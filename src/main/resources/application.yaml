@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: online_exam
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/online_exam?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC
+    username: root
+    password: 123456
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+server:
+  port: 8081
+
+jwt:
+  secret: mySecretKeyForJwtTokenMustBeLongEnough123456
+  access-expire: 3600000
+  refresh-expire: 604800000
