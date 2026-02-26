@@ -13,10 +13,10 @@ import java.util.Set;
 
 public class UserResponse {
 
-//    private Long id;
+    private Long id;
     private String username;
     private String email;
     private String fullName;
     private UserStatus status;
-    private Set<Role> roles;
+    private Set<String> roles;
 }

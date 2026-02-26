@@ -1,14 +1,10 @@
 package com.example.online_exam.course.dto;
 
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 @Data
-public class CourseRequest {
-    @NotBlank
+public class CourseUpdateRequest {
     private String name;
     private String description;
-    @NotNull
     private Long teacherId;
 }

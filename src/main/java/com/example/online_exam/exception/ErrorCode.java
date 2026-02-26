@@ -13,6 +13,8 @@ public enum ErrorCode {
     INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "Invalid password"),
     ROLE_NOT_FOUND(HttpStatus.NOT_FOUND, "Role not found"),
     TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "Token expired"),
+    COURSE_NOT_FOUND(HttpStatus.NOT_FOUND, "Course not found"),
+    INVALID_TEACHER(HttpStatus.BAD_REQUEST, "Assigned user is not a teacher"),
 
     // ===== AUTH =====
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "Unauthorized"),
