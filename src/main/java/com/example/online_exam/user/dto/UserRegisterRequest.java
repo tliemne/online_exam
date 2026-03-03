@@ -1,6 +1,7 @@
 package com.example.online_exam.user.dto;
 
 import com.example.online_exam.user.enums.RoleName;
+import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
@@ -11,9 +12,8 @@ public class UserRegisterRequest {
     @NotBlank
     private String password;
     @NotBlank
-    private String email;
-
+    @Email
+    private String email;  // bắt buộc, không được null
     private String fullName;
-
     private RoleName role;
 }

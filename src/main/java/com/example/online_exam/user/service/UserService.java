@@ -4,6 +4,7 @@ import com.example.online_exam.user.dto.MyProfileResponse;
 import com.example.online_exam.user.dto.UserRegisterRequest;
 import com.example.online_exam.user.dto.UserResponse;
 import com.example.online_exam.user.dto.UserUpdateRequest;
+import com.example.online_exam.user.enums.RoleName;
 import com.example.online_exam.userprofile.dto.StudentProfileResponse;
 import com.example.online_exam.userprofile.dto.StudentProfileUpdateRequest;
 import com.example.online_exam.userprofile.dto.TeacherProfileResponse;
@@ -27,4 +28,5 @@ public interface UserService {
     StudentProfileResponse updateMyStudentProfile(StudentProfileUpdateRequest request);
 
     TeacherProfileResponse updateMyTeacherProfile(TeacherProfileUpdateRequest request);
+    List<UserResponse> getAllByRole(RoleName role);
 }

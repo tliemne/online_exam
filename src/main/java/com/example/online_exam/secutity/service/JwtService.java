@@ -16,9 +16,6 @@ import java.util.Date;
 @Service
 public class JwtService {
 
-//    private final String SECRET = "my-super-secret-key-my-super-secret-key";
-//    private final long ACCESS_EXPIRE = 1000 * 60 * 60; // 1h
-//    private final long REFRESH_EXPIRE = 1000L * 60 * 60 * 24 * 7; // 7 ngày
     @Value("${jwt.secret}")
     private String secret;
 

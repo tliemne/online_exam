@@ -1,16 +1,22 @@
 package com.example.online_exam.config;
 
 import com.example.online_exam.user.entity.Role;
+import com.example.online_exam.user.entity.User;
 import com.example.online_exam.user.enums.RoleName;
+import com.example.online_exam.user.enums.UserStatus;
 import com.example.online_exam.user.repository.RoleRepository;
+import com.example.online_exam.user.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+
+import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
 public class DataInitializer {
     private final RoleRepository roleRepository;
+    private final UserRepository userRepository;
     @PostConstruct
     public void initRoles() {
         for (RoleName roleName : RoleName.values()) {

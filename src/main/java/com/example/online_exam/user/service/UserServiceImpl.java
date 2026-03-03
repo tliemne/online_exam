@@ -224,19 +224,23 @@ public class UserServiceImpl implements UserService {
         User viewer = currentUserService.getCurrentUser().orElse(null);
 
         if (viewer == null) {
-            return userMapper.toRoleAwareResponse(targetUser, true, false);
+            // Chưa đăng nhập (vd: vừa register) → trả đủ info của chính user đó
+            return userMapper.toRoleAwareResponse(targetUser, true, true);
         }
 
         boolean viewerIsAdmin = currentUserService.isAdmin(viewer);
         boolean viewerIsOwner = viewer.getId().equals(targetUser.getId());
         boolean includeSensitive = viewerIsAdmin || viewerIsOwner;
-
-        boolean viewerIsStudentOnly = currentUserService.hasRole(viewer, RoleName.STUDENT)
-                && !currentUserService.hasRole(viewer, RoleName.ADMIN)
-                && !currentUserService.hasRole(viewer, RoleName.TEACHER);
-        boolean includeId = !viewerIsStudentOnly;
+        boolean includeId = viewerIsAdmin || viewerIsOwner;
 
         return userMapper.toRoleAwareResponse(targetUser, includeSensitive, includeId);
+    }
+    @Override
+    public List<UserResponse> getAllByRole(RoleName role) {
+        return userRepository.findAll().stream()
+                .filter(u -> u.getRoles().stream().anyMatch(r -> r.getName() == role))
+                .map(userMapper::toPrivateResponse)
+                .toList();
     }
 
 }

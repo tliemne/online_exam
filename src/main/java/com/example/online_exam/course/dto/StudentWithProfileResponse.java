@@ -1,0 +1,17 @@
+package com.example.online_exam.course.dto;
+
+import lombok.Data;
+import java.time.LocalDate;
+
+@Data
+public class StudentWithProfileResponse {
+    private Long id;
+    private String username;
+    private String fullName;
+    private String email;
+    // từ StudentProfile
+    private String studentCode;
+    private String phone;
+    private LocalDate dateOfBirth;
+    private String className;
+}

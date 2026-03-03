@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CourseResponse {
     private Long id;
+//    private Long teacherId;
     private String name;
     private String description;
     private String teacherName;

@@ -2,10 +2,14 @@ package com.example.online_exam.user.controller;
 
 import com.example.online_exam.auth.dto.AuthResponse;
 import com.example.online_exam.common.dto.BaseResponse;
+import com.example.online_exam.exception.AppException;
+import com.example.online_exam.exception.ErrorCode;
+import com.example.online_exam.user.dto.MyProfileResponse;
 import com.example.online_exam.user.dto.UserRegisterRequest;
 import com.example.online_exam.user.dto.UserResponse;
 import com.example.online_exam.user.dto.UserUpdateRequest;
 import com.example.online_exam.user.entity.User;
+import com.example.online_exam.user.enums.RoleName;
 import com.example.online_exam.user.service.UserService;
 import com.example.online_exam.userprofile.dto.StudentProfileResponse;
 import com.example.online_exam.userprofile.dto.StudentProfileUpdateRequest;
@@ -29,11 +33,28 @@ public class UserController {
 
     private final UserService userService;
 
+    // Public: chỉ tạo được STUDENT hoặc TEACHER
     @PostMapping("/register")
     public BaseResponse<UserResponse> register(@Validated @RequestBody UserRegisterRequest request) {
+        // Không cho tạo ADMIN qua endpoint public
+        if (request.getRole() == RoleName.ADMIN) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
         return BaseResponse.<UserResponse>builder()
                 .status(200)
                 .message("register success")
+                .data(userService.register(request))
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
+    // Chỉ ADMIN mới tạo được mọi role kể cả ADMIN khác
+    @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public BaseResponse<UserResponse> createUser(@Validated @RequestBody UserRegisterRequest request) {
+        return BaseResponse.<UserResponse>builder()
+                .status(200)
+                .message("create user success")
                 .data(userService.register(request))
                 .timestamp(LocalDateTime.now())
                 .build();
@@ -45,6 +66,16 @@ public class UserController {
                 .status(200)
                 .message("get my profile success")
                 .data(userService.getById(currentUser.getId()))
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+    // Xem profile đầy đủ của chính mình (có cả studentProfile / teacherProfile)
+    @GetMapping("/me/profile")
+    public BaseResponse<MyProfileResponse> myProfile() {
+        return BaseResponse.<MyProfileResponse>builder()
+                .status(200)
+                .message("get my profile success")
+                .data(userService.getMyProfile())
                 .timestamp(LocalDateTime.now())
                 .build();
     }
@@ -71,7 +102,7 @@ public class UserController {
                 .build();
     }
 
-    @PreAuthorize("hasRole('ADMIN') of #id == authentication.principal.id")
+    @PreAuthorize("hasRole('ADMIN') or #id == authentication.principal.id")
     @GetMapping("/{id}")
     public BaseResponse<UserResponse> getById(@PathVariable Long id) {
         return BaseResponse.<UserResponse>builder()
@@ -93,7 +124,7 @@ public class UserController {
                 .build();
     }
 
-    @PreAuthorize("hasRole('ADMIN') of #id == authentication.principal.id")
+    @PreAuthorize("hasRole('ADMIN') or #id == authentication.principal.id")
     @PutMapping("/{id}")
     public BaseResponse<UserResponse> update(@PathVariable Long id, @Validated @RequestBody UserUpdateRequest request) {
         return BaseResponse.<UserResponse>builder()
@@ -111,6 +142,17 @@ public class UserController {
         return BaseResponse.<Void>builder()
                 .status(200)
                 .message("delete user success")
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+    // Teacher xem danh sách tất cả student để thêm vào lớp
+    @GetMapping("/students")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    public BaseResponse<List<UserResponse>> getAllStudents() {
+        return BaseResponse.<List<UserResponse>>builder()
+                .status(200)
+                .message("get all students success")
+                .data(userService.getAllByRole(RoleName.STUDENT))
                 .timestamp(LocalDateTime.now())
                 .build();
     }

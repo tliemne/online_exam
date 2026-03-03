@@ -7,13 +7,9 @@ import org.mapstruct.Mapping;
 
 import java.util.List;
 @Mapper(componentModel = "spring")
-//@Mapper(componentModel = "spring", uses = com.example.online_exam.user.mapper.UserMapper.class)
 public interface CourseMapper {
 
-//    @Mapping(
-//            target = "teacherName",
-//            expression = "java(course.getTeacher() != null ? course.getTeacher().getFullName() : null)"
-//    )
+    @Mapping(target = "id", source = "id")
     @Mapping(target = "teacherName", source = "teacher.fullName")
     CourseResponse toResponse(Course course);
 

@@ -3,15 +3,19 @@ package com.example.online_exam.course.service;
 import com.example.online_exam.course.dto.CourseRequest;
 import com.example.online_exam.course.dto.CourseResponse;
 import com.example.online_exam.course.dto.CourseUpdateRequest;
+import com.example.online_exam.course.dto.StudentWithProfileResponse;
 import com.example.online_exam.course.entity.Course;
 import com.example.online_exam.course.mapper.CourseMapper;
 import com.example.online_exam.course.repository.CourseRepository;
 import com.example.online_exam.exception.AppException;
 import com.example.online_exam.exception.ErrorCode;
 import com.example.online_exam.secutity.service.CurrentUserService;
+import com.example.online_exam.user.dto.UserResponse;
 import com.example.online_exam.user.entity.User;
 import com.example.online_exam.user.enums.RoleName;
+import com.example.online_exam.user.mapper.UserMapper;
 import com.example.online_exam.user.repository.UserRepository;
+import com.example.online_exam.userprofile.repository.StudentProfileRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,6 +30,8 @@ public class CourseService {
     private final UserRepository userRepository;
     private final CourseMapper courseMapper;
     private final CurrentUserService currentUserService;
+    private final UserMapper userMapper;
+    private final StudentProfileRepository studentProfileRepository;
 
     public CourseResponse create(CourseRequest request)
     {
@@ -147,5 +153,71 @@ public class CourseService {
         }
 
         return teacher;
+    }
+    public CourseResponse addStudent(Long courseId, Long studentId) {
+        Course course = findCourseByManageScope(courseId);
+
+        User student = userRepository.findById(studentId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        boolean isStudent = student.getRoles().stream()
+                .anyMatch(role -> role.getName() == RoleName.STUDENT);
+        if (!isStudent) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+
+        course.getStudents().add(student);
+        courseRepository.save(course);
+        return courseMapper.toResponse(course);
+    }
+
+    public void removeStudent(Long courseId, Long studentId) {
+        Course course = findCourseByManageScope(courseId);
+
+        User student = userRepository.findById(studentId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        course.getStudents().remove(student);
+        courseRepository.save(course);
+    }
+
+    public List<StudentWithProfileResponse> getStudents(Long courseId) {
+        Course course = findCourseByDataScope(courseId);
+        return course.getStudents().stream().map(s -> {
+            StudentWithProfileResponse res = new StudentWithProfileResponse();
+            res.setId(s.getId());
+            res.setUsername(s.getUsername());
+            res.setFullName(s.getFullName());
+            res.setEmail(s.getEmail());
+            studentProfileRepository.findByUserId(s.getId()).ifPresent(p -> {
+                res.setStudentCode(p.getStudentCode());
+                res.setPhone(p.getPhone());
+                res.setDateOfBirth(p.getDateOfBirth());
+                res.setClassName(p.getClassName());
+            });
+            return res;
+        }).toList();
+    }
+    public CourseResponse addStudents(Long courseId, List<Long> studentIds) {
+        Course course = findCourseByManageScope(courseId);
+
+        List<User> students = userRepository.findAllById(studentIds);
+
+        // Kiểm tra tất cả id có tồn tại không
+        if (students.size() != studentIds.size()) {
+            throw new AppException(ErrorCode.USER_NOT_FOUND);
+        }
+
+        // Kiểm tra tất cả phải là STUDENT
+        boolean allAreStudents = students.stream()
+                .allMatch(s -> s.getRoles().stream()
+                        .anyMatch(r -> r.getName() == RoleName.STUDENT));
+        if (!allAreStudents) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+
+        course.getStudents().addAll(students);
+        courseRepository.save(course);
+        return courseMapper.toResponse(course);
     }
 }
