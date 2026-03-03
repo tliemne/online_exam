@@ -47,7 +47,7 @@ export default function AppLayout({ children }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [collapsed, setCollapsed] = useState(false)
-  const role = user?.roles?.[0]?.name
+  const role = user?.roles?.[0]
   const navItems = getNav(role)
 
   const handleLogout = async () => {
@@ -55,6 +55,7 @@ export default function AppLayout({ children }) {
     navigate('/login')
   }
 
+  // roles là Set<String> ví dụ ["ADMIN"] nên lấy phần tử đầu trực tiếp
   const roleLabel = { ADMIN: 'Quản trị viên', TEACHER: 'Giảng viên', STUDENT: 'Sinh viên' }[role] || role
   const roleColor = { ADMIN: 'badge-red', TEACHER: 'badge-cyan', STUDENT: 'badge-green' }[role] || 'badge-muted'
 

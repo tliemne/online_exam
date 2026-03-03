@@ -39,7 +39,7 @@ export default function AdminDashboard() {
       .finally(() => setLoading(false))
   }, [])
 
-  const roleCount = (role) => users.filter((u) => u.roles?.some((r) => r.name === role)).length
+  const roleCount = (role) => users.filter((u) => u.roles?.includes(role)).length
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
@@ -97,10 +97,10 @@ export default function AdminDashboard() {
                     <td className="py-3 text-sm text-text-secondary">{u.email || '—'}</td>
                     <td className="py-3">
                       {u.roles?.map((r) => (
-                        <span key={r.name} className={
-                          r.name === 'ADMIN' ? 'badge-red' :
-                          r.name === 'TEACHER' ? 'badge-cyan' : 'badge-green'
-                        }>{r.name}</span>
+                        <span key={r} className={
+                          r === 'ADMIN' ? 'badge-red' :
+                          r === 'TEACHER' ? 'badge-cyan' : 'badge-green'
+                        }>{r}</span>
                       ))}
                     </td>
                     <td className="py-3">

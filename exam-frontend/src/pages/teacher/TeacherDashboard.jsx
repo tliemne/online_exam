@@ -14,7 +14,7 @@ export default function TeacherDashboard() {
       .finally(() => setLoading(false))
   }, [])
 
-  const myCourses = courses.filter((c) => c.teacherId === user?.id || c.teacherName === user?.fullName)
+  const myCourses = courses.filter((c) => c.teacherId === user?.id)
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">

@@ -11,6 +11,7 @@ export const authApi = {
 export const userApi = {
   register: (data) => api.post('/users/register', data),
   me: () => api.get('/users/me'),
+  myProfile: () => api.get('/users/me/profile'),
   getAll: () => api.get('/users'),
   getById: (id) => api.get(`/users/${id}`),
   update: (id, data) => api.put(`/users/${id}`, data),
@@ -32,7 +33,7 @@ export const courseApi = {
   removeStudent: (id, studentId) => api.delete(`/courses/${id}/students/${studentId}`),
 }
 
-// ── QUESTIONS (to be implemented) ───────────────────────
+// ── QUESTIONS ────────────────────────────────────────────
 export const questionApi = {
   getAll: (courseId) => api.get('/questions', { params: { courseId } }),
   create: (data) => api.post('/questions', data),

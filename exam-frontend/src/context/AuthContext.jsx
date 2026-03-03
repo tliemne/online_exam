@@ -12,9 +12,15 @@ export function AuthProvider({ children }) {
     if (!token) { setLoading(false); return }
     try {
       const res = await userApi.me()
-      setUser(res.data.data)
-    } catch {
-      localStorage.clear()
+      const userData = res.data.data
+      console.log('🔍 /users/me response:', JSON.stringify(userData))
+      setUser(userData)
+    } catch (err) {
+      console.error('❌ /users/me failed:', err.response?.status, err.response?.data)
+      // Chỉ clear token khi 401, không clear khi lỗi server 500
+      if (err.response?.status === 401) {
+        localStorage.clear()
+      }
     } finally {
       setLoading(false)
     }
@@ -28,8 +34,10 @@ export function AuthProvider({ children }) {
     localStorage.setItem('accessToken', accessToken)
     localStorage.setItem('refreshToken', refreshToken)
     const me = await userApi.me()
-    setUser(me.data.data)
-    return me.data.data
+    const userData = me.data.data
+    console.log('✅ Login success, user:', JSON.stringify(userData))
+    setUser(userData)
+    return userData
   }
 
   const logout = async () => {
@@ -39,13 +47,14 @@ export function AuthProvider({ children }) {
     setUser(null)
   }
 
-  const hasRole = (role) => user?.roles?.some((r) => r.name === role)
-  const isAdmin = () => hasRole('ADMIN')
-  const isTeacher = () => hasRole('TEACHER')
-  const isStudent = () => hasRole('STUDENT')
+  // Hỗ trợ cả 2 dạng roles: ["ADMIN"] và [{name:"ADMIN"}]
+  const hasRole = (role) => {
+    if (!user?.roles) return false
+    return user.roles.some((r) => (typeof r === 'string' ? r : r.name) === role)
+  }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, hasRole, isAdmin, isTeacher, isStudent, reload: loadUser }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, hasRole }}>
       {children}
     </AuthContext.Provider>
   )
