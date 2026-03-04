@@ -60,3 +60,93 @@
   .section-title { @apply font-display font-semibold text-lg text-text-primary; }
   .label { @apply block text-xs font-medium text-text-secondary mb-1.5 uppercase tracking-wider; }
 }
+/* ═══════════════════════════════════════════════════
+   THÊM VÀO CUỐI index.css
+   Light mode overrides
+═══════════════════════════════════════════════════ */
+
+/* Light mode — override toàn bộ màu nền/text */
+html[data-theme="light"] {
+  background-color: #f4f6f9;
+  color: #0f1117;
+
+  /* Surface colors */
+  --tw-surface-950: #ffffff;
+  --tw-surface-900: #f4f6f9;
+  --tw-surface-800: #ffffff;
+  --tw-surface-700: #eef1f5;
+  --tw-surface-600: #dde2ea;
+  --tw-surface-500: #c8d0db;
+
+  /* Text colors */
+  --tw-text-primary: #0f1117;
+  --tw-text-secondary: #4a5568;
+  --tw-text-muted: #8896a8;
+}
+
+html[data-theme="light"] body { background-color: #f4f6f9; }
+
+/* Override Tailwind utilities cho light mode */
+html[data-theme="light"] .bg-surface-950 { background-color: #f4f6f9 !important; }
+html[data-theme="light"] .bg-surface-900 { background-color: #edf0f5 !important; }
+html[data-theme="light"] .bg-surface-800 { background-color: #ffffff !important; }
+html[data-theme="light"] .bg-surface-700 { background-color: #f0f3f7 !important; }
+html[data-theme="light"] .bg-surface-600 { background-color: #e4e8ef !important; }
+
+html[data-theme="light"] .border-surface-700 { border-color: #dde2ea !important; }
+html[data-theme="light"] .border-surface-600 { border-color: #d1d8e3 !important; }
+html[data-theme="light"] .border-surface-500 { border-color: #c4cdd9 !important; }
+
+html[data-theme="light"] .text-text-primary   { color: #0f1117 !important; }
+html[data-theme="light"] .text-text-secondary { color: #4a5568 !important; }
+html[data-theme="light"] .text-text-muted     { color: #8896a8 !important; }
+
+html[data-theme="light"] .card {
+  background-color: #ffffff !important;
+  border-color: #dde2ea !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06) !important;
+}
+
+html[data-theme="light"] .input-field {
+  background-color: #f8fafc !important;
+  border-color: #c8d0db !important;
+  color: #0f1117 !important;
+}
+html[data-theme="light"] .input-field::placeholder { color: #8896a8 !important; }
+html[data-theme="light"] .input-field:focus {
+  border-color: #7c6aff !important;
+  background-color: #ffffff !important;
+}
+
+html[data-theme="light"] .btn-secondary {
+  background-color: #eef1f5 !important;
+  border-color: #c8d0db !important;
+  color: #0f1117 !important;
+}
+html[data-theme="light"] .btn-secondary:hover {
+  background-color: #e4e8ef !important;
+}
+
+html[data-theme="light"] .btn-ghost:hover {
+  background-color: #eef1f5 !important;
+}
+
+/* Sidebar light */
+html[data-theme="light"] aside {
+  background-color: #ffffff !important;
+  border-color: #dde2ea !important;
+}
+html[data-theme="light"] aside .text-text-secondary { color: #4a5568 !important; }
+html[data-theme="light"] aside nav a:hover { background-color: #f0f3f7 !important; }
+
+/* Scrollbar light */
+html[data-theme="light"] ::-webkit-scrollbar-track { background: #f4f6f9; }
+html[data-theme="light"] ::-webkit-scrollbar-thumb { background: #c8d0db; }
+html[data-theme="light"] ::-webkit-scrollbar-thumb:hover { background: #7c6aff; }
+
+/* Select options */
+html[data-theme="light"] select option {
+  background-color: #ffffff;
+  color: #0f1117;
+}
+

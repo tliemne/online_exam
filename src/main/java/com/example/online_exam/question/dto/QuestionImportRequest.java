@@ -12,8 +12,8 @@ import java.util.List;
 @Data
 public class QuestionImportRequest {
     private String content;
-    private QuestionType type;         // MULTIPLE_CHOICE | TRUE_FALSE | ESSAY
-    private Difficulty difficulty;     // EASY | MEDIUM | HARD
+    private QuestionType type;
+    private Difficulty difficulty;
     private List<AnswerRequest> answers;
 }
 
