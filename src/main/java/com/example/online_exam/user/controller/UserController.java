@@ -1,6 +1,5 @@
 package com.example.online_exam.user.controller;
 
-import com.example.online_exam.auth.dto.AuthResponse;
 import com.example.online_exam.common.dto.BaseResponse;
 import com.example.online_exam.exception.AppException;
 import com.example.online_exam.exception.ErrorCode;
@@ -15,10 +14,8 @@ import com.example.online_exam.userprofile.dto.StudentProfileResponse;
 import com.example.online_exam.userprofile.dto.StudentProfileUpdateRequest;
 import com.example.online_exam.userprofile.dto.TeacherProfileResponse;
 import com.example.online_exam.userprofile.dto.TeacherProfileUpdateRequest;
-import com.example.online_exam.userprofile.entity.StudentProfile;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.AuthenticatedPrincipal;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -33,28 +30,30 @@ public class UserController {
 
     private final UserService userService;
 
-    // Public: chỉ tạo được STUDENT hoặc TEACHER
-    @PostMapping("/register")
-    public BaseResponse<UserResponse> register(@Validated @RequestBody UserRegisterRequest request) {
-        // Không cho tạo ADMIN qua endpoint public
-        if (request.getRole() == RoleName.ADMIN) {
-            throw new AppException(ErrorCode.FORBIDDEN);
-        }
-        return BaseResponse.<UserResponse>builder()
-                .status(200)
-                .message("register success")
-                .data(userService.register(request))
-                .timestamp(LocalDateTime.now())
-                .build();
-    }
-
-    // Chỉ ADMIN mới tạo được mọi role kể cả ADMIN khác
+    // ADMIN tạo bất kỳ role (ADMIN, TEACHER, STUDENT)
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public BaseResponse<UserResponse> createUser(@Validated @RequestBody UserRegisterRequest request) {
         return BaseResponse.<UserResponse>builder()
                 .status(200)
                 .message("create user success")
+                .data(userService.register(request))
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
+    // TEACHER tạo STUDENT
+    @PostMapping("/students")
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    public BaseResponse<UserResponse> createStudent(@Validated @RequestBody UserRegisterRequest request) {
+        // Bắt buộc role phải là STUDENT
+        if (request.getRole() != null && request.getRole() != RoleName.STUDENT) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+        request.setRole(RoleName.STUDENT);
+        return BaseResponse.<UserResponse>builder()
+                .status(200)
+                .message("create student success")
                 .data(userService.register(request))
                 .timestamp(LocalDateTime.now())
                 .build();
@@ -69,7 +68,7 @@ public class UserController {
                 .timestamp(LocalDateTime.now())
                 .build();
     }
-    // Xem profile đầy đủ của chính mình (có cả studentProfile / teacherProfile)
+
     @GetMapping("/me/profile")
     public BaseResponse<MyProfileResponse> myProfile() {
         return BaseResponse.<MyProfileResponse>builder()
@@ -124,6 +123,28 @@ public class UserController {
                 .build();
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN', 'TEACHER')")
+    @GetMapping("/students")
+    public BaseResponse<List<UserResponse>> getAllStudents() {
+        return BaseResponse.<List<UserResponse>>builder()
+                .status(200)
+                .message("get all students success")
+                .data(userService.getAllByRole(RoleName.STUDENT))
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/teachers")
+    public BaseResponse<List<UserResponse>> getAllTeachers() {
+        return BaseResponse.<List<UserResponse>>builder()
+                .status(200)
+                .message("get all teachers success")
+                .data(userService.getAllByRole(RoleName.TEACHER))
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
     @PreAuthorize("hasRole('ADMIN') or #id == authentication.principal.id")
     @PutMapping("/{id}")
     public BaseResponse<UserResponse> update(@PathVariable Long id, @Validated @RequestBody UserUpdateRequest request) {
@@ -133,8 +154,8 @@ public class UserController {
                 .data(userService.update(id, request))
                 .timestamp(LocalDateTime.now())
                 .build();
-
     }
+
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
     public BaseResponse<Void> delete(@PathVariable Long id) {
@@ -142,17 +163,6 @@ public class UserController {
         return BaseResponse.<Void>builder()
                 .status(200)
                 .message("delete user success")
-                .timestamp(LocalDateTime.now())
-                .build();
-    }
-    // Teacher xem danh sách tất cả student để thêm vào lớp
-    @GetMapping("/students")
-    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
-    public BaseResponse<List<UserResponse>> getAllStudents() {
-        return BaseResponse.<List<UserResponse>>builder()
-                .status(200)
-                .message("get all students success")
-                .data(userService.getAllByRole(RoleName.STUDENT))
                 .timestamp(LocalDateTime.now())
                 .build();
     }

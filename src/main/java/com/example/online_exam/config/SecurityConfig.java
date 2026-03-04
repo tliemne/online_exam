@@ -53,7 +53,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()  // thêm dòng này
                         .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers("/users/register").permitAll()
+//                        .requestMatchers("/users/register").permitAll()
                         .requestMatchers(HttpMethod.GET, "/users").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
