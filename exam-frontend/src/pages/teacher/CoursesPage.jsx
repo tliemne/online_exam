@@ -352,9 +352,9 @@ export default function CoursesPage() {
   // Teacher cần allUsers để thêm SV — lấy riêng
   useEffect(() => {
     if (!isAdmin && hasRole('TEACHER')) {
-      userApi.getAll().then(r => setAllUsers(r.data.data || [])).catch(() => {})
+      userApi.getAllStudents().then(r => setAllUsers(r.data.data || [])).catch(() => {})
     }
-  }, [isAdmin, hasRole])
+  }, [isAdmin])
 
   const handleDelete = async (course) => {
     if (!confirm(`Xóa lớp "${course.name}"?`)) return

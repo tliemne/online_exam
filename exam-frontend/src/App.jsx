@@ -40,7 +40,11 @@ export default function App() {
           {/* Admin */}
           <Route path="/admin" element={<ProtectedRoute roles={['ADMIN']}><WithLayout><AdminDashboard /></WithLayout></ProtectedRoute>} />
           <Route path="/admin/users" element={<ProtectedRoute roles={['ADMIN']}><WithLayout><AdminUsers /></WithLayout></ProtectedRoute>} />
-          <Route path="/admin/courses" element={<ProtectedRoute roles={['ADMIN']}><WithLayout><AdminCoursesPage /></WithLayout></ProtectedRoute>} />
+          <Route path="/admin/courses" element={
+            <ProtectedRoute roles={['ADMIN']}>
+              <WithLayout><CoursesPage /></WithLayout>
+            </ProtectedRoute>
+          } />
 
           {/* Teacher */}
           <Route path="/teacher" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><TeacherDashboard /></WithLayout></ProtectedRoute>} />
