@@ -10,6 +10,7 @@ import java.util.List;
 public interface CourseMapper {
 
     @Mapping(target = "id", source = "id")
+    @Mapping(target = "teacherId", source = "teacher.id")
     @Mapping(target = "teacherName", source = "teacher.fullName")
     CourseResponse toResponse(Course course);
 

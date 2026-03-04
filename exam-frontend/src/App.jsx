@@ -12,7 +12,11 @@ import AdminUsers from './pages/admin/AdminUsers'
 import TeacherDashboard from './pages/teacher/TeacherDashboard'
 import CoursesPage from './pages/teacher/CoursesPage'
 
+import ProfilePage from './pages/profile/ProfilePage'
+
+
 import StudentDashboard from './pages/student/StudentDashboard'
+
 
 import {
   QuestionsPage,
@@ -42,7 +46,7 @@ export default function App() {
           <Route path="/admin/users" element={<ProtectedRoute roles={['ADMIN']}><WithLayout><AdminUsers /></WithLayout></ProtectedRoute>} />
           <Route path="/admin/courses" element={
             <ProtectedRoute roles={['ADMIN']}>
-              <WithLayout><CoursesPage /></WithLayout>
+              <WithLayout><CoursesPage /></WithLayout>  
             </ProtectedRoute>
           } />
 
@@ -56,6 +60,9 @@ export default function App() {
           <Route path="/student" element={<ProtectedRoute roles={['STUDENT']}><WithLayout><StudentDashboard /></WithLayout></ProtectedRoute>} />
           <Route path="/student/exams" element={<ProtectedRoute roles={['STUDENT']}><WithLayout><StudentExamsPage /></WithLayout></ProtectedRoute>} />
           <Route path="/student/results" element={<ProtectedRoute roles={['STUDENT']}><WithLayout><StudentResultsPage /></WithLayout></ProtectedRoute>} />
+
+          {/* profile */}  
+          <Route path="/profile" element={<ProtectedRoute roles={['ADMIN','TEACHER','STUDENT']}><WithLayout><ProfilePage /></WithLayout></ProtectedRoute>} />
 
           {/* Redirect root */}
           <Route path="/" element={<Navigate to="/login" replace />} />

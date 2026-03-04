@@ -195,7 +195,11 @@ public class UserServiceImpl implements UserService {
         }
 
         TeacherProfile profile = teacherProfileRepository.findByUserId(currentUser.getId())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+                .orElseGet(() -> {
+                    TeacherProfile p = new TeacherProfile();
+                    p.setUser(currentUser);
+                    return p;
+                });
 
         profile.setTeacherCode(request.getTeacherCode());
         profile.setPhone(request.getPhone());
