@@ -25,6 +25,9 @@ public enum ErrorCode {
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, "Invalid request data"),
     VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "Validation failed"),
 
+    // ===== QUESTION =====
+    QUESTION_NOT_FOUND(HttpStatus.NOT_FOUND, "Question not found"),
+
     // ===== SYSTEM =====
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");
 

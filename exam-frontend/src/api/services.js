@@ -9,13 +9,14 @@ export const authApi = {
 
 // ── USERS ───────────────────────────────────────────────
 export const userApi = {
-  register: (data) => api.post('/users/register', data),
+  createUser: (data) => api.post('/users', data),           // Admin tạo bất kỳ role
+  createStudent: (data) => api.post('/users/students', data), // Admin/Teacher tạo student
   me: () => api.get('/users/me'),
   myProfile: () => api.get('/users/me/profile'),
   getAll: () => api.get('/users'),
-  getById: (id) => api.get(`/users/${id}`),
   getAllStudents: () => api.get('/users/students'),
   getAllTeachers: () => api.get('/users/teachers'),
+  getById: (id) => api.get(`/users/${id}`),
   update: (id, data) => api.put(`/users/${id}`, data),
   delete: (id) => api.delete(`/users/${id}`),
   updateStudentProfile: (data) => api.put('/users/me/student-profile', data),
@@ -37,7 +38,7 @@ export const courseApi = {
 
 // ── QUESTIONS ────────────────────────────────────────────
 export const questionApi = {
-  getAll: (courseId) => api.get('/questions', { params: { courseId } }),
+  getAll: (courseId, params) => api.get(`/questions`, { params: { courseId, ...params } }),
   create: (data) => api.post('/questions', data),
   update: (id, data) => api.put(`/questions/${id}`, data),
   delete: (id) => api.delete(`/questions/${id}`),
