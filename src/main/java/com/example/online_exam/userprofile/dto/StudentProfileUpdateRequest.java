@@ -6,7 +6,7 @@ import java.time.LocalDate;
 
 @Data
 public class StudentProfileUpdateRequest {
-    private String studentCode;
+//    private String studentCode;
     private String phone;
     private LocalDate dateOfBirth;
     private String className;

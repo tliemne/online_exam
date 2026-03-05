@@ -149,4 +149,162 @@ html[data-theme="light"] select option {
   background-color: #ffffff;
   color: #0f1117;
 }
+/* ═══════════════════════════════════════════════════
+   PASTE ĐOẠN NÀY VÀO CUỐI src/index.css
+   Light mode targeted fixes
+═══════════════════════════════════════════════════ */
 
+/* ── Login card ── */
+[data-theme="light"] .bg-surface-800\/80 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: #dde2ea !important;
+}
+
+/* ── Tất cả bg-surface-* → màu sáng ── */
+[data-theme="light"] .bg-surface-950 { background-color: #f0f4f9 !important; }
+[data-theme="light"] .bg-surface-900 { background-color: #e8edf4 !important; }
+[data-theme="light"] .bg-surface-800 { background-color: #ffffff !important; }
+[data-theme="light"] .bg-surface-700 { background-color: #f5f7fa !important; }
+[data-theme="light"] .bg-surface-600 { background-color: #eaecf2 !important; }
+
+/* ── Border ── */
+[data-theme="light"] .border-surface-700 { border-color: #dde2ea !important; }
+[data-theme="light"] .border-surface-600 { border-color: #dde2ea !important; }
+[data-theme="light"] .border-surface-500 { border-color: #c8d0db !important; }
+
+/* ── Text ── */
+[data-theme="light"] .text-text-primary   { color: #0f1117 !important; }
+[data-theme="light"] .text-text-secondary { color: #4a5568 !important; }
+[data-theme="light"] .text-text-muted     { color: #8896a8 !important; }
+
+/* ── Sidebar profile block (nền đen → sáng) ── */
+[data-theme="light"] aside { 
+  background-color: #ffffff !important; 
+  border-right-color: #dde2ea !important; 
+}
+[data-theme="light"] aside .bg-surface-950,
+[data-theme="light"] aside [class*="bg-surface"] {
+  background-color: #f5f7fa !important;
+}
+/* Profile name/badge block */
+[data-theme="light"] aside a.flex.items-center {
+  background-color: transparent !important;
+}
+[data-theme="light"] aside a.flex.items-center:hover {
+  background-color: #f0f3f7 !important;
+}
+/* Chữ trong sidebar */
+[data-theme="light"] aside p.text-text-primary { color: #0f1117 !important; }
+[data-theme="light"] aside .border-surface-700 { border-color: #dde2ea !important; }
+
+/* ── Hover rows ── */
+[data-theme="light"] .hover\:bg-surface-700\/30:hover { 
+  background-color: rgba(234, 236, 242, 0.6) !important; 
+}
+[data-theme="light"] .hover\:bg-surface-700:hover { 
+  background-color: #f0f3f7 !important; 
+}
+
+/* ── divide lines ── */
+[data-theme="light"] .divide-surface-700 > * + * { 
+  border-color: #eaecf2 !important; 
+}
+
+/* ── Input ── */
+[data-theme="light"] .input-field {
+  background-color: #ffffff !important;
+  border-color: #c8d0db !important;
+  color: #0f1117 !important;
+}
+[data-theme="light"] .input-field::placeholder { color: #8896a8 !important; }
+[data-theme="light"] .input-field:focus {
+  border-color: #7c6aff !important;
+  box-shadow: 0 0 0 3px rgba(124,106,255,0.12) !important;
+}
+
+/* ── Card ── */
+[data-theme="light"] .card {
+  background-color: #ffffff !important;
+  border-color: #dde2ea !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06) !important;
+}
+[data-theme="light"] .card-hover:hover {
+  border-color: rgba(124,106,255,0.35) !important;
+  box-shadow: 0 4px 20px rgba(124,106,255,0.12) !important;
+}
+
+/* ── btn-secondary ── */
+[data-theme="light"] .btn-secondary {
+  background-color: #f0f3f7 !important;
+  border-color: #c8d0db !important;
+  color: #0f1117 !important;
+}
+[data-theme="light"] .btn-secondary:hover {
+  background-color: #e4e8ef !important;
+  border-color: rgba(124,106,255,0.4) !important;
+}
+
+/* ── btn-ghost ── */
+[data-theme="light"] .btn-ghost { color: #4a5568 !important; }
+[data-theme="light"] .btn-ghost:hover {
+  color: #0f1117 !important;
+  background-color: #f0f3f7 !important;
+}
+
+/* ── badge-muted ── */
+[data-theme="light"] .badge-muted {
+  background-color: #eaecf2 !important;
+  color: #4a5568 !important;
+  border-color: #c8d0db !important;
+}
+
+/* ── Select options ── */
+[data-theme="light"] select option {
+  background-color: #ffffff;
+  color: #0f1117;
+}
+
+/* ── Table header ── */
+[data-theme="light"] thead tr {
+  background-color: #f5f7fa !important;
+}
+[data-theme="light"] thead th {
+  color: #8896a8 !important;
+}
+[data-theme="light"] .border-b.border-surface-600 {
+  border-color: #dde2ea !important;
+}
+
+/* ── Scrollbar ── */
+[data-theme="light"] ::-webkit-scrollbar-track { background: #f0f4f9; }
+[data-theme="light"] ::-webkit-scrollbar-thumb { background: #c8d0db; }
+
+/* ── Theme/Lang toggle buttons in sidebar ── */
+[data-theme="light"] aside button {
+  color: #4a5568 !important;
+}
+[data-theme="light"] aside button:hover {
+  background-color: #f0f3f7 !important;
+  color: #0f1117 !important;
+}
+[data-theme="light"] aside button.border {
+  border-color: #c8d0db !important;
+  background-color: #f5f7fa !important;
+}
+
+/* ── Nav active state ── */
+[data-theme="light"] nav a.bg-accent\/15 {
+  background-color: rgba(124,106,255,0.1) !important;
+}
+
+/* ── Inline bg dùng trong dashboard cards ── */
+[data-theme="light"] .bg-surface-700.border.border-surface-600 {
+  background-color: #f5f7fa !important;
+  border-color: #dde2ea !important;
+}
+
+/* ── Coming soon / dashed card ── */
+[data-theme="light"] .border-dashed.border-surface-500 {
+  border-color: #c8d0db !important;
+  background-color: #fafbfc !important;
+}

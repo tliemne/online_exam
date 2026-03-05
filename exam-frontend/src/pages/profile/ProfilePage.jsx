@@ -142,8 +142,10 @@ export default function ProfilePage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="label">Mã sinh viên</label>
-                    <input className="input-field" value={form.studentCode || ''}
-                      onChange={e => setForm({...form, studentCode: e.target.value})} />
+                    <div className="input-field bg-surface-700 cursor-not-allowed flex items-center gap-2">
+                      <span className="font-mono text-text-primary">{profile?.studentProfile?.studentCode || '—'}</span>
+                      <span className="ml-auto text-xs text-text-muted">Không thể thay đổi</span>
+                    </div>
                   </div>
                   <div>
                     <label className="label">Lớp</label>
@@ -166,8 +168,10 @@ export default function ProfilePage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="label">Mã giảng viên</label>
-                    <input className="input-field" value={form.teacherCode || ''}
-                      onChange={e => setForm({...form, teacherCode: e.target.value})} />
+                    <div className="input-field bg-surface-700 cursor-not-allowed flex items-center gap-2">
+                      <span className="font-mono text-text-primary">{profile?.teacherProfile?.teacherCode || '—'}</span>
+                      <span className="ml-auto text-xs text-text-muted">Không thể thay đổi</span>
+                    </div>
                   </div>
                   <div>
                     <label className="label">Khoa</label>

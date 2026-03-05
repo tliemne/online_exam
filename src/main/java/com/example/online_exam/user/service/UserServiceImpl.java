@@ -27,7 +27,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.Year;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
 @Service
@@ -76,14 +78,17 @@ public class UserServiceImpl implements UserService {
 
         userRepository.save(user);
 
-        if(roleName == RoleName.STUDENT){
+        if (roleName == RoleName.STUDENT) {
             StudentProfile profile = new StudentProfile();
             profile.setUser(user);
+            profile.setStudentCode(generateStudentCode()); // ← auto generate
             studentProfileRepository.save(profile);
         }
-        if(roleName == RoleName.TEACHER){
+
+        if (roleName == RoleName.TEACHER) {
             TeacherProfile profile = new TeacherProfile();
             profile.setUser(user);
+            profile.setTeacherCode(generateTeacherCode()); // ← auto generate
             teacherProfileRepository.save(profile);
         }
         return mapByVisibility(user);
@@ -174,7 +179,7 @@ public class UserServiceImpl implements UserService {
         StudentProfile profile = studentProfileRepository.findByUserId(currentUser.getId())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-        profile.setStudentCode(request.getStudentCode());
+//        profile.setStudentCode(request.getStudentCode());
         profile.setPhone(request.getPhone());
         profile.setDateOfBirth(request.getDateOfBirth());
         profile.setClassName(request.getClassName());
@@ -201,7 +206,7 @@ public class UserServiceImpl implements UserService {
                     return p;
                 });
 
-        profile.setTeacherCode(request.getTeacherCode());
+//        profile.setTeacherCode(request.getTeacherCode());
         profile.setPhone(request.getPhone());
         profile.setDepartment(request.getDepartment());
         profile.setSpecialization(request.getSpecialization());
@@ -246,5 +251,26 @@ public class UserServiceImpl implements UserService {
                 .map(userMapper::toPrivateResponse)
                 .toList();
     }
+    private String generateStudentCode() {
+        String year = String.valueOf(Year.now().getValue());
+        Random rnd = new Random();
+        String code;
+        do {
+            // Format: SV2024XXXX  (4 chữ số random, padding 0 nếu cần)
+            code = "SV" + year + String.format("%04d", rnd.nextInt(10000));
+        } while (studentProfileRepository.existsByStudentCode(code));
+        return code;
+    }
+
+    private String generateTeacherCode() {
+        String year = String.valueOf(Year.now().getValue());
+        Random rnd = new Random();
+        String code;
+        do {
+            code = "GV" + year + String.format("%04d", rnd.nextInt(10000));
+        } while (teacherProfileRepository.existsByTeacherCode(code));
+        return code;
+    }
+
 
 }
