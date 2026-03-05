@@ -38,7 +38,7 @@ function AddStudentModal({ courseId, currentStudents, onClose, onAdded }) {
     .filter(s =>
       s.fullName?.toLowerCase().includes(search.toLowerCase()) ||
       s.username?.toLowerCase().includes(search.toLowerCase()) ||
-      s.studentCode?.toLowerCase().includes(search.toLowerCase())
+      s.studentProfile?.studentCode?.toLowerCase().includes(search.toLowerCase())
     )
 
   const toggle = (id) =>
@@ -95,7 +95,7 @@ function AddStudentModal({ courseId, currentStudents, onClose, onAdded }) {
             <div className="space-y-2">
               {filtered.map(s => {
                 const isSelected = selected.includes(s.id)
-                const code = s.studentCode
+                const code = s.studentProfile?.studentCode
                 return (
                   <div key={s.id}
                     onClick={() => toggle(s.id)}
@@ -274,7 +274,7 @@ function TabStudents({ course, isTeacher, onRefresh }) {
   const filtered = students.filter(s =>
     s.fullName?.toLowerCase().includes(search.toLowerCase()) ||
     s.username?.toLowerCase().includes(search.toLowerCase()) ||
-    s.studentCode?.toLowerCase().includes(search.toLowerCase())
+    s.studentProfile?.studentCode?.toLowerCase().includes(search.toLowerCase())
   )
 
   return (
@@ -344,12 +344,12 @@ function TabStudents({ course, isTeacher, onRefresh }) {
                     </div>
                   </td>
                   <td className="px-5 py-3.5">
-                    {s.studentCode
-                      ? <span className="text-xs font-mono bg-surface-700 border border-surface-500 px-2 py-0.5 rounded">{s.studentCode}</span>
+                    {s.studentProfile?.studentCode
+                      ? <span className="text-xs font-mono bg-surface-700 border border-surface-500 px-2 py-0.5 rounded">{s.studentProfile.studentCode}</span>
                       : <span className="text-text-muted text-xs">—</span>}
                   </td>
                   <td className="px-5 py-3.5 text-sm text-text-secondary">{s.email || '—'}</td>
-                  <td className="px-5 py-3.5 text-sm text-text-secondary">{s.className || '—'}</td>
+                  <td className="px-5 py-3.5 text-sm text-text-secondary">{s.studentProfile?.className || '—'}</td>
                   {isTeacher && (
                     <td className="px-5 py-3.5">
                       <button onClick={() => handleRemove(s.id)} disabled={removing === s.id}
@@ -532,8 +532,13 @@ function TabExams({ course, isTeacher }) {
 }
 
 // ── MAIN PAGE ─────────────────────────────────────────────
-const TABS = [
+const TEACHER_TABS = [
   { key: 'students', label: 'Sinh viên',  icon: '👥' },
+  { key: 'lectures', label: 'Bài giảng',  icon: '🎬' },
+  { key: 'exams',    label: 'Đề thi',     icon: '📝' },
+]
+
+const STUDENT_TABS = [
   { key: 'lectures', label: 'Bài giảng',  icon: '🎬' },
   { key: 'exams',    label: 'Đề thi',     icon: '📝' },
 ]
@@ -546,7 +551,8 @@ export default function CourseDetailPage() {
 
   const [course, setCourse] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState('students')
+  const [tab, setTab] = useState(isTeacher ? 'students' : 'lectures')
+  const TABS = isTeacher ? TEACHER_TABS : STUDENT_TABS
 
   const loadCourse = useCallback(() => {
     courseApi.getById(id)
@@ -594,8 +600,6 @@ export default function CourseDetailPage() {
               )}
               <div className="flex items-center gap-3 mt-2 text-xs text-text-muted">
                 <span>👨‍🏫 {course.teacherName || 'Chưa có giảng viên'}</span>
-                <span>·</span>
-                <span>👥 {course.studentCount ?? 0} sinh viên</span>
               </div>
             </div>
           </div>
