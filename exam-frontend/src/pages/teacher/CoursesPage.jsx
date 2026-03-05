@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { courseApi, userApi } from '../../api/services'
 import { useAuth } from '../../context/AuthContext'
 
@@ -13,14 +14,13 @@ const Icon = {
   x: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>,
   search: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>,
   refresh: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>,
-  userPlus: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zM4 19.235v-.11a6.375 6.375 0 0112.75 0v.109A12.318 12.318 0 0110.374 21c-2.331 0-4.512-.645-6.374-1.766z"/></svg>,
 }
 
 // ── Modal wrapper ────────────────────────────────────────
-function Modal({ title, onClose, children, maxWidth = 'max-w-lg' }) {
+function Modal({ title, onClose, children }) {
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className={`bg-surface-800 border border-surface-600 rounded-2xl w-full ${maxWidth} shadow-glow-md animate-slide-up`}>
+      <div className="bg-surface-800 border border-surface-600 rounded-2xl w-full max-w-lg shadow-glow-md animate-slide-up">
         <div className="flex items-center justify-between px-6 py-4 border-b border-surface-600">
           <h2 className="section-title">{title}</h2>
           <button onClick={onClose} className="btn-ghost p-1.5">{Icon.x}</button>
@@ -28,64 +28,6 @@ function Modal({ title, onClose, children, maxWidth = 'max-w-lg' }) {
         <div className="p-6">{children}</div>
       </div>
     </div>
-  )
-}
-
-// ── Create Student Modal ─────────────────────────────────
-function CreateStudentModal({ onClose, onCreated }) {
-  const [form, setForm] = useState({ username: '', password: '', email: '', fullName: '' })
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setSaving(true)
-    setError('')
-    try {
-      await userApi.createStudent({ ...form, role: 'STUDENT' })
-      onCreated()
-      onClose()
-    } catch (err) {
-      setError(err.response?.data?.message || 'Có lỗi xảy ra')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <Modal title="Tạo tài khoản sinh viên" onClose={onClose}>
-      {error && <div className="mb-4 px-3 py-2 rounded-lg bg-red-accent/10 border border-red-accent/30 text-red-accent text-sm">{error}</div>}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="label">Username *</label>
-            <input className="input-field" value={form.username}
-              onChange={e => setForm({...form, username: e.target.value})} required autoFocus />
-          </div>
-          <div>
-            <label className="label">Mật khẩu *</label>
-            <input type="password" className="input-field" value={form.password}
-              onChange={e => setForm({...form, password: e.target.value})} required />
-          </div>
-        </div>
-        <div>
-          <label className="label">Email *</label>
-          <input type="email" className="input-field" value={form.email}
-            onChange={e => setForm({...form, email: e.target.value})} required />
-        </div>
-        <div>
-          <label className="label">Họ tên</label>
-          <input className="input-field" value={form.fullName}
-            onChange={e => setForm({...form, fullName: e.target.value})} />
-        </div>
-        <div className="flex gap-3 pt-2">
-          <button type="submit" disabled={saving} className="btn-primary flex-1">
-            {saving ? 'Đang tạo...' : 'Tạo tài khoản'}
-          </button>
-          <button type="button" onClick={onClose} className="btn-secondary">Hủy</button>
-        </div>
-      </form>
-    </Modal>
   )
 }
 
@@ -161,12 +103,11 @@ function CourseFormModal({ course, onClose, onSaved, isAdmin, allUsers }) {
 }
 
 // ── Add Students Modal ───────────────────────────────────
-function AddStudentsModal({ courseId, currentStudents, onClose, onSaved, allUsers, onRefreshUsers }) {
+function AddStudentsModal({ courseId, currentStudents, onClose, onSaved, allUsers }) {
   const [selected, setSelected] = useState([])
   const [search, setSearch] = useState('')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  const [showCreate, setShowCreate] = useState(false)
 
   const currentIds = currentStudents.map(s => s.id)
   const available = allUsers.filter(u =>
@@ -196,78 +137,55 @@ function AddStudentsModal({ courseId, currentStudents, onClose, onSaved, allUser
   }
 
   return (
-    <>
-      <Modal title="Thêm sinh viên vào lớp" onClose={onClose}>
-        {error && <div className="mb-4 px-4 py-3 rounded-lg bg-red-accent/10 border border-red-accent/30 text-red-accent text-sm">{error}</div>}
-        <div className="space-y-4">
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">{Icon.search}</span>
-              <input className="input-field pl-9" placeholder="Tìm sinh viên..." value={search}
-                onChange={e => setSearch(e.target.value)} autoFocus />
-            </div>
-            <button onClick={() => setShowCreate(true)}
-              className="btn-secondary shrink-0 flex items-center gap-1.5 text-sm">
-              {Icon.userPlus} Tạo mới
-            </button>
-          </div>
-          <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
-            {available.length === 0 ? (
-              <div className="text-center py-6">
-                <p className="text-text-muted text-sm">Không có sinh viên nào khả dụng</p>
-                <button onClick={() => setShowCreate(true)} className="btn-primary mt-3 text-sm">
-                  Tạo tài khoản sinh viên mới
-                </button>
-              </div>
-            ) : available.map(u => (
-              <label key={u.id}
-                className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
-                  selected.includes(u.id)
-                    ? 'border-accent bg-accent/10'
-                    : 'border-surface-600 bg-surface-700 hover:border-surface-500'
-                }`}>
-                <input type="checkbox" className="hidden" checked={selected.includes(u.id)}
-                  onChange={() => toggle(u.id)} />
-                <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-                  selected.includes(u.id) ? 'bg-accent border-accent' : 'border-surface-400'
-                }`}>
-                  {selected.includes(u.id) && <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-text-primary text-sm font-medium">{u.fullName || u.username}</p>
-                  <p className="text-text-muted text-xs font-mono">@{u.username}</p>
-                </div>
-                {selected.includes(u.id) && <span className="badge-accent text-xs">Đã chọn</span>}
-              </label>
-            ))}
-          </div>
-          {selected.length > 0 && (
-            <p className="text-accent text-sm">Đã chọn {selected.length} sinh viên</p>
-          )}
-          <div className="flex gap-3 pt-2">
-            <button onClick={handleAdd} disabled={saving || !selected.length} className="btn-primary flex-1">
-              {saving ? 'Đang thêm...' : `Thêm ${selected.length > 0 ? selected.length + ' ' : ''}sinh viên`}
-            </button>
-            <button onClick={onClose} className="btn-secondary flex-1">Hủy</button>
-          </div>
+    <Modal title="Thêm sinh viên vào lớp" onClose={onClose}>
+      {error && <div className="mb-4 px-4 py-3 rounded-lg bg-red-accent/10 border border-red-accent/30 text-red-accent text-sm">{error}</div>}
+      <div className="space-y-4">
+        <div className="relative">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">{Icon.search}</span>
+          <input className="input-field pl-9" placeholder="Tìm sinh viên..." value={search}
+            onChange={e => setSearch(e.target.value)} autoFocus />
         </div>
-      </Modal>
-
-      {showCreate && (
-        <CreateStudentModal
-          onClose={() => setShowCreate(false)}
-          onCreated={() => {
-            onRefreshUsers()
-            setShowCreate(false)
-          }}
-        />
-      )}
-    </>
+        <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
+          {available.length === 0 ? (
+            <p className="text-center text-text-muted text-sm py-6">Không có sinh viên nào khả dụng</p>
+          ) : available.map(u => (
+            <label key={u.id}
+              className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                selected.includes(u.id)
+                  ? 'border-accent bg-accent/10'
+                  : 'border-surface-600 bg-surface-700 hover:border-surface-500'
+              }`}>
+              <input type="checkbox" className="hidden" checked={selected.includes(u.id)}
+                onChange={() => toggle(u.id)} />
+              <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                selected.includes(u.id) ? 'bg-accent border-accent' : 'border-surface-400'
+              }`}>
+                {selected.includes(u.id) && <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-text-primary text-sm font-medium">{u.fullName || u.username}</p>
+                <p className="text-text-muted text-xs font-mono">@{u.username}</p>
+              </div>
+              {selected.includes(u.id) && <span className="badge-accent text-xs">Đã chọn</span>}
+            </label>
+          ))}
+        </div>
+        {selected.length > 0 && (
+          <p className="text-accent text-sm">Đã chọn {selected.length} sinh viên</p>
+        )}
+        <div className="flex gap-3 pt-2">
+          <button onClick={handleAdd} disabled={saving || !selected.length} className="btn-primary flex-1">
+            {saving ? 'Đang thêm...' : `Thêm ${selected.length > 0 ? selected.length + ' ' : ''}sinh viên`}
+          </button>
+          <button onClick={onClose} className="btn-secondary flex-1">Hủy</button>
+        </div>
+      </div>
+    </Modal>
   )
 }
 
 // ── Students Modal ───────────────────────────────────────
-function StudentsModal({ course, onClose, onUpdated, allUsers, onRefreshUsers }) {
+function StudentsModal({ course, onClose, onUpdated, allUsers }) {
   const [students, setStudents] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
@@ -297,7 +215,8 @@ function StudentsModal({ course, onClose, onUpdated, allUsers, onRefreshUsers })
 
   const filtered = students.filter(s =>
     s.fullName?.toLowerCase().includes(search.toLowerCase()) ||
-    s.username?.toLowerCase().includes(search.toLowerCase())
+    s.username?.toLowerCase().includes(search.toLowerCase()) ||
+    s.studentCode?.toLowerCase().includes(search.toLowerCase())
   )
 
   return (
@@ -310,7 +229,7 @@ function StudentsModal({ course, onClose, onUpdated, allUsers, onRefreshUsers })
               <input className="input-field pl-9" placeholder="Tìm sinh viên..." value={search}
                 onChange={e => setSearch(e.target.value)} />
             </div>
-            <button onClick={() => setShowAdd(true)} className="btn-primary shrink-0 flex items-center gap-1.5">
+            <button onClick={() => setShowAdd(true)} className="btn-primary shrink-0">
               {Icon.plus} Thêm
             </button>
           </div>
@@ -339,13 +258,14 @@ function StudentsModal({ course, onClose, onUpdated, allUsers, onRefreshUsers })
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-text-primary text-sm font-medium truncate">{s.fullName || s.username}</p>
-                    <p className="text-text-muted text-xs font-mono">@{s.username}</p>
+                    <div className="flex gap-2 mt-0.5">
+                      {s.studentCode && <span className="text-text-muted text-xs font-mono">{s.studentCode}</span>}
+                      {s.className && <span className="text-text-muted text-xs">· {s.className}</span>}
+                    </div>
                   </div>
                   <button onClick={() => handleRemove(s.id)} disabled={removing === s.id}
                     className="btn-ghost text-red-accent/70 hover:text-red-accent hover:bg-red-accent/10 p-1.5">
-                    {removing === s.id
-                      ? <span className="w-4 h-4 border border-red-accent border-t-transparent rounded-full animate-spin block"/>
-                      : Icon.trash}
+                    {removing === s.id ? <span className="w-4 h-4 border border-red-accent border-t-transparent rounded-full animate-spin block"/> : Icon.trash}
                   </button>
                 </div>
               ))}
@@ -363,7 +283,6 @@ function StudentsModal({ course, onClose, onUpdated, allUsers, onRefreshUsers })
           courseId={course.id}
           currentStudents={students}
           allUsers={allUsers}
-          onRefreshUsers={onRefreshUsers}
           onClose={() => setShowAdd(false)}
           onSaved={() => { load(); onUpdated() }}
         />
@@ -373,25 +292,27 @@ function StudentsModal({ course, onClose, onUpdated, allUsers, onRefreshUsers })
 }
 
 // ── Course Card ──────────────────────────────────────────
-function CourseCard({ course, onEdit, onDelete, onViewStudents, isOwner }) {
+function CourseCard({ course, onEdit, onDelete, onDetail, isOwner }) {
   return (
     <div className="card group flex flex-col gap-4 hover:border-accent/30 transition-all duration-200">
-      <div className="flex items-start justify-between">
-        <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-accent/20 to-cyan-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
-          <span className="text-accent font-bold font-display">{course.name?.[0]?.toUpperCase()}</span>
+      {/* Click vào phần trên → vào chi tiết lớp */}
+      <div className="flex-1 cursor-pointer" onClick={() => onDetail(course)}>
+        <div className="flex items-start justify-between mb-3">
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-accent/20 to-cyan-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
+            <span className="text-accent font-bold font-display">{course.name?.[0]?.toUpperCase()}</span>
+          </div>
+          {isOwner && <span className="badge-accent">Của tôi</span>}
         </div>
-        {isOwner && <span className="badge-accent">Của tôi</span>}
-      </div>
-      <div className="flex-1">
         <h3 className="font-display font-semibold text-text-primary group-hover:text-accent transition-colors">{course.name}</h3>
         <p className="text-text-muted text-sm mt-1 line-clamp-2">{course.description || 'Không có mô tả'}</p>
         {course.teacherName && (
           <p className="text-text-secondary text-xs mt-2">👨‍🏫 {course.teacherName}</p>
         )}
+        <p className="text-accent text-xs mt-2 opacity-0 group-hover:opacity-100 transition-opacity">Xem chi tiết →</p>
       </div>
       <div className="flex gap-2 pt-3 border-t border-surface-600">
-        <button onClick={() => onViewStudents(course)} className="btn-ghost flex-1 text-xs py-1.5">
-          {Icon.users} <span>Sinh viên</span>
+        <button onClick={() => onDetail(course)} className="btn-ghost flex-1 text-xs py-1.5">
+          {Icon.users} <span>Chi tiết</span>
         </button>
         <button onClick={() => onEdit(course)} className="btn-ghost px-2.5 py-1.5 text-text-secondary hover:text-accent">
           {Icon.edit}
@@ -407,35 +328,38 @@ function CourseCard({ course, onEdit, onDelete, onViewStudents, isOwner }) {
 // ── Main Page ────────────────────────────────────────────
 export default function CoursesPage() {
   const { user, hasRole } = useAuth()
+  const navigate = useNavigate()
   const isAdmin = hasRole('ADMIN')
+  const basePath = isAdmin ? '/admin' : '/teacher'
   const [courses, setCourses] = useState([])
   const [allUsers, setAllUsers] = useState([])
   const [loading, setLoading] = useState(true)
-  const [view, setView] = useState('grid')
+  const [view, setView] = useState('grid') // 'grid' | 'table'
   const [search, setSearch] = useState('')
-  const [modal, setModal] = useState(null)
+  const [modal, setModal] = useState(null) // null | 'create' | 'edit' | 'students'
   const [selected, setSelected] = useState(null)
   const [deleting, setDeleting] = useState(null)
 
-  const loadUsers = useCallback(() => {
-    if (isAdmin) {
-      userApi.getAll().then(r => setAllUsers(r.data.data || [])).catch(() => {})
-    } else if (hasRole('TEACHER')) {
+  const load = useCallback(() => {
+    setLoading(true)
+    const calls = [courseApi.getAll()]
+    if (isAdmin) calls.push(userApi.getAll())
+    Promise.all(calls)
+      .then(([c, u]) => {
+        setCourses(c.data.data || [])
+        if (u) setAllUsers(u.data.data || [])
+      })
+      .finally(() => setLoading(false))
+  }, [isAdmin])
+
+  useEffect(() => { load() }, [load])
+
+  // Teacher cần allUsers để thêm SV — lấy riêng
+  useEffect(() => {
+    if (!isAdmin && hasRole('TEACHER')) {
       userApi.getAllStudents().then(r => setAllUsers(r.data.data || [])).catch(() => {})
     }
   }, [isAdmin])
-
-  const load = useCallback(() => {
-    setLoading(true)
-    courseApi.getAll()
-      .then(r => setCourses(r.data.data || []))
-      .finally(() => setLoading(false))
-  }, [])
-
-  useEffect(() => {
-    load()
-    loadUsers()
-  }, [load, loadUsers])
 
   const handleDelete = async (course) => {
     if (!confirm(`Xóa lớp "${course.name}"?`)) return
@@ -454,12 +378,11 @@ export default function CoursesPage() {
     c.teacherName?.toLowerCase().includes(search.toLowerCase())
   )
 
-  const myCourses = filtered.filter(c =>
-    c.teacherId === user?.id || c.teacherName === user?.fullName
-  )
+  const myCourses = filtered.filter(c => c.teacherName && user?.fullName && c.teacherName === user.fullName)
 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-title">Lớp học</h1>
@@ -470,6 +393,7 @@ export default function CoursesPage() {
         </button>
       </div>
 
+      {/* Toolbar */}
       <div className="flex items-center gap-3">
         <div className="relative flex-1 max-w-sm">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">{Icon.search}</span>
@@ -477,6 +401,7 @@ export default function CoursesPage() {
             onChange={e => setSearch(e.target.value)} />
         </div>
         <button onClick={load} className="btn-secondary">{Icon.refresh}</button>
+        {/* Toggle view */}
         <div className="flex bg-surface-700 border border-surface-600 rounded-lg p-1 gap-1">
           <button onClick={() => setView('grid')}
             className={`p-1.5 rounded transition-all ${view === 'grid' ? 'bg-accent text-white' : 'text-text-muted hover:text-text-primary'}`}>
@@ -489,6 +414,7 @@ export default function CoursesPage() {
         </div>
       </div>
 
+      {/* Content */}
       {loading ? (
         <div className="flex justify-center py-16">
           <div className="w-8 h-8 rounded-full border-2 border-accent border-t-transparent animate-spin" />
@@ -506,11 +432,12 @@ export default function CoursesPage() {
               isOwner={myCourses.some(m => m.id === c.id)}
               onEdit={(c) => { setSelected(c); setModal('edit') }}
               onDelete={handleDelete}
-              onViewStudents={(c) => { setSelected(c); setModal('students') }}
+              onDetail={(c) => navigate(`${basePath}/courses/${c.id}`)}
             />
           ))}
         </div>
       ) : (
+        /* Table view */
         <div className="card">
           <table className="w-full">
             <thead>
@@ -533,7 +460,7 @@ export default function CoursesPage() {
                   <td className="py-3 pr-4 text-text-secondary text-sm">{c.teacherName || '—'}</td>
                   <td className="py-3">
                     <div className="flex items-center gap-1">
-                      <button onClick={() => { setSelected(c); setModal('students') }}
+                      <button onClick={() => navigate(`${basePath}/courses/${c.id}`)}
                         className="btn-ghost px-2 py-1.5 text-xs">{Icon.users}</button>
                       <button onClick={() => { setSelected(c); setModal('edit') }}
                         className="btn-ghost px-2 py-1.5 text-xs text-text-secondary hover:text-accent">{Icon.edit}</button>
@@ -550,6 +477,7 @@ export default function CoursesPage() {
         </div>
       )}
 
+      {/* Modals */}
       {(modal === 'create' || modal === 'edit') && (
         <CourseFormModal
           course={modal === 'edit' ? selected : null}
@@ -563,7 +491,6 @@ export default function CoursesPage() {
         <StudentsModal
           course={selected}
           allUsers={allUsers}
-          onRefreshUsers={loadUsers}
           onClose={() => setModal(null)}
           onUpdated={load}
         />

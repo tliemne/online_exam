@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { courseApi } from '../../api/services'
 import { useAuth } from '../../context/AuthContext'
 
 export default function TeacherDashboard() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [courses, setCourses] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -61,13 +62,16 @@ export default function TeacherDashboard() {
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {myCourses.map((c) => (
-              <div key={c.id} className="flex items-start gap-3 p-4 rounded-lg bg-surface-700 border border-surface-600 hover:border-accent/30 transition-colors">
+              <div key={c.id}
+                onClick={() => navigate(`/teacher/courses/${c.id}`)}
+                className="flex items-start gap-3 p-4 rounded-lg bg-surface-700 border border-surface-600 hover:border-accent/30 hover:bg-surface-600/50 transition-all cursor-pointer group">
                 <div className="w-10 h-10 rounded-lg bg-accent/15 border border-accent/25 flex items-center justify-center shrink-0">
                   <span className="text-accent text-xs font-bold font-display">{c.name?.[0]?.toUpperCase()}</span>
                 </div>
-                <div>
-                  <div className="text-text-primary text-sm font-medium">{c.name}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-text-primary text-sm font-medium group-hover:text-accent transition-colors">{c.name}</div>
                   <div className="text-text-muted text-xs mt-0.5 line-clamp-1">{c.description || 'Không có mô tả'}</div>
+                  <div className="text-accent text-xs mt-1 opacity-0 group-hover:opacity-100 transition-opacity">Xem chi tiết →</div>
                 </div>
               </div>
             ))}

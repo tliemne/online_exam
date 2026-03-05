@@ -1,12 +1,16 @@
 import { useState } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useSettings } from '../../context/SettingsContext'
 
 function NavItem({ to, icon, label, end }) {
+  const location = useLocation()
+  const isActive = end
+    ? location.pathname === to
+    : location.pathname === to || location.pathname.startsWith(to + '/')
   return (
     <NavLink to={to} end={end}
-      className={({ isActive }) =>
+      className={() =>
         `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 group ${
           isActive
             ? 'bg-accent/15 text-accent border border-accent/20'
@@ -36,9 +40,11 @@ const Icons = {
 
 function getNavItems(role, t) {
   const admin = [
-    { to: '/admin',         label: t('nav.dashboard'), end: true, icon: Icons.dashboard },
-    { to: '/admin/users',   label: t('nav.users'),     icon: Icons.users },
-    { to: '/admin/courses', label: t('nav.courses'),   icon: Icons.courses },
+    { to: '/admin',             label: t('nav.dashboard'), end: true, icon: Icons.dashboard },
+    { to: '/admin/users',       label: t('nav.users'),     icon: Icons.users },
+    { to: '/admin/courses',     label: t('nav.courses'),   icon: Icons.courses },
+    { to: '/teacher/questions', label: t('nav.questions'), icon: Icons.questions },
+    { to: '/teacher/exams',     label: t('nav.exams'),     icon: Icons.exams },
   ]
   const teacher = [
     { to: '/teacher',           label: t('nav.dashboard'), end: true, icon: Icons.dashboard },

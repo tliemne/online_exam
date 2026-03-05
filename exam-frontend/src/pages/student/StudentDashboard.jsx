@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { courseApi } from '../../api/services'
 import { useAuth } from '../../context/AuthContext'
 
 export default function StudentDashboard() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [courses, setCourses] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -67,15 +68,20 @@ export default function StudentDashboard() {
         ) : (
           <div className="grid gap-3">
             {courses.map((c) => (
-              <div key={c.id} className="flex items-center gap-4 p-4 rounded-lg bg-surface-700 border border-surface-600 hover:border-accent/30 transition-colors">
+              <div key={c.id}
+                onClick={() => navigate(`/student/courses/${c.id}`)}
+                className="flex items-center gap-4 p-4 rounded-lg bg-surface-700 border border-surface-600 hover:border-accent/30 hover:bg-surface-600/50 transition-all cursor-pointer group">
                 <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-accent/20 to-cyan-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
                   <span className="text-accent font-bold font-display text-sm">{c.name?.[0]?.toUpperCase()}</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-text-primary font-medium text-sm">{c.name}</div>
+                  <div className="text-text-primary font-medium text-sm group-hover:text-accent transition-colors">{c.name}</div>
                   <div className="text-text-muted text-xs mt-0.5 truncate">{c.description || 'Không có mô tả'}</div>
                 </div>
-                <span className="badge-accent shrink-0">Đang học</span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="badge-accent">Đang học</span>
+                  <span className="text-accent text-xs opacity-0 group-hover:opacity-100 transition-opacity">→</span>
+                </div>
               </div>
             ))}
           </div>

@@ -10,6 +10,7 @@ import AdminUsers from './pages/admin/AdminUsers'
 
 import TeacherDashboard from './pages/teacher/TeacherDashboard'
 import CoursesPage from './pages/teacher/CoursesPage'
+import CourseDetailPage from './pages/teacher/CourseDetailPage'
 
 import ProfilePage from './pages/profile/ProfilePage'
 
@@ -18,6 +19,7 @@ import StudentDashboard from './pages/student/StudentDashboard'
 
 
 import QuestionsPage from './pages/teacher/QuestionsPage'
+
 import {
   // QuestionsPage moved to real page
   TeacherExamsPage,
@@ -49,10 +51,12 @@ export default function App() {
               <WithLayout><CoursesPage /></WithLayout>  
             </ProtectedRoute>
           } />
+          <Route path="/admin/courses/:id" element={<ProtectedRoute roles={['ADMIN']}><WithLayout><CourseDetailPage /></WithLayout></ProtectedRoute>} />
 
           {/* Teacher */}
           <Route path="/teacher" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><TeacherDashboard /></WithLayout></ProtectedRoute>} />
           <Route path="/teacher/courses" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><CoursesPage /></WithLayout></ProtectedRoute>} />
+          <Route path="/teacher/courses/:id" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><CourseDetailPage /></WithLayout></ProtectedRoute>} />
           <Route path="/teacher/questions" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><QuestionsPage /></WithLayout></ProtectedRoute>} />
           <Route path="/teacher/exams" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><TeacherExamsPage /></WithLayout></ProtectedRoute>} />
 
@@ -60,6 +64,7 @@ export default function App() {
           <Route path="/student" element={<ProtectedRoute roles={['STUDENT']}><WithLayout><StudentDashboard /></WithLayout></ProtectedRoute>} />
           <Route path="/student/exams" element={<ProtectedRoute roles={['STUDENT']}><WithLayout><StudentExamsPage /></WithLayout></ProtectedRoute>} />
           <Route path="/student/results" element={<ProtectedRoute roles={['STUDENT']}><WithLayout><StudentResultsPage /></WithLayout></ProtectedRoute>} />
+          <Route path="/student/courses/:id" element={<ProtectedRoute roles={['STUDENT']}><WithLayout><CourseDetailPage /></WithLayout></ProtectedRoute>} />
 
           {/* profile */}  
           <Route path="/profile" element={<ProtectedRoute roles={['ADMIN','TEACHER','STUDENT']}><WithLayout><ProfilePage /></WithLayout></ProtectedRoute>} />
