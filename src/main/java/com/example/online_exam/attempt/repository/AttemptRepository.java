@@ -1,7 +1,6 @@
 package com.example.online_exam.attempt.repository;
 
 import com.example.online_exam.attempt.entity.Attempt;
-
 import com.example.online_exam.attempt.enums.AttemptStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -32,4 +31,7 @@ public interface AttemptRepository extends JpaRepository<Attempt, Long> {
         ORDER BY a.submittedAt DESC
     """)
     List<Attempt> findSubmittedByStudent(@Param("studentId") Long studentId);
+
+    // Xóa toàn bộ bài thi của 1 student (dùng khi xóa tài khoản)
+    void deleteByStudentId(Long studentId);
 }

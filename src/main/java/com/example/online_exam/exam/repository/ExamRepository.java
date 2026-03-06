@@ -38,4 +38,10 @@ public interface ExamRepository extends JpaRepository<Exam, Long> {
         ORDER BY e.startTime DESC
     """)
     List<Exam> findPublishedForStudent(@Param("studentId") Long studentId);
+
+    // Xóa toàn bộ đề thi do 1 teacher tạo (dùng khi xóa tài khoản teacher)
+    void deleteByCreatedById(Long userId);
+
+    // Lấy đề thi do 1 teacher tạo
+    List<Exam> findByCreatedById(Long userId);
 }

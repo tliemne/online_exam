@@ -47,4 +47,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     );
 
     long countByCourseId(Long courseId);
+
+    // Xóa toàn bộ câu hỏi do 1 teacher tạo (dùng khi xóa tài khoản teacher)
+    void deleteByCreatedById(Long userId);
 }

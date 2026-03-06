@@ -1,8 +1,13 @@
 package com.example.online_exam.user.service;
 
+import com.example.online_exam.attempt.repository.AttemptRepository;
 import com.example.online_exam.auth.repository.RefreshTokenRepository;
+import com.example.online_exam.course.repository.CourseRepository;
+import com.example.online_exam.exam.repository.ExamRepository;
 import com.example.online_exam.exception.AppException;
 import com.example.online_exam.exception.ErrorCode;
+import com.example.online_exam.lecture.repository.LectureRepository;
+import com.example.online_exam.question.repository.QuestionRepository;
 import com.example.online_exam.secutity.service.CurrentUserService;
 import com.example.online_exam.user.dto.MyProfileResponse;
 import com.example.online_exam.user.dto.UserRegisterRequest;
@@ -46,18 +51,18 @@ public class UserServiceImpl implements UserService {
     private final TeacherProfileRepository teacherProfileRepository;
     private final CurrentUserService currentUserService;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final AttemptRepository attemptRepository;
+    private final CourseRepository courseRepository;
+    private final ExamRepository examRepository;
+    private final QuestionRepository questionRepository;
+    private final LectureRepository lectureRepository;
 
     @Override
     public UserResponse register(UserRegisterRequest request) {
-
-
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new AppException(ErrorCode.USERNAME_EXISTS);
         }
-
-
-        if (request.getEmail() != null &&
-                userRepository.existsByEmail(request.getEmail())) {
+        if (request.getEmail() != null && userRepository.existsByEmail(request.getEmail())) {
             throw new AppException(ErrorCode.EMAIL_EXISTS);
         }
 
@@ -65,44 +70,35 @@ public class UserServiceImpl implements UserService {
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
         user.setFullName(request.getFullName());
-
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-
-
         user.setStatus(UserStatus.ACTIVE);
-
 
         RoleName roleName = request.getRole() != null ? request.getRole() : RoleName.STUDENT;
         Role role = roleRepository.findByName(roleName)
                 .orElseThrow(() -> new AppException(ErrorCode.INTERNAL_ERROR));
-
         user.setRoles(Set.of(role));
-
         userRepository.save(user);
 
         if (roleName == RoleName.STUDENT) {
             StudentProfile profile = new StudentProfile();
             profile.setUser(user);
-            profile.setStudentCode(generateStudentCode()); // ← auto generate
+            profile.setStudentCode(generateStudentCode());
             studentProfileRepository.save(profile);
         }
-
         if (roleName == RoleName.TEACHER) {
             TeacherProfile profile = new TeacherProfile();
             profile.setUser(user);
-            profile.setTeacherCode(generateTeacherCode()); // ← auto generate
+            profile.setTeacherCode(generateTeacherCode());
             teacherProfileRepository.save(profile);
         }
+
         return mapByVisibility(user);
-//        return userMapper.toResponse(user);
-//
     }
 
     @Override
     public UserResponse getById(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-
         return mapByVisibility(user);
     }
 
@@ -113,6 +109,7 @@ public class UserServiceImpl implements UserService {
                 .map(userMapper::toPrivateResponse)
                 .toList();
     }
+
     @Override
     public MyProfileResponse getMyProfile() {
         User currentUser = currentUserService.requireCurrentUser();
@@ -124,22 +121,22 @@ public class UserServiceImpl implements UserService {
 
         studentProfileRepository.findByUserId(user.getId())
                 .ifPresent(profile -> {
-                    StudentProfileResponse studentProfileResponse = new StudentProfileResponse();
-                    studentProfileResponse.setStudentCode(profile.getStudentCode());
-                    studentProfileResponse.setPhone(profile.getPhone());
-                    studentProfileResponse.setDateOfBirth(profile.getDateOfBirth());
-                    studentProfileResponse.setClassName(profile.getClassName());
-                    response.setStudentProfile(studentProfileResponse);
+                    StudentProfileResponse sp = new StudentProfileResponse();
+                    sp.setStudentCode(profile.getStudentCode());
+                    sp.setPhone(profile.getPhone());
+                    sp.setDateOfBirth(profile.getDateOfBirth());
+                    sp.setClassName(profile.getClassName());
+                    response.setStudentProfile(sp);
                 });
 
         teacherProfileRepository.findByUserId(user.getId())
                 .ifPresent(profile -> {
-                    TeacherProfileResponse teacherProfileResponse = new TeacherProfileResponse();
-                    teacherProfileResponse.setTeacherCode(profile.getTeacherCode());
-                    teacherProfileResponse.setPhone(profile.getPhone());
-                    teacherProfileResponse.setDepartment(profile.getDepartment());
-                    teacherProfileResponse.setSpecialization(profile.getSpecialization());
-                    response.setTeacherProfile(teacherProfileResponse);
+                    TeacherProfileResponse tp = new TeacherProfileResponse();
+                    tp.setTeacherCode(profile.getTeacherCode());
+                    tp.setPhone(profile.getPhone());
+                    tp.setDepartment(profile.getDepartment());
+                    tp.setSpecialization(profile.getSpecialization());
+                    response.setTeacherProfile(tp);
                 });
 
         return response;
@@ -154,18 +151,9 @@ public class UserServiceImpl implements UserService {
                 && userRepository.existsByEmail(request.getEmail())) {
             throw new AppException(ErrorCode.EMAIL_EXISTS);
         }
-
-        if (request.getEmail() != null) {
-            user.setEmail(request.getEmail());
-        }
-
-        if (request.getFullName() != null) {
-            user.setFullName(request.getFullName());
-        }
-
-        if (request.getStatus() != null) {
-            user.setStatus(request.getStatus());
-        }
+        if (request.getEmail() != null) user.setEmail(request.getEmail());
+        if (request.getFullName() != null) user.setFullName(request.getFullName());
+        if (request.getStatus() != null) user.setStatus(request.getStatus());
 
         userRepository.save(user);
         return mapByVisibility(user);
@@ -181,7 +169,6 @@ public class UserServiceImpl implements UserService {
         StudentProfile profile = studentProfileRepository.findByUserId(currentUser.getId())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
-//        profile.setStudentCode(request.getStudentCode());
         profile.setPhone(request.getPhone());
         profile.setDateOfBirth(request.getDateOfBirth());
         profile.setClassName(request.getClassName());
@@ -194,6 +181,7 @@ public class UserServiceImpl implements UserService {
         response.setClassName(profile.getClassName());
         return response;
     }
+
     @Override
     public TeacherProfileResponse updateMyTeacherProfile(TeacherProfileUpdateRequest request) {
         User currentUser = currentUserService.requireCurrentUser();
@@ -208,7 +196,6 @@ public class UserServiceImpl implements UserService {
                     return p;
                 });
 
-//        profile.setTeacherCode(request.getTeacherCode());
         profile.setPhone(request.getPhone());
         profile.setDepartment(request.getDepartment());
         profile.setSpecialization(request.getSpecialization());
@@ -221,32 +208,61 @@ public class UserServiceImpl implements UserService {
         response.setSpecialization(profile.getSpecialization());
         return response;
     }
+
     @Override
     public void delete(Long id) {
-
         if (!userRepository.existsById(id)) {
             throw new AppException(ErrorCode.USER_NOT_FOUND);
         }
-        refreshTokenRepository.deleteByUserId(id);  // thêm method này vào repo
-        studentProfileRepository.findByUserId(id).ifPresent(studentProfileRepository::delete);
-        teacherProfileRepository.findByUserId(id).ifPresent(teacherProfileRepository::delete);
-        userRepository.deleteById(id);
-    }
-    private UserResponse mapByVisibility(User targetUser) {
-        User viewer = currentUserService.getCurrentUser().orElse(null);
 
-        if (viewer == null) {
-            // Chưa đăng nhập (vd: vừa register) → trả đủ info của chính user đó
-            return userMapper.toRoleAwareResponse(targetUser, true, true);
+        User userRef = userRepository.getReferenceById(id);
+
+        // 1. Xóa refresh token (chung mọi role)
+        refreshTokenRepository.deleteByUser(userRef);
+
+        boolean isStudent = studentProfileRepository.findByUserId(id).isPresent();
+        boolean isTeacher = teacherProfileRepository.findByUserId(id).isPresent();
+
+        if (isStudent) {
+            // Xóa khỏi danh sách tất cả lớp học
+            courseRepository.removeStudentFromAllCourses(id);
+            // Xóa toàn bộ bài thi + câu trả lời (Attempt cascade ALL → answers tự xóa)
+            attemptRepository.deleteByStudentId(id);
+            // Xóa student profile
+            studentProfileRepository.findByUserId(id)
+                    .ifPresent(p -> studentProfileRepository.deleteById(p.getId()));
         }
 
+        if (isTeacher) {
+            // Xóa lecture do teacher tạo
+            lectureRepository.deleteByCreatedById(id);
+            // Xóa câu hỏi do teacher tạo
+            questionRepository.deleteByCreatedById(id);
+            // Xóa đề thi do teacher tạo (Exam cascade ALL → examQuestions + attempts tự xóa)
+            examRepository.deleteByCreatedById(id);
+            // Null teacher_id trong courses → giữ lại lớp học, chỉ mất giáo viên phụ trách
+            courseRepository.nullifyTeacher(id);
+            // Xóa teacher profile
+            teacherProfileRepository.findByUserId(id)
+                    .ifPresent(p -> teacherProfileRepository.deleteById(p.getId()));
+        }
+
+        // Xóa user (user_roles tự xóa do cascade trên join table)
+        userRepository.deleteById(id);
+    }
+
+    private UserResponse mapByVisibility(User targetUser) {
+        User viewer = currentUserService.getCurrentUser().orElse(null);
+        if (viewer == null) {
+            return userMapper.toRoleAwareResponse(targetUser, true, true);
+        }
         boolean viewerIsAdmin = currentUserService.isAdmin(viewer);
         boolean viewerIsOwner = viewer.getId().equals(targetUser.getId());
         boolean includeSensitive = viewerIsAdmin || viewerIsOwner;
         boolean includeId = viewerIsAdmin || viewerIsOwner;
-
         return userMapper.toRoleAwareResponse(targetUser, includeSensitive, includeId);
     }
+
     @Override
     public List<UserResponse> getAllByRole(RoleName role) {
         return userRepository.findAll().stream()
@@ -254,12 +270,12 @@ public class UserServiceImpl implements UserService {
                 .map(userMapper::toPrivateResponse)
                 .toList();
     }
+
     private String generateStudentCode() {
         String year = String.valueOf(Year.now().getValue());
         Random rnd = new Random();
         String code;
         do {
-            // Format: SV2024XXXX  (4 chữ số random, padding 0 nếu cần)
             code = "SV" + year + String.format("%04d", rnd.nextInt(10000));
         } while (studentProfileRepository.existsByStudentCode(code));
         return code;
@@ -274,6 +290,4 @@ public class UserServiceImpl implements UserService {
         } while (teacherProfileRepository.existsByTeacherCode(code));
         return code;
     }
-
-
 }

@@ -1,6 +1,5 @@
 package com.example.online_exam.exam.service;
 
-import com.example.online_exam.common.dto.BaseResponse;
 import com.example.online_exam.course.entity.Course;
 import com.example.online_exam.course.repository.CourseRepository;
 import com.example.online_exam.exam.dto.*;
@@ -14,9 +13,9 @@ import com.example.online_exam.exception.ErrorCode;
 import com.example.online_exam.question.entity.Answer;
 import com.example.online_exam.question.entity.Question;
 import com.example.online_exam.question.repository.QuestionRepository;
-import com.example.online_exam.attempt.repository.AttemptRepository;
 import com.example.online_exam.secutity.service.CurrentUserService;
 import com.example.online_exam.user.entity.User;
+import com.example.online_exam.user.enums.RoleName;
 import com.example.online_exam.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -31,12 +30,12 @@ import java.util.stream.Collectors;
 @Transactional
 public class ExamServiceImpl implements ExamService {
 
-    private final ExamRepository        examRepo;
+    private final ExamRepository         examRepo;
     private final ExamQuestionRepository examQRepo;
-    private final CourseRepository      courseRepo;
-    private final QuestionRepository    questionRepo;
-    private final UserRepository        userRepo;
-    private final CurrentUserService    currentUserService;
+    private final CourseRepository       courseRepo;
+    private final QuestionRepository     questionRepo;
+    private final UserRepository         userRepo;
+    private final CurrentUserService     currentUserService;
 
     // ── Create ────────────────────────────────────────────
     @Override
@@ -46,13 +45,17 @@ public class ExamServiceImpl implements ExamService {
 
         User creator = currentUser();
 
+        // Teacher chỉ được tạo đề trong lớp của mình
+        if (isTeacher(creator) && !isOwnerOfCourse(course, creator)) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+
         Exam exam = new Exam();
         mapRequest(req, exam);
         exam.setCourse(course);
         exam.setCreatedBy(creator);
         exam = examRepo.save(exam);
 
-        // Thêm câu hỏi nếu có
         if (req.getQuestions() != null && !req.getQuestions().isEmpty()) {
             addQuestionsToExam(exam, req.getQuestions());
         }
@@ -64,12 +67,30 @@ public class ExamServiceImpl implements ExamService {
     @Override
     public ExamResponse update(Long id, ExamRequest req) {
         Exam exam = findExam(id);
-        if (exam.getStatus() == ExamStatus.CLOSED)
-            throw new AppException(ErrorCode.INVALID_REQUEST); // Không sửa đề đã đóng
+        User caller = currentUser();
+
+        // Teacher chỉ được sửa đề của mình
+        if (isTeacher(caller)) {
+            checkOwnership(exam, caller);
+        }
+
+        // Không cho sửa đề đã CLOSED (chỉ Admin mới được)
+        // Không cho sửa đề đang PUBLISHED và còn hạn (đang diễn ra)
+        if (exam.getStatus() == ExamStatus.PUBLISHED) {
+            boolean stillActive = exam.getEndTime() == null
+                    || exam.getEndTime().isAfter(java.time.LocalDateTime.now());
+            if (stillActive && isTeacher(caller)) {
+                throw new AppException(ErrorCode.INVALID_REQUEST);
+            }
+        }
 
         if (req.getCourseId() != null && !req.getCourseId().equals(exam.getCourse().getId())) {
             Course course = courseRepo.findById(req.getCourseId())
                     .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
+            // Teacher không được chuyển đề sang lớp của người khác
+            if (isTeacher(caller) && !isOwnerOfCourse(course, caller)) {
+                throw new AppException(ErrorCode.FORBIDDEN);
+            }
             exam.setCourse(course);
         }
 
@@ -81,14 +102,18 @@ public class ExamServiceImpl implements ExamService {
     @Override
     public void delete(Long id) {
         Exam exam = findExam(id);
-        // Chỉ chặn nếu đề PUBLISHED và chưa hết hạn (đang mở thực sự)
+        User caller = currentUser();
+
+        if (isTeacher(caller)) {
+            checkOwnership(exam, caller);
+        }
+
         if (exam.getStatus() == ExamStatus.PUBLISHED) {
             boolean expired = exam.getEndTime() != null
                     && exam.getEndTime().isBefore(java.time.LocalDateTime.now());
             if (!expired) {
-                throw new AppException(ErrorCode.INVALID_REQUEST); // Đề đang mở, chưa hết hạn
+                throw new AppException(ErrorCode.INVALID_REQUEST);
             }
-            // Đề hết hạn → cho phép xóa (cascade sẽ xóa exam_questions)
         }
         examRepo.delete(exam);
     }
@@ -97,12 +122,29 @@ public class ExamServiceImpl implements ExamService {
     @Override
     @Transactional(readOnly = true)
     public ExamResponse getById(Long id, boolean includeQuestions, boolean hideCorrect) {
-        return toResponse(findExam(id), includeQuestions, hideCorrect);
+        Exam exam = findExam(id);
+        User caller = currentUser();
+
+        // Teacher chỉ được xem đề của mình
+        if (isTeacher(caller)) {
+            checkOwnership(exam, caller);
+        }
+
+        return toResponse(exam, includeQuestions, hideCorrect);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<ExamResponse> getAll() {
+        User caller = currentUser();
+
+        // Teacher chỉ thấy đề của mình
+        if (isTeacher(caller)) {
+            return examRepo.findByCreatedById(caller.getId()).stream()
+                    .map(e -> toResponse(e, false, false)).collect(Collectors.toList());
+        }
+
+        // Admin thấy tất cả
         return examRepo.findAll().stream()
                 .map(e -> toResponse(e, false, false)).collect(Collectors.toList());
     }
@@ -110,6 +152,15 @@ public class ExamServiceImpl implements ExamService {
     @Override
     @Transactional(readOnly = true)
     public List<ExamResponse> getByCourse(Long courseId) {
+        User caller = currentUser();
+
+        // Teacher chỉ thấy đề của mình trong lớp đó
+        if (isTeacher(caller)) {
+            return examRepo.findByCourseId(courseId).stream()
+                    .filter(e -> e.getCreatedBy() != null && e.getCreatedBy().getId().equals(caller.getId()))
+                    .map(e -> toResponse(e, false, false)).collect(Collectors.toList());
+        }
+
         return examRepo.findByCourseId(courseId).stream()
                 .map(e -> toResponse(e, false, false)).collect(Collectors.toList());
     }
@@ -130,13 +181,19 @@ public class ExamServiceImpl implements ExamService {
     @Override
     public ExamResponse addQuestions(Long examId, List<ExamQuestionItem> items) {
         Exam exam = findExam(examId);
+        User caller = currentUser();
+        if (isTeacher(caller)) checkOwnership(exam, caller);
+
         addQuestionsToExam(exam, items);
         return toResponse(examRepo.findById(examId).orElseThrow(), true, false);
     }
 
     @Override
     public ExamResponse removeQuestion(Long examId, Long questionId) {
-        findExam(examId);
+        Exam exam = findExam(examId);
+        User caller = currentUser();
+        if (isTeacher(caller)) checkOwnership(exam, caller);
+
         examQRepo.deleteByExamIdAndQuestionId(examId, questionId);
         return toResponse(findExam(examId), true, false);
     }
@@ -144,8 +201,10 @@ public class ExamServiceImpl implements ExamService {
     @Override
     public ExamResponse reorderQuestions(Long examId, List<ExamQuestionItem> items) {
         Exam exam = findExam(examId);
-        List<ExamQuestion> eqs = examQRepo.findByExamIdOrderByOrderIndex(examId);
+        User caller = currentUser();
+        if (isTeacher(caller)) checkOwnership(exam, caller);
 
+        List<ExamQuestion> eqs = examQRepo.findByExamIdOrderByOrderIndex(examId);
         for (ExamQuestionItem item : items) {
             eqs.stream()
                     .filter(eq -> eq.getQuestion().getId().equals(item.getQuestionId()))
@@ -163,8 +222,14 @@ public class ExamServiceImpl implements ExamService {
     @Override
     public ExamResponse publish(Long id) {
         Exam exam = findExam(id);
-        if (exam.getExamQuestions().isEmpty())
+        User caller = currentUser();
+        if (isTeacher(caller)) checkOwnership(exam, caller);
+
+        if (exam.getExamQuestions().isEmpty()) {
             throw new AppException(ErrorCode.INVALID_REQUEST); // Phải có ít nhất 1 câu
+        }
+
+        // Cho phép publish từ bất kỳ status nào (kể cả CLOSED → mở lại)
         exam.setStatus(ExamStatus.PUBLISHED);
         return toResponse(examRepo.save(exam), false, false);
     }
@@ -172,17 +237,45 @@ public class ExamServiceImpl implements ExamService {
     @Override
     public ExamResponse close(Long id) {
         Exam exam = findExam(id);
+        User caller = currentUser();
+        if (isTeacher(caller)) checkOwnership(exam, caller);
+
         exam.setStatus(ExamStatus.CLOSED);
         return toResponse(examRepo.save(exam), false, false);
     }
 
     // ── Helpers ───────────────────────────────────────────
+
+    /**
+     * Kiểm tra teacher có phải chủ đề thi không, ném FORBIDDEN nếu không phải.
+     */
+    private void checkOwnership(Exam exam, User caller) {
+        if (exam.getCreatedBy() == null || !exam.getCreatedBy().getId().equals(caller.getId())) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+    }
+
+    /**
+     * Kiểm tra teacher có phải chủ lớp không.
+     */
+    private boolean isOwnerOfCourse(Course course, User caller) {
+        return course.getTeacher() != null && course.getTeacher().getId().equals(caller.getId());
+    }
+
+    /**
+     * Trả true nếu user là TEACHER (không phải ADMIN).
+     */
+    private boolean isTeacher(User user) {
+        return user.getRoles().stream()
+                .anyMatch(r -> r.getName() == RoleName.TEACHER);
+    }
+
     private void mapRequest(ExamRequest req, Exam exam) {
-        exam.setTitle(req.getTitle());
-        exam.setDescription(req.getDescription());
-        exam.setDurationMinutes(req.getDurationMinutes());
-        exam.setStartTime(req.getStartTime());
-        exam.setEndTime(req.getEndTime());
+        if (req.getTitle() != null)           exam.setTitle(req.getTitle());
+        if (req.getDescription() != null)     exam.setDescription(req.getDescription());
+        if (req.getDurationMinutes() != null) exam.setDurationMinutes(req.getDurationMinutes());
+        if (req.getStartTime() != null)       exam.setStartTime(req.getStartTime());
+        if (req.getEndTime() != null)         exam.setEndTime(req.getEndTime());
         exam.setTotalScore(req.getTotalScore() != null ? req.getTotalScore() : 10.0);
         exam.setPassScore(req.getPassScore() != null ? req.getPassScore() : 5.0);
         exam.setRandomizeQuestions(req.getRandomizeQuestions() != null && req.getRandomizeQuestions());
@@ -196,7 +289,7 @@ public class ExamServiceImpl implements ExamService {
         for (int i = 0; i < items.size(); i++) {
             ExamQuestionItem item = items.get(i);
             if (examQRepo.existsByExamIdAndQuestionId(exam.getId(), item.getQuestionId()))
-                continue; // Bỏ qua nếu đã có
+                continue;
 
             Question q = questionRepo.findById(item.getQuestionId())
                     .orElseThrow(() -> new AppException(ErrorCode.QUESTION_NOT_FOUND));
@@ -258,7 +351,7 @@ public class ExamServiceImpl implements ExamService {
             ExamQuestionResponse.AnswerInExam ai = new ExamQuestionResponse.AnswerInExam();
             ai.setId(a.getId());
             ai.setContent(a.getContent());
-            ai.setCorrect(hideCorrect ? null : a.isCorrect()); // null = ẩn đáp án đúng
+            ai.setCorrect(hideCorrect ? null : a.isCorrect());
             return ai;
         }).collect(Collectors.toList()));
 

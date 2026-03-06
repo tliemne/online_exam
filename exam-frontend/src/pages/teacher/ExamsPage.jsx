@@ -435,13 +435,13 @@ function ExamCard({ exam, onEdit, onDelete, onPublish, onClose, onManageQuestion
           </button>
         )}
 
-        {/* Publish button — chỉ hiện khi DRAFT */}
-        {isDraft && (
-          <button onClick={() => onPublish(exam)}
-            title="Xuất bản đề thi"
+        {/* Publish button — hiện khi DRAFT hoặc CLOSED */}
+        {(isDraft || exam.status === 'CLOSED') && (
+        <button onClick={() => onPublish(exam)}
+            title={exam.status === 'CLOSED' ? 'Mở lại đề thi' : 'Xuất bản đề thi'}
             className="btn-ghost px-2.5 py-1.5 text-green-accent hover:bg-green-accent/10">
             {Icon.send}
-          </button>
+        </button>
         )}
         {isPublished && (
           <span className="flex items-center px-2.5 py-1.5 text-green-accent text-xs">

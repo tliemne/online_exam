@@ -14,6 +14,7 @@ import com.example.online_exam.question.entity.Question;
 import com.example.online_exam.question.repository.QuestionRepository;
 import com.example.online_exam.secutity.service.CurrentUserService;
 import com.example.online_exam.user.entity.User;
+import com.example.online_exam.user.enums.RoleName;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,13 +41,11 @@ public class AttemptServiceImpl implements AttemptService {
         Exam exam    = examRepo.findById(examId)
                 .orElseThrow(() -> new AppException(ErrorCode.EXAM_NOT_FOUND));
 
-        // Kiểm tra số lần thi
         long doneCount = attemptRepo.countByExamIdAndStudentId(examId, student.getId());
         if (exam.getMaxAttempts() != null && doneCount >= exam.getMaxAttempts()) {
-            throw new AppException(ErrorCode.INVALID_REQUEST); // Hết lượt thi
+            throw new AppException(ErrorCode.INVALID_REQUEST);
         }
 
-        // Tạo attempt
         Attempt attempt = new Attempt();
         attempt.setExam(exam);
         attempt.setStudent(student);
@@ -55,14 +54,11 @@ public class AttemptServiceImpl implements AttemptService {
         attempt.setTotalScore(exam.getTotalScore() != null ? exam.getTotalScore() : 10.0);
         attempt = attemptRepo.save(attempt);
 
-        // Map questionId → ExamQuestion để lấy điểm từng câu
         Map<Long, ExamQuestion> examQMap = exam.getExamQuestions().stream()
                 .collect(Collectors.toMap(eq -> eq.getQuestion().getId(), eq -> eq));
 
-        // Lưu từng câu trả lời
         List<AttemptAnswer> savedAnswers = new ArrayList<>();
         double totalEarned = 0.0;
-        int correctCount   = 0;
         boolean hasEssay   = false;
 
         for (SubmitAnswerItem item : items) {
@@ -77,26 +73,21 @@ public class AttemptServiceImpl implements AttemptService {
             double qScore   = eq != null ? (eq.getScore() != null ? eq.getScore() : 1.0) : 1.0;
 
             if (q.getType().name().equals("ESSAY")) {
-                // Tự luận — lưu text, chờ giáo viên chấm
                 aa.setTextAnswer(item.getTextAnswer());
-                aa.setIsCorrect(null);  // chưa biết
-                aa.setScore(null);      // chưa chấm
+                aa.setIsCorrect(null);
+                aa.setScore(null);
                 hasEssay = true;
-
             } else {
-                // Trắc nghiệm / Đúng-Sai — chấm tự động
                 Answer selected = null;
                 if (item.getAnswerId() != null) {
                     selected = q.getAnswers().stream()
                             .filter(a -> a.getId().equals(item.getAnswerId()))
                             .findFirst().orElse(null);
                 } else if ("true".equals(item.getTextAnswer()) || "false".equals(item.getTextAnswer())) {
-                    // TRUE_FALSE dạng text
                     boolean chosenTrue = "true".equals(item.getTextAnswer());
                     selected = q.getAnswers().stream()
                             .filter(a -> a.isCorrect() == chosenTrue)
                             .findFirst().orElse(null);
-                    // Set answerId sau
                 }
 
                 if (selected != null) {
@@ -106,7 +97,6 @@ public class AttemptServiceImpl implements AttemptService {
                     if (correct) {
                         aa.setScore(qScore);
                         totalEarned += qScore;
-                        correctCount++;
                     } else {
                         aa.setScore(0.0);
                     }
@@ -115,15 +105,12 @@ public class AttemptServiceImpl implements AttemptService {
                     aa.setScore(0.0);
                 }
             }
-
             savedAnswers.add(aa);
         }
 
         answerRepo.saveAll(savedAnswers);
 
-        // Cập nhật điểm attempt
         if (!hasEssay) {
-            // Tất cả là trắc nghiệm → chấm xong ngay
             double percent = exam.getExamQuestions().isEmpty() ? 0
                     : totalEarned / exam.getExamQuestions().stream()
                     .mapToDouble(eq -> eq.getScore() != null ? eq.getScore() : 1.0).sum();
@@ -132,7 +119,6 @@ public class AttemptServiceImpl implements AttemptService {
             attempt.setPassed(exam.getPassScore() == null || finalScore >= exam.getPassScore());
             attempt.setStatus(AttemptStatus.GRADED);
         }
-        // Nếu có tự luận → status = SUBMITTED, giáo viên chấm sau
 
         attempt = attemptRepo.save(attempt);
         return toResponse(attempt, true);
@@ -142,7 +128,15 @@ public class AttemptServiceImpl implements AttemptService {
     @Override
     @Transactional(readOnly = true)
     public AttemptResponse getById(Long attemptId) {
-        return toResponse(findAttempt(attemptId), true);
+        Attempt attempt = findAttempt(attemptId);
+        User caller = currentUserService.requireCurrentUser();
+
+        // Teacher chỉ được xem bài thi thuộc đề của mình
+        if (isTeacher(caller)) {
+            checkExamOwnership(attempt.getExam(), caller);
+        }
+
+        return toResponse(attempt, true);
     }
 
     // ── Student history ───────────────────────────────────
@@ -166,6 +160,15 @@ public class AttemptServiceImpl implements AttemptService {
     @Override
     @Transactional(readOnly = true)
     public List<AttemptResponse> getByExam(Long examId) {
+        User caller = currentUserService.requireCurrentUser();
+        Exam exam = examRepo.findById(examId)
+                .orElseThrow(() -> new AppException(ErrorCode.EXAM_NOT_FOUND));
+
+        // Teacher chỉ được xem bài nộp của đề mình tạo
+        if (isTeacher(caller)) {
+            checkExamOwnership(exam, caller);
+        }
+
         return attemptRepo.findByExamIdOrderBySubmittedAtDesc(examId)
                 .stream().map(a -> toResponse(a, false)).collect(Collectors.toList());
     }
@@ -174,23 +177,27 @@ public class AttemptServiceImpl implements AttemptService {
     @Override
     public AttemptResponse grade(Long attemptId, GradeRequest req) {
         Attempt attempt = findAttempt(attemptId);
+        User caller = currentUserService.requireCurrentUser();
 
-        // Cập nhật từng câu
+        // Teacher chỉ được chấm bài thi thuộc đề của mình
+        if (isTeacher(caller)) {
+            checkExamOwnership(attempt.getExam(), caller);
+        }
+
         for (GradeRequest.AnswerGrade ag : req.getAnswers()) {
             attempt.getAnswers().stream()
                     .filter(aa -> aa.getId().equals(ag.getAttemptAnswerId()))
                     .findFirst().ifPresent(aa -> {
-                        if (ag.getScore()    != null) aa.setScore(ag.getScore());
-                        if (ag.getIsCorrect()!= null) aa.setIsCorrect(ag.getIsCorrect());
+                        if (ag.getScore()         != null) aa.setScore(ag.getScore());
+                        if (ag.getIsCorrect()     != null) aa.setIsCorrect(ag.getIsCorrect());
                         if (ag.getTeacherComment() != null) aa.setTeacherComment(ag.getTeacherComment());
                     });
         }
 
-        // Tính tổng điểm
         double total = attempt.getAnswers().stream()
                 .mapToDouble(aa -> aa.getScore() != null ? aa.getScore() : 0.0).sum();
 
-        double maxScore  = attempt.getTotalScore() != null ? attempt.getTotalScore() : 10.0;
+        double maxScore    = attempt.getTotalScore() != null ? attempt.getTotalScore() : 10.0;
         double maxEarnable = attempt.getExam().getExamQuestions().stream()
                 .mapToDouble(eq -> eq.getScore() != null ? eq.getScore() : 1.0).sum();
 
@@ -207,6 +214,21 @@ public class AttemptServiceImpl implements AttemptService {
     }
 
     // ── Helpers ───────────────────────────────────────────
+
+    /**
+     * Teacher chỉ được thao tác trên đề do mình tạo.
+     */
+    private void checkExamOwnership(Exam exam, User caller) {
+        if (exam.getCreatedBy() == null || !exam.getCreatedBy().getId().equals(caller.getId())) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+    }
+
+    private boolean isTeacher(User user) {
+        return user.getRoles().stream()
+                .anyMatch(r -> r.getName() == RoleName.TEACHER);
+    }
+
     private Attempt findAttempt(Long id) {
         return attemptRepo.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ATTEMPT_NOT_FOUND));
@@ -234,7 +256,8 @@ public class AttemptServiceImpl implements AttemptService {
                 r.setStudentCode(a.getStudent().getStudentProfile().getStudentCode());
         }
 
-        long correct = a.getAnswers().stream().filter(aa -> Boolean.TRUE.equals(aa.getIsCorrect())).count();
+        long correct = a.getAnswers().stream()
+                .filter(aa -> Boolean.TRUE.equals(aa.getIsCorrect())).count();
         r.setCorrectCount((int) correct);
         r.setTotalQuestions(a.getAnswers().size());
 
@@ -246,8 +269,6 @@ public class AttemptServiceImpl implements AttemptService {
                     d.setQuestionId(aa.getQuestion().getId());
                     d.setQuestionContent(aa.getQuestion().getContent());
                     d.setQuestionType(aa.getQuestion().getType().name());
-
-                    // Đáp án đúng
                     aa.getQuestion().getAnswers().stream()
                             .filter(Answer::isCorrect).findFirst().ifPresent(ca -> {
                                 d.setCorrectAnswerId(ca.getId());
