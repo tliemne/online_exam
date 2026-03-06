@@ -19,4 +19,18 @@ public class UserResponse {
     private String fullName;
     private UserStatus status;
     private Set<String> roles;
+    private StudentProfileData studentProfile;
+    private TeacherProfileData teacherProfile;
+
+    @Data
+    public static class StudentProfileData {
+        private String studentCode;
+        private String phone;
+    }
+
+    @Data
+    public static class TeacherProfileData {
+        private String teacherCode;
+        private String phone;
+    }
 }

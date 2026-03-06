@@ -1,5 +1,6 @@
 package com.example.online_exam.user.service;
 
+import com.example.online_exam.auth.repository.RefreshTokenRepository;
 import com.example.online_exam.exception.AppException;
 import com.example.online_exam.exception.ErrorCode;
 import com.example.online_exam.secutity.service.CurrentUserService;
@@ -44,6 +45,7 @@ public class UserServiceImpl implements UserService {
     private final StudentProfileRepository studentProfileRepository;
     private final TeacherProfileRepository teacherProfileRepository;
     private final CurrentUserService currentUserService;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     @Override
     public UserResponse register(UserRegisterRequest request) {
@@ -225,6 +227,7 @@ public class UserServiceImpl implements UserService {
         if (!userRepository.existsById(id)) {
             throw new AppException(ErrorCode.USER_NOT_FOUND);
         }
+        refreshTokenRepository.deleteByUserId(id);  // thêm method này vào repo
         studentProfileRepository.findByUserId(id).ifPresent(studentProfileRepository::delete);
         teacherProfileRepository.findByUserId(id).ifPresent(teacherProfileRepository::delete);
         userRepository.deleteById(id);

@@ -13,6 +13,7 @@ export const userApi = {
   me: () => api.get('/users/me'),
   myProfile: () => api.get('/users/me/profile'),
   getAll: () => api.get('/users'),
+  createUser: (data) => api.post('/users', data),
   getById: (id) => api.get(`/users/${id}`),
   getAllStudents: () => api.get('/users/students'),
   getAllTeachers: () => api.get('/users/teachers'),
