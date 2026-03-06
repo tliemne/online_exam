@@ -28,7 +28,11 @@ public enum ErrorCode {
     // ===== QUESTION =====
     QUESTION_NOT_FOUND(HttpStatus.NOT_FOUND, "Question not found"),
 
+    // ===== MODULES =====
+    EXAM_NOT_FOUND(HttpStatus.NOT_FOUND, "Exam not found"),
     LECTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "Lecture not found"),
+
+
     // ===== SYSTEM =====
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");
 

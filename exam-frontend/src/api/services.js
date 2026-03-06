@@ -37,7 +37,7 @@ export const courseApi = {
 
 // ── QUESTIONS ────────────────────────────────────────────
 export const questionApi = {
-  getAll: (courseId) => api.get('/questions', { params: { courseId } }),
+  getAll: (courseId, params) => api.get('/questions', { params: { courseId, ...params } }),
   create: (data) => api.post('/questions', data),
   update: (id, data) => api.put(`/questions/${id}`, data),
   delete: (id) => api.delete(`/questions/${id}`),
@@ -45,12 +45,17 @@ export const questionApi = {
 
 // ── EXAMS ────────────────────────────────────────────────
 export const examApi = {
-  getAll: () => api.get('/exams'),
-  getById: (id) => api.get(`/exams/${id}`),
+  getAll: (courseId) => api.get('/exams', { params: courseId ? { courseId } : {} }),
+  getById: (id, includeQuestions = false) => api.get(`/exams/${id}`, { params: { includeQuestions } }),
   create: (data) => api.post('/exams', data),
   update: (id, data) => api.put(`/exams/${id}`, data),
   delete: (id) => api.delete(`/exams/${id}`),
   publish: (id) => api.post(`/exams/${id}/publish`),
+  close: (id) => api.post(`/exams/${id}/close`),
+  // Quản lý câu hỏi trong đề
+  addQuestions: (examId, items) => api.post(`/exams/${examId}/questions`, items),
+  removeQuestion: (examId, questionId) => api.delete(`/exams/${examId}/questions/${questionId}`),
+  reorderQuestions: (examId, items) => api.put(`/exams/${examId}/questions/reorder`, items),
 }
 
 // ── ATTEMPTS ─────────────────────────────────────────────

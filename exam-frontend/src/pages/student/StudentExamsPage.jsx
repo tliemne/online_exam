@@ -1,0 +1,491 @@
+import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { examApi } from '../../api/services'
+import api from '../../api/client'
+
+// ── Icons ─────────────────────────────────────────────────
+const Icon = {
+  clock:  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>,
+  doc:    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z"/></svg>,
+  play:   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 010 1.972l-11.54 6.347a1.125 1.125 0 01-1.667-.986V5.653z"/></svg>,
+  x:      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>,
+  check:  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.5 12.75l6 6 9-13.5"/></svg>,
+  warn:   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126z"/></svg>,
+}
+
+// ── Exam Taking Modal ─────────────────────────────────────
+function TakeExamModal({ exam, onClose, onSubmitted }) {
+  const [questions, setQuestions]   = useState([])
+  const [answers, setAnswers]       = useState({})  // questionId → answerId hoặc text
+  const [loading, setLoading]       = useState(true)
+  const [submitting, setSubmitting] = useState(false)
+  const [timeLeft, setTimeLeft]     = useState(exam.durationMinutes * 60)
+  const [submitted, setSubmitted]   = useState(false)
+  const [result, setResult]         = useState(null)
+  const [current, setCurrent]       = useState(0)
+
+  // Load câu hỏi của đề (ẩn đáp án đúng)
+  useEffect(() => {
+    api.get(`/exams/${exam.id}`, { params: { includeQuestions: true, hideCorrect: true } })
+      .then(r => {
+        const data = r.data.data
+        const qs = data.questions || []
+        setQuestions(qs)
+      })
+      .catch(() => setQuestions([]))
+      .finally(() => setLoading(false))
+  }, [exam.id])
+
+  // Đếm ngược thời gian
+  useEffect(() => {
+    if (submitted || loading) return
+    const t = setInterval(() => {
+      setTimeLeft(p => {
+        if (p <= 1) { clearInterval(t); handleSubmit(true); return 0 }
+        return p - 1
+      })
+    }, 1000)
+    return () => clearInterval(t)
+  }, [submitted, loading])
+
+  const fmt = (s) => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`
+  const urgent = timeLeft < 300 // < 5 phút
+
+  const handleAnswer = (questionId, value) => {
+    setAnswers(p => ({ ...p, [questionId]: value }))
+  }
+
+  const handleSubmit = async (auto = false) => {
+    if (!auto && !confirm('Nộp bài thi?')) return
+    setSubmitting(true)
+    try {
+      // Format answers cho backend
+      const answerList = Object.entries(answers).map(([qId, val]) => ({
+        questionId: Number(qId),
+        answerId: typeof val === 'number' ? val : null,
+        textAnswer: typeof val === 'string' ? val : null,
+      }))
+
+      // POST /exams/{id}/submit (sẽ implement sau)
+      // Tạm tính điểm ở frontend
+      let correct = 0
+      questions.forEach(q => {
+        const ans = answers[q.questionId]
+        if (q.type === 'MULTIPLE_CHOICE' || q.type === 'TRUE_FALSE') {
+          // Vì hideCorrect=true nên không biết đáp án đúng, chỉ ghi nhận đã trả lời
+        }
+      })
+
+      setResult({
+        totalQuestions: questions.length,
+        answered: Object.keys(answers).length,
+        submitted: true,
+      })
+      setSubmitted(true)
+    } catch (err) {
+      alert('Có lỗi khi nộp bài: ' + (err?.response?.data?.message || err.message))
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const q = questions[current]
+  const answered = Object.keys(answers).length
+
+  if (loading) return (
+    <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center">
+      <div className="w-10 h-10 rounded-full border-2 border-accent border-t-transparent animate-spin"/>
+    </div>
+  )
+
+  // Màn hình kết quả
+  if (submitted && result) return (
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-surface-800 border border-surface-600 rounded-2xl w-full max-w-md p-8 text-center shadow-xl">
+        <div className="w-16 h-16 rounded-full bg-green-accent/15 border border-green-accent/30 flex items-center justify-center mx-auto mb-4">
+          <span className="text-green-accent">{Icon.check}</span>
+        </div>
+        <h2 className="text-xl font-bold text-text-primary mb-2">Nộp bài thành công!</h2>
+        <p className="text-text-secondary text-sm mb-6">
+          Bạn đã trả lời {result.answered}/{result.totalQuestions} câu hỏi
+        </p>
+        <div className="bg-surface-700 rounded-xl p-4 mb-6 text-left space-y-2">
+          <div className="flex justify-between text-sm">
+            <span className="text-text-muted">Đề thi</span>
+            <span className="text-text-primary font-medium">{exam.title}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-text-muted">Lớp</span>
+            <span className="text-text-primary">{exam.courseName}</span>
+          </div>
+          <div className="flex justify-between text-sm">
+            <span className="text-text-muted">Đã trả lời</span>
+            <span className="text-text-primary">{result.answered}/{result.totalQuestions} câu</span>
+          </div>
+        </div>
+        <p className="text-xs text-text-muted mb-4">Giáo viên sẽ chấm điểm và công bố kết quả sau</p>
+        <button onClick={() => { onSubmitted(); onClose() }} className="btn-primary w-full">
+          Đóng
+        </button>
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="fixed inset-0 z-50 bg-surface-900 flex flex-col">
+      {/* Header */}
+      <div className="flex items-center justify-between px-6 py-3 border-b border-surface-700 bg-surface-800 shrink-0">
+        <div>
+          <h2 className="font-semibold text-text-primary">{exam.title}</h2>
+          <p className="text-xs text-text-muted">{exam.courseName} · {questions.length} câu hỏi</p>
+        </div>
+        <div className="flex items-center gap-4">
+          {/* Timer */}
+          <div className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono font-bold text-lg border ${
+            urgent ? 'bg-red-accent/10 border-red-accent/30 text-red-accent animate-pulse'
+                   : 'bg-surface-700 border-surface-600 text-text-primary'
+          }`}>
+            {Icon.clock} {fmt(timeLeft)}
+          </div>
+          {/* Progress */}
+          <div className="text-sm text-text-muted">
+            <span className="text-accent font-semibold">{answered}</span>/{questions.length} đã trả lời
+          </div>
+          <button onClick={() => confirm('Thoát? Bài làm sẽ không được lưu.') && onClose()}
+            className="btn-ghost p-2 text-text-muted hover:text-red-accent">
+            {Icon.x}
+          </button>
+        </div>
+      </div>
+
+      <div className="flex flex-1 overflow-hidden">
+        {/* Question list sidebar */}
+        <div className="w-56 border-r border-surface-700 bg-surface-800 p-3 overflow-y-auto shrink-0">
+          <p className="text-xs text-text-muted mb-2 font-medium uppercase tracking-wider">Câu hỏi</p>
+          <div className="grid grid-cols-5 gap-1.5">
+            {questions.map((q, i) => (
+              <button key={q.questionId} onClick={() => setCurrent(i)}
+                className={`w-8 h-8 rounded-lg text-xs font-mono font-bold transition-all ${
+                  current === i
+                    ? 'bg-accent text-white'
+                    : answers[q.questionId] !== undefined
+                    ? 'bg-green-accent/20 border border-green-accent/40 text-green-accent'
+                    : 'bg-surface-700 border border-surface-600 text-text-muted hover:border-accent/50'
+                }`}>
+                {i + 1}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Main question area */}
+        <div className="flex-1 overflow-y-auto p-8">
+          {q ? (
+            <div className="max-w-3xl mx-auto">
+              {/* Question header */}
+              <div className="flex items-center gap-3 mb-6">
+                <span className="w-9 h-9 rounded-xl bg-accent/15 border border-accent/25 flex items-center justify-center text-accent font-bold font-mono text-sm shrink-0">
+                  {current + 1}
+                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                    q.type === 'MULTIPLE_CHOICE' ? 'bg-blue-500/15 text-blue-400 border border-blue-500/25'
+                    : q.type === 'TRUE_FALSE'    ? 'bg-green-accent/15 text-green-accent border border-green-accent/25'
+                    : 'bg-orange-400/15 text-orange-400 border border-orange-400/25'
+                  }`}>
+                    {q.type === 'MULTIPLE_CHOICE' ? 'Trắc nghiệm'
+                     : q.type === 'TRUE_FALSE' ? 'Đúng/Sai'
+                     : 'Tự luận'}
+                  </span>
+                  <span className={`text-xs px-2 py-0.5 rounded-full ${
+                    q.difficulty === 'EASY'   ? 'bg-green-accent/10 text-green-accent'
+                    : q.difficulty === 'HARD' ? 'bg-red-accent/10 text-red-accent'
+                    : 'bg-yellow-400/10 text-yellow-400'
+                  }`}>
+                    {q.difficulty === 'EASY' ? 'Dễ' : q.difficulty === 'HARD' ? 'Khó' : 'TB'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Question content */}
+              <p className="text-text-primary text-base leading-relaxed mb-6">{q.content}</p>
+
+              {/* Answers */}
+              {(q.type === 'MULTIPLE_CHOICE') && (
+                <div className="space-y-3">
+                  {(q.answers || []).map((a, ai) => {
+                    const isSelected = answers[q.questionId] === a.id
+                    return (
+                      <button key={a.id} onClick={() => handleAnswer(q.questionId, a.id)}
+                        className={`w-full flex items-center gap-4 p-4 rounded-xl border text-left transition-all ${
+                          isSelected
+                            ? 'border-accent bg-accent/10 text-text-primary'
+                            : 'border-surface-600 bg-surface-700/50 hover:border-surface-500 text-text-secondary'
+                        }`}>
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 ${
+                          isSelected ? 'bg-accent text-white' : 'bg-surface-600 text-text-muted'
+                        }`}>
+                          {String.fromCharCode(65 + ai)}
+                        </div>
+                        <span className="text-sm">{a.content}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+
+              {q.type === 'TRUE_FALSE' && (
+                <div className="flex gap-4">
+                  {[{ id: 'true', label: '✓ Đúng' }, { id: 'false', label: '✗ Sai' }].map(opt => (
+                    <button key={opt.id} onClick={() => handleAnswer(q.questionId, opt.id)}
+                      className={`flex-1 py-4 rounded-xl border text-sm font-medium transition-all ${
+                        answers[q.questionId] === opt.id
+                          ? 'border-accent bg-accent/10 text-accent'
+                          : 'border-surface-600 bg-surface-700/50 hover:border-surface-500 text-text-secondary'
+                      }`}>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {q.type === 'ESSAY' && (
+                <textarea
+                  className="input-field w-full resize-none text-sm"
+                  rows={8}
+                  placeholder="Nhập câu trả lời của bạn..."
+                  value={answers[q.questionId] || ''}
+                  onChange={e => handleAnswer(q.questionId, e.target.value)}
+                />
+              )}
+
+              {/* Navigation */}
+              <div className="flex justify-between mt-8">
+                <button disabled={current === 0} onClick={() => setCurrent(p => p - 1)}
+                  className="btn-secondary disabled:opacity-40">
+                  ← Câu trước
+                </button>
+                {current < questions.length - 1 ? (
+                  <button onClick={() => setCurrent(p => p + 1)} className="btn-primary">
+                    Câu tiếp →
+                  </button>
+                ) : (
+                  <button onClick={() => handleSubmit(false)} disabled={submitting}
+                    className="btn-primary bg-green-accent/80 hover:bg-green-accent border-green-accent/50">
+                    {submitting ? 'Đang nộp...' : '✓ Nộp bài'}
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-20 text-text-muted">Không có câu hỏi</div>
+          )}
+        </div>
+      </div>
+
+      {/* Footer submit bar */}
+      <div className="border-t border-surface-700 bg-surface-800 px-6 py-3 flex items-center justify-between shrink-0">
+        <p className="text-sm text-text-muted">
+          {urgent && <span className="text-red-accent font-medium mr-2">⚠ Sắp hết giờ!</span>}
+          Đã trả lời <span className="text-accent font-semibold">{answered}/{questions.length}</span> câu
+        </p>
+        <button onClick={() => handleSubmit(false)} disabled={submitting}
+          className="btn-primary">
+          {submitting ? 'Đang nộp...' : '✓ Nộp bài thi'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ── Exam Card ─────────────────────────────────────────────
+function StudentExamCard({ exam, onTake }) {
+  const now = new Date()
+  const start = exam.startTime ? new Date(exam.startTime) : null
+  const end   = exam.endTime   ? new Date(exam.endTime)   : null
+
+  const isOpen   = (!start || now >= start) && (!end || now <= end)
+  const isEnded  = end && now > end
+  const notYet   = start && now < start
+
+  const fmtTime = (dt) => dt ? new Date(dt).toLocaleString('vi-VN', {
+    day:'2-digit', month:'2-digit', year:'numeric',
+    hour:'2-digit', minute:'2-digit'
+  }) : null
+
+  return (
+    <div className={`card p-0 overflow-hidden border transition-all ${
+      isOpen ? 'border-accent/30 hover:border-accent/60' : 'border-surface-600'
+    }`}>
+      {/* Status bar */}
+      <div className={`h-1 w-full ${
+        isEnded ? 'bg-surface-600' : isOpen ? 'bg-accent' : 'bg-yellow-400'
+      }`}/>
+
+      <div className="p-5">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="flex-1 min-w-0">
+            <span className="text-xs text-text-muted font-medium">{exam.courseName}</span>
+            <h3 className="text-text-primary font-semibold mt-0.5 truncate">{exam.title}</h3>
+            {exam.description && (
+              <p className="text-text-muted text-xs mt-0.5 line-clamp-2">{exam.description}</p>
+            )}
+          </div>
+          <span className={`shrink-0 text-xs px-2.5 py-1 rounded-full font-medium border ${
+            isEnded  ? 'bg-surface-700 border-surface-500 text-text-muted'
+            : isOpen ? 'bg-accent/15 border-accent/30 text-accent'
+            : 'bg-yellow-400/15 border-yellow-400/30 text-yellow-400'
+          }`}>
+            {isEnded ? 'Đã kết thúc' : isOpen ? '● Đang mở' : '○ Chưa mở'}
+          </span>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-3 py-3 border-y border-surface-700 mb-3">
+          <div className="text-center">
+            <p className="text-text-primary font-semibold text-sm">{exam.durationMinutes ?? exam.duration ?? '?'}</p>
+            <p className="text-text-muted text-xs">phút</p>
+          </div>
+          <div className="text-center">
+            <p className="text-text-primary font-semibold text-sm">{exam.questionCount ?? 0}</p>
+            <p className="text-text-muted text-xs">câu hỏi</p>
+          </div>
+          <div className="text-center">
+            <p className="text-text-primary font-semibold text-sm">{exam.maxAttempts ?? 1}</p>
+            <p className="text-text-muted text-xs">lần thi</p>
+          </div>
+        </div>
+
+        {/* Time info */}
+        {(start || end) && (
+          <div className="text-xs text-text-muted mb-3 space-y-1">
+            {start && <p>🕐 Mở: {fmtTime(start)}</p>}
+            {end   && <p>🕐 Đóng: {fmtTime(end)}</p>}
+          </div>
+        )}
+
+        {/* Action */}
+        <button
+          onClick={() => isOpen && onTake(exam)}
+          disabled={!isOpen}
+          className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all ${
+            isOpen
+              ? 'bg-accent text-white hover:bg-accent/90 cursor-pointer'
+              : 'bg-surface-700 text-text-muted cursor-not-allowed border border-surface-600'
+          }`}>
+          {Icon.play}
+          {isEnded ? 'Đã kết thúc' : isOpen ? 'Vào làm bài' : 'Chưa đến giờ thi'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+// ── Main Page ─────────────────────────────────────────────
+export default function StudentExamsPage() {
+  const [exams, setExams]     = useState([])
+  const [loading, setLoading] = useState(true)
+  const [taking, setTaking]   = useState(null)
+  const [filter, setFilter]   = useState('all') // all | open | ended
+
+  const load = () => {
+    setLoading(true)
+    api.get('/exams/student')
+      .then(r => setExams(r.data.data || []))
+      .catch(() => setExams([]))
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => { load() }, [])
+
+  const now = new Date()
+  const filtered = exams.filter(e => {
+    if (filter === 'open') {
+      const s = e.startTime ? new Date(e.startTime) : null
+      const end = e.endTime ? new Date(e.endTime) : null
+      return (!s || now >= s) && (!end || now <= end)
+    }
+    if (filter === 'ended') return e.endTime && now > new Date(e.endTime)
+    return true
+  })
+
+  const openCount  = exams.filter(e => {
+    const s = e.startTime ? new Date(e.startTime) : null
+    const end = e.endTime ? new Date(e.endTime) : null
+    return (!s || now >= s) && (!end || now <= end)
+  }).length
+
+  return (
+    <div className="max-w-5xl mx-auto space-y-6">
+      <div>
+        <h1 className="page-title">Đề thi</h1>
+        <p className="text-text-secondary text-sm mt-1">Danh sách đề thi dành cho bạn</p>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-4">
+        {[
+          { label: 'Tổng đề thi', value: exams.length, color: 'text-accent' },
+          { label: 'Đang mở',     value: openCount,    color: 'text-green-accent' },
+          { label: 'Đã kết thúc', value: exams.length - openCount, color: 'text-text-muted' },
+        ].map(s => (
+          <div key={s.label} className="card text-center py-4">
+            <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
+            <p className="text-text-muted text-xs mt-1">{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Filter tabs */}
+      <div className="flex gap-2">
+        {[
+          { key: 'all',   label: 'Tất cả' },
+          { key: 'open',  label: '● Đang mở' },
+          { key: 'ended', label: 'Đã kết thúc' },
+        ].map(f => (
+          <button key={f.key} onClick={() => setFilter(f.key)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              filter === f.key
+                ? 'bg-accent text-white'
+                : 'bg-surface-700 text-text-muted hover:text-text-primary border border-surface-600'
+            }`}>
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Exam grid */}
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <div className="w-8 h-8 rounded-full border-2 border-accent border-t-transparent animate-spin"/>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="card text-center py-16">
+          <div className="text-4xl mb-3">📋</div>
+          <p className="text-text-secondary font-medium">
+            {exams.length === 0 ? 'Chưa có đề thi nào được giao' : 'Không có đề thi nào trong mục này'}
+          </p>
+          <p className="text-text-muted text-sm mt-1">
+            {exams.length === 0 ? 'Giáo viên sẽ giao đề thi khi có bài kiểm tra' : ''}
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {filtered.map(e => (
+            <StudentExamCard key={e.id} exam={e} onTake={setTaking} />
+          ))}
+        </div>
+      )}
+
+      {/* Take exam modal */}
+      {taking && (
+        <TakeExamModal
+          exam={taking}
+          onClose={() => setTaking(null)}
+          onSubmitted={load}
+        />
+      )}
+    </div>
+  )
+}

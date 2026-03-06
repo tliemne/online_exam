@@ -19,13 +19,11 @@ import StudentDashboard from './pages/student/StudentDashboard'
 
 
 import QuestionsPage from './pages/teacher/QuestionsPage'
+import ExamsPage from './pages/teacher/ExamsPage'
+import StudentExamsPage from './pages/student/StudentExamsPage'
 
 import {
-  // QuestionsPage moved to real page
-  TeacherExamsPage,
-  StudentExamsPage,
   StudentResultsPage,
-  AdminCoursesPage,
   UnauthorizedPage,
 } from './pages/Placeholders'
 
@@ -58,7 +56,7 @@ export default function App() {
           <Route path="/teacher/courses" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><CoursesPage /></WithLayout></ProtectedRoute>} />
           <Route path="/teacher/courses/:id" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><CourseDetailPage /></WithLayout></ProtectedRoute>} />
           <Route path="/teacher/questions" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><QuestionsPage /></WithLayout></ProtectedRoute>} />
-          <Route path="/teacher/exams" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><TeacherExamsPage /></WithLayout></ProtectedRoute>} />
+          <Route path="/teacher/exams" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><ExamsPage /></WithLayout></ProtectedRoute>} />
 
           {/* Student */}
           <Route path="/student" element={<ProtectedRoute roles={['STUDENT']}><WithLayout><StudentDashboard /></WithLayout></ProtectedRoute>} />

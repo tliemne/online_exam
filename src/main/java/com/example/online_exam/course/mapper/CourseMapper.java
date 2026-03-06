@@ -6,12 +6,13 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
 import java.util.List;
+
 @Mapper(componentModel = "spring")
 public interface CourseMapper {
 
-    @Mapping(target = "id", source = "id")
-    @Mapping(target = "teacherId", source = "teacher.id")
-    @Mapping(target = "teacherName", source = "teacher.fullName")
+    @Mapping(target = "id",           source = "id")
+    @Mapping(target = "teacherName",  source = "teacher.fullName")
+    @Mapping(target = "studentCount", expression = "java(course.getStudents() != null ? course.getStudents().size() : 0)")
     CourseResponse toResponse(Course course);
 
     List<CourseResponse> toResponses(List<Course> courses);

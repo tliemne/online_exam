@@ -1,6 +1,5 @@
 package com.example.online_exam.course.dto;
 
-import com.example.online_exam.user.dto.UserResponse;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,8 +12,8 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CourseResponse {
     private Long id;
-    private Long teacherId;
     private String name;
     private String description;
     private String teacherName;
+    private Integer studentCount;
 }
