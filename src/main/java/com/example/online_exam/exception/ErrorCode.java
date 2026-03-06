@@ -31,7 +31,9 @@ public enum ErrorCode {
     // ===== MODULES =====
     EXAM_NOT_FOUND(HttpStatus.NOT_FOUND, "Exam not found"),
     LECTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "Lecture not found"),
-
+    // ===== ATTEMPT =====
+    ATTEMPT_NOT_FOUND(HttpStatus.NOT_FOUND, "Attempt not found"),
+    EXAM_ALREADY_ATTEMPTED(HttpStatus.BAD_REQUEST, "Exam already attempted"),
 
     // ===== SYSTEM =====
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");

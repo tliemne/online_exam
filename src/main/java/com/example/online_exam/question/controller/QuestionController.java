@@ -11,6 +11,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -58,17 +62,30 @@ public class QuestionController {
                 .timestamp(LocalDateTime.now()).build();
     }
 
-    // GET /questions?courseId=1&type=MULTIPLE_CHOICE&difficulty=EASY&keyword=java
+    // GET /questions?courseId=1&type=MC&difficulty=EASY&keyword=java&page=0&size=20
+    // Nếu có param 'paged=true' → trả Page, không thì trả List (cho AddQuestionsModal)
     @GetMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
-    public BaseResponse<List<QuestionResponse>> search(
-            @RequestParam Long courseId,
+    public BaseResponse<?> search(
+            @RequestParam(required = false) Long courseId,
             @RequestParam(required = false) QuestionType type,
             @RequestParam(required = false) Difficulty difficulty,
-            @RequestParam(required = false) String keyword) {
-        return BaseResponse.<List<QuestionResponse>>builder()
-                .status(200).message("success")
-                .data(questionService.search(courseId, type, difficulty, keyword))
-                .timestamp(LocalDateTime.now()).build();
+            @RequestParam(required = false) String keyword,
+            @RequestParam(defaultValue = "false") boolean paged,
+            @RequestParam(defaultValue = "0")  int page,
+            @RequestParam(defaultValue = "20") int size) {
+
+        if (paged) {
+            // Phân trang — dùng cho QuestionsPage
+            PageRequest pageable = PageRequest.of(page, size, Sort.by("id").descending());
+            Page<QuestionResponse> result = questionService.searchPaged(courseId, type, difficulty, keyword, pageable);
+            return BaseResponse.<Page<QuestionResponse>>builder()
+                    .status(200).message("success").data(result).timestamp(LocalDateTime.now()).build();
+        } else {
+            // Lấy toàn bộ — dùng cho AddQuestionsModal trong Exam
+            List<QuestionResponse> result = questionService.search(courseId, type, difficulty, keyword);
+            return BaseResponse.<List<QuestionResponse>>builder()
+                    .status(200).message("success").data(result).timestamp(LocalDateTime.now()).build();
+        }
     }
 }

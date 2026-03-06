@@ -3,6 +3,8 @@ package com.example.online_exam.question.repository;
 import com.example.online_exam.question.entity.Question;
 import com.example.online_exam.question.enums.Difficulty;
 import com.example.online_exam.question.enums.QuestionType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -13,6 +15,23 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
 
     List<Question> findByCourseId(Long courseId);
 
+    // Phân trang — dùng cho QuestionsPage (20 câu/trang)
+    @Query("""
+        SELECT q FROM Question q
+        WHERE (:courseId IS NULL OR q.course.id = :courseId)
+          AND (:type IS NULL OR q.type = :type)
+          AND (:difficulty IS NULL OR q.difficulty = :difficulty)
+          AND (:keyword IS NULL OR LOWER(q.content) LIKE LOWER(CONCAT('%', :keyword, '%')))
+    """)
+    Page<Question> searchPaged(
+            @Param("courseId")   Long courseId,
+            @Param("type")       QuestionType type,
+            @Param("difficulty") Difficulty difficulty,
+            @Param("keyword")    String keyword,
+            Pageable pageable
+    );
+
+    // List version — dùng cho AddQuestionsModal (không cần phân trang)
     @Query("""
         SELECT q FROM Question q
         WHERE q.course.id = :courseId
@@ -21,10 +40,10 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
           AND (:keyword IS NULL OR LOWER(q.content) LIKE LOWER(CONCAT('%', :keyword, '%')))
     """)
     List<Question> search(
-            @Param("courseId") Long courseId,
-            @Param("type") QuestionType type,
+            @Param("courseId")   Long courseId,
+            @Param("type")       QuestionType type,
             @Param("difficulty") Difficulty difficulty,
-            @Param("keyword") String keyword
+            @Param("keyword")    String keyword
     );
 
     long countByCourseId(Long courseId);

@@ -44,13 +44,15 @@ function getNavItems(role, t) {
     { to: '/admin/users',       label: t('nav.users'),     icon: Icons.users },
     { to: '/admin/courses',     label: t('nav.courses'),   icon: Icons.courses },
     { to: '/teacher/questions', label: t('nav.questions'), icon: Icons.questions },
-    { to: '/teacher/exams',     label: t('nav.exams'),     icon: Icons.exams },
+    { to: '/teacher/grading', label: 'Chấm điểm', icon: Icons.results },
+    { to: '/teacher/exams', label: t('nav.exams'), icon: Icons.exams },
   ]
   const teacher = [
     { to: '/teacher',           label: t('nav.dashboard'), end: true, icon: Icons.dashboard },
     { to: '/teacher/courses',   label: t('nav.courses'),   icon: Icons.courses },
     { to: '/teacher/questions', label: t('nav.questions'), icon: Icons.questions },
-    { to: '/teacher/exams',     label: t('nav.exams'),     icon: Icons.exams },
+    { to: '/teacher/grading', label: 'Chấm điểm', icon: Icons.results },
+    { to: '/teacher/exams', label: t('nav.exams'), icon: Icons.exams },
   ]
   const student = [
     { to: '/student',          label: t('nav.dashboard'), end: true, icon: Icons.dashboard },

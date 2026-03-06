@@ -13,6 +13,8 @@ import com.example.online_exam.question.entity.Question;
 import com.example.online_exam.question.enums.Difficulty;
 import com.example.online_exam.question.enums.QuestionType;
 import com.example.online_exam.question.repository.QuestionRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import com.example.online_exam.secutity.service.CurrentUserService;
 import com.example.online_exam.user.entity.User;
 import jakarta.transaction.Transactional;
@@ -93,6 +95,12 @@ public class QuestionServiceImpl implements QuestionService {
     public List<QuestionResponse> search(Long courseId, QuestionType type, Difficulty difficulty, String keyword) {
         return questionRepository.search(courseId, type, difficulty, keyword)
                 .stream().map(this::toResponse).toList();
+    }
+
+    @Override
+    public Page<QuestionResponse> searchPaged(Long courseId, QuestionType type, Difficulty difficulty, String keyword, Pageable pageable) {
+        return questionRepository.searchPaged(courseId, type, difficulty, keyword, pageable)
+                .map(this::toResponse);
     }
 
     // ── Helpers ──────────────────────────────────────────

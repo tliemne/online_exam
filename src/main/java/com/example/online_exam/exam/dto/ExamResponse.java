@@ -31,6 +31,9 @@ public class ExamResponse {
     private Integer questionCount;
     private LocalDateTime createdAt;
 
+    // Student: số lần đã thi (để check limit phía client)
+    private Integer myAttemptCount;
+
     // Danh sách câu hỏi (chỉ trả về khi cần)
     private List<ExamQuestionResponse> questions;
 }

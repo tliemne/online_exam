@@ -21,9 +21,10 @@ import StudentDashboard from './pages/student/StudentDashboard'
 import QuestionsPage from './pages/teacher/QuestionsPage'
 import ExamsPage from './pages/teacher/ExamsPage'
 import StudentExamsPage from './pages/student/StudentExamsPage'
+import StudentResultsPage from './pages/student/StudentResultsPage'
+import TeacherGradingPage from './pages/teacher/TeacherGradingPage'
 
 import {
-  StudentResultsPage,
   UnauthorizedPage,
 } from './pages/Placeholders'
 
@@ -56,6 +57,7 @@ export default function App() {
           <Route path="/teacher/courses" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><CoursesPage /></WithLayout></ProtectedRoute>} />
           <Route path="/teacher/courses/:id" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><CourseDetailPage /></WithLayout></ProtectedRoute>} />
           <Route path="/teacher/questions" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><QuestionsPage /></WithLayout></ProtectedRoute>} />
+          <Route path="/teacher/grading" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><TeacherGradingPage /></WithLayout></ProtectedRoute>} />
           <Route path="/teacher/exams" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><ExamsPage /></WithLayout></ProtectedRoute>} />
 
           {/* Student */}

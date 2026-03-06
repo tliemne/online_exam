@@ -2,6 +2,8 @@ package com.example.online_exam.user.entity;
 
 import com.example.online_exam.common.entity.BaseEntity;
 import com.example.online_exam.user.enums.UserStatus;
+import com.example.online_exam.userprofile.entity.StudentProfile;
+import com.example.online_exam.userprofile.entity.TeacherProfile;
 import jakarta.persistence.*;
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
@@ -34,12 +36,18 @@ public class User extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private UserStatus status = UserStatus.ACTIVE;
 
+    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
+    private StudentProfile studentProfile;
+    @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
+    private TeacherProfile teacherProfile;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
+
     private Set<Role> roles = new HashSet<>();
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return roles.stream()

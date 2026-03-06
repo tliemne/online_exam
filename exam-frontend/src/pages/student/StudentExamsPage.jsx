@@ -13,6 +13,143 @@ const Icon = {
   warn:   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126z"/></svg>,
 }
 
+
+// ── Result History Modal ──────────────────────────────────
+function ResultHistoryModal({ exam, onClose }) {
+  const [attempts, setAttempts] = useState([])
+  const [loading, setLoading]   = useState(true)
+  const [detail, setDetail]     = useState(null)  // attempt detail
+
+  useEffect(() => {
+    api.get(`/attempts/my/exams/${exam.id}`)
+      .then(r => setAttempts(r.data.data || []))
+      .catch(() => setAttempts([]))
+      .finally(() => setLoading(false))
+  }, [exam.id])
+
+  const statusColor = (s) => s === 'GRADED' ? 'text-green-accent' : 'text-yellow-400'
+  const statusLabel = (s) => s === 'GRADED' ? 'Đã chấm' : s === 'SUBMITTED' ? 'Chờ chấm' : 'Đang làm'
+
+  if (detail) return (
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-surface-800 border border-surface-600 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-surface-700">
+          <div>
+            <h3 className="font-semibold text-text-primary">Chi tiết bài làm</h3>
+            <p className="text-xs text-text-muted">{exam.title}</p>
+          </div>
+          <button onClick={() => setDetail(null)} className="btn-ghost p-2 text-text-muted">{Icon.x}</button>
+        </div>
+        <div className="overflow-y-auto flex-1 p-6 space-y-4">
+          {/* Score summary */}
+          <div className="bg-surface-700 rounded-xl p-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs text-text-muted mb-1">Điểm số</p>
+              <p className={`text-3xl font-bold ${detail.passed ? 'text-green-accent' : 'text-red-accent'}`}>
+                {detail.score != null ? `${detail.score}/${detail.totalScore}` : 'Chờ chấm'}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-text-muted mb-1">Kết quả</p>
+              <p className={`text-sm font-semibold ${detail.passed ? 'text-green-accent' : detail.passed === false ? 'text-red-accent' : 'text-yellow-400'}`}>
+                {detail.passed == null ? '—' : detail.passed ? '✓ Đạt' : '✗ Chưa đạt'}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs text-text-muted mb-1">Đúng/Tổng</p>
+              <p className="text-sm font-semibold text-text-primary">{detail.correctCount ?? '?'}/{detail.totalQuestions ?? '?'}</p>
+            </div>
+          </div>
+
+          {/* Answer details */}
+          {(detail.answers || []).map((a, i) => (
+            <div key={a.id} className={`border rounded-xl p-4 ${
+              a.isCorrect === true  ? 'border-green-accent/30 bg-green-accent/5'
+              : a.isCorrect === false ? 'border-red-accent/30 bg-red-accent/5'
+              : 'border-surface-600 bg-surface-700/30'
+            }`}>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="w-6 h-6 rounded-lg bg-surface-600 flex items-center justify-center text-xs font-mono font-bold text-text-muted">{i+1}</span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-surface-600 text-text-muted">{
+                  a.questionType === 'MULTIPLE_CHOICE' ? 'Trắc nghiệm'
+                  : a.questionType === 'TRUE_FALSE' ? 'Đúng/Sai' : 'Tự luận'
+                }</span>
+                <span className={`ml-auto text-xs font-medium ${a.isCorrect === true ? 'text-green-accent' : a.isCorrect === false ? 'text-red-accent' : 'text-yellow-400'}`}>
+                  {a.isCorrect === true ? '✓ Đúng' : a.isCorrect === false ? '✗ Sai' : '○ Chờ chấm'}
+                  {a.score != null ? ` · ${a.score}đ` : ''}
+                </span>
+              </div>
+              <p className="text-text-primary text-sm mb-2">{a.questionContent}</p>
+              {a.selectedAnswerContent && (
+                <p className="text-xs text-text-muted">Bạn chọn: <span className="text-text-secondary">{a.selectedAnswerContent}</span></p>
+              )}
+              {a.textAnswer && (
+                <p className="text-xs text-text-muted">Câu trả lời: <span className="text-text-secondary">{a.textAnswer}</span></p>
+              )}
+              {a.correctAnswerContent && a.isCorrect === false && (
+                <p className="text-xs text-green-accent mt-1">Đáp án đúng: {a.correctAnswerContent}</p>
+              )}
+              {a.teacherComment && (
+                <p className="text-xs text-accent mt-1 italic">💬 GV: {a.teacherComment}</p>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-surface-800 border border-surface-600 rounded-2xl w-full max-w-lg shadow-2xl">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-surface-700">
+          <div>
+            <h3 className="font-semibold text-text-primary">Lịch sử bài làm</h3>
+            <p className="text-xs text-text-muted">{exam.title}</p>
+          </div>
+          <button onClick={onClose} className="btn-ghost p-2 text-text-muted">{Icon.x}</button>
+        </div>
+        <div className="p-6">
+          {loading ? (
+            <div className="flex justify-center py-8">
+              <div className="w-6 h-6 rounded-full border-2 border-accent border-t-transparent animate-spin"/>
+            </div>
+          ) : attempts.length === 0 ? (
+            <p className="text-center text-text-muted py-8">Chưa có bài làm nào</p>
+          ) : (
+            <div className="space-y-3">
+              {attempts.map((a, i) => (
+                <div key={a.id} className="bg-surface-700 rounded-xl p-4 flex items-center gap-4">
+                  <div className="w-8 h-8 rounded-lg bg-surface-600 flex items-center justify-center text-sm font-bold text-text-muted font-mono">
+                    {i + 1}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`text-xs font-medium ${statusColor(a.status)}`}>{statusLabel(a.status)}</span>
+                      <span className="text-xs text-text-muted">{a.submittedAt ? new Date(a.submittedAt).toLocaleString('vi-VN') : ''}</span>
+                    </div>
+                    <p className="text-text-primary font-semibold text-sm">
+                      {a.score != null ? `${a.score}/${a.totalScore} điểm` : 'Chờ chấm tự luận'}
+                      {a.passed != null && <span className={`ml-2 text-xs ${a.passed ? 'text-green-accent' : 'text-red-accent'}`}>{a.passed ? '✓ Đạt' : '✗ Chưa đạt'}</span>}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      api.get(`/attempts/${a.id}`).then(r => setDetail(r.data.data))
+                    }}
+                    className="btn-ghost text-xs px-3 py-1.5 text-accent border border-accent/30 rounded-lg hover:bg-accent/10">
+                    Xem chi tiết
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Exam Taking Modal ─────────────────────────────────────
 function TakeExamModal({ exam, onClose, onSubmitted }) {
   const [questions, setQuestions]   = useState([])
@@ -59,31 +196,33 @@ function TakeExamModal({ exam, onClose, onSubmitted }) {
     if (!auto && !confirm('Nộp bài thi?')) return
     setSubmitting(true)
     try {
-      // Format answers cho backend
       const answerList = Object.entries(answers).map(([qId, val]) => ({
         questionId: Number(qId),
-        answerId: typeof val === 'number' ? val : null,
-        textAnswer: typeof val === 'string' ? val : null,
+        answerId:   typeof val === 'number' ? val : null,
+        textAnswer: typeof val === 'string'  ? val : null,
       }))
 
-      // POST /exams/{id}/submit (sẽ implement sau)
-      // Tạm tính điểm ở frontend
-      let correct = 0
-      questions.forEach(q => {
-        const ans = answers[q.questionId]
-        if (q.type === 'MULTIPLE_CHOICE' || q.type === 'TRUE_FALSE') {
-          // Vì hideCorrect=true nên không biết đáp án đúng, chỉ ghi nhận đã trả lời
-        }
-      })
+      const res = await api.post(`/attempts/exams/${exam.id}/submit`, answerList)
+      const data = res.data.data
 
       setResult({
-        totalQuestions: questions.length,
-        answered: Object.keys(answers).length,
-        submitted: true,
+        totalQuestions: data.totalQuestions || questions.length,
+        answered:       Object.keys(answers).length,
+        score:          data.score,
+        totalScore:     data.totalScore,
+        passed:         data.passed,
+        status:         data.status,
+        correctCount:   data.correctCount,
+        submitted:      true,
       })
       setSubmitted(true)
     } catch (err) {
-      alert('Có lỗi khi nộp bài: ' + (err?.response?.data?.message || err.message))
+      const msg = err?.response?.data?.message || err.message
+      if (msg?.includes('lần thi') || err?.response?.status === 400) {
+        alert('Bạn đã hết số lần thi cho phép!')
+      } else {
+        alert('Có lỗi khi nộp bài: ' + msg)
+      }
     } finally {
       setSubmitting(false)
     }
@@ -106,9 +245,20 @@ function TakeExamModal({ exam, onClose, onSubmitted }) {
           <span className="text-green-accent">{Icon.check}</span>
         </div>
         <h2 className="text-xl font-bold text-text-primary mb-2">Nộp bài thành công!</h2>
-        <p className="text-text-secondary text-sm mb-6">
-          Bạn đã trả lời {result.answered}/{result.totalQuestions} câu hỏi
-        </p>
+        {result.score != null ? (
+          <div className="mb-4">
+            <p className={`text-4xl font-bold mb-1 ${result.passed ? 'text-green-accent' : 'text-red-accent'}`}>
+              {result.score}/{result.totalScore}
+            </p>
+            <p className={`text-sm font-medium ${result.passed ? 'text-green-accent' : 'text-red-accent'}`}>
+              {result.passed ? '✓ Đạt' : '✗ Chưa đạt'}
+            </p>
+          </div>
+        ) : (
+          <p className="text-text-secondary text-sm mb-4">
+            Bài có câu tự luận — giáo viên sẽ chấm điểm sau
+          </p>
+        )}
         <div className="bg-surface-700 rounded-xl p-4 mb-6 text-left space-y-2">
           <div className="flex justify-between text-sm">
             <span className="text-text-muted">Đề thi</span>
@@ -299,14 +449,18 @@ function TakeExamModal({ exam, onClose, onSubmitted }) {
 }
 
 // ── Exam Card ─────────────────────────────────────────────
-function StudentExamCard({ exam, onTake }) {
+function StudentExamCard({ exam, onTake, onViewResult }) {
   const now = new Date()
   const start = exam.startTime ? new Date(exam.startTime) : null
   const end   = exam.endTime   ? new Date(exam.endTime)   : null
 
-  const isOpen   = (!start || now >= start) && (!end || now <= end)
-  const isEnded  = end && now > end
-  const notYet   = start && now < start
+  const isOpen     = (!start || now >= start) && (!end || now <= end)
+  const isEnded    = end && now > end
+  const notYet     = start && now < start
+  const myCount    = exam.myAttemptCount ?? 0
+  const maxCount   = exam.maxAttempts ?? 1
+  const limitHit   = myCount >= maxCount
+  const canTake    = isOpen && !limitHit
 
   const fmtTime = (dt) => dt ? new Date(dt).toLocaleString('vi-VN', {
     day:'2-digit', month:'2-digit', year:'numeric',
@@ -366,16 +520,27 @@ function StudentExamCard({ exam, onTake }) {
         )}
 
         {/* Action */}
+        {/* Attempt count badge */}
+        {maxCount > 0 && (
+          <div className="flex items-center justify-between text-xs mb-3">
+            <span className="text-text-muted">Lần thi: <span className={`font-semibold ${limitHit ? 'text-red-accent' : 'text-accent'}`}>{myCount}/{maxCount}</span></span>
+            {myCount > 0 && (
+              <button onClick={() => onViewResult(exam)} className="text-accent hover:underline text-xs">Xem kết quả →</button>
+            )}
+          </div>
+        )}
         <button
-          onClick={() => isOpen && onTake(exam)}
-          disabled={!isOpen}
+          onClick={() => canTake && onTake(exam)}
+          disabled={!canTake}
           className={`w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all ${
-            isOpen
+            canTake
               ? 'bg-accent text-white hover:bg-accent/90 cursor-pointer'
+              : limitHit
+              ? 'bg-red-accent/10 text-red-accent cursor-not-allowed border border-red-accent/30'
               : 'bg-surface-700 text-text-muted cursor-not-allowed border border-surface-600'
           }`}>
           {Icon.play}
-          {isEnded ? 'Đã kết thúc' : isOpen ? 'Vào làm bài' : 'Chưa đến giờ thi'}
+          {limitHit ? `Đã hết lượt thi (${myCount}/${maxCount})` : isEnded ? 'Đã kết thúc' : isOpen ? 'Vào làm bài' : 'Chưa đến giờ thi'}
         </button>
       </div>
     </div>
@@ -387,6 +552,7 @@ export default function StudentExamsPage() {
   const [exams, setExams]     = useState([])
   const [loading, setLoading] = useState(true)
   const [taking, setTaking]   = useState(null)
+  const [viewingResult, setViewingResult] = useState(null)
   const [filter, setFilter]   = useState('all') // all | open | ended
 
   const load = () => {
@@ -473,7 +639,7 @@ export default function StudentExamsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map(e => (
-            <StudentExamCard key={e.id} exam={e} onTake={setTaking} />
+            <StudentExamCard key={e.id} exam={e} onTake={setTaking} onViewResult={(ex) => { setViewingResult(ex); }} />
           ))}
         </div>
       )}
@@ -483,8 +649,11 @@ export default function StudentExamsPage() {
         <TakeExamModal
           exam={taking}
           onClose={() => setTaking(null)}
-          onSubmitted={load}
+          onSubmitted={() => { load(); setTaking(null) }}
         />
+      )}
+      {viewingResult && (
+        <ResultHistoryModal exam={viewingResult} onClose={() => setViewingResult(null)} />
       )}
     </div>
   )

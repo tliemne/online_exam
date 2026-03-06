@@ -362,7 +362,7 @@ function AddQuestionsModal({ exam, onClose, onSaved }) {
 }
 
 // ── Exam Card ─────────────────────────────────────────────
-function ExamCard({ exam, onEdit, onDelete, onPublish, onManageQuestions }) {
+function ExamCard({ exam, onEdit, onDelete, onPublish, onClose, onManageQuestions }) {
   const statusMeta = STATUS_META[exam.status] || STATUS_META.DRAFT
   const isDraft = exam.status === 'DRAFT'
   const isPublished = exam.status === 'PUBLISHED'
@@ -427,7 +427,15 @@ function ExamCard({ exam, onEdit, onDelete, onPublish, onManageQuestions }) {
           )}
         </button>
 
-        {/* Publish / Unpublish */}
+        {/* Close button — chỉ hiện khi PUBLISHED */}
+        {isPublished && (
+          <button onClick={() => onClose(exam)}
+            className="btn-ghost p-1.5 text-text-muted hover:text-yellow-400" title="Đóng đề thi">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
+          </button>
+        )}
+
+        {/* Publish button — chỉ hiện khi DRAFT */}
         {isDraft && (
           <button onClick={() => onPublish(exam)}
             title="Xuất bản đề thi"
@@ -499,12 +507,31 @@ export default function ExamsPage() {
   useEffect(() => { load() }, [load])
 
   const handleDelete = async (exam) => {
-    if (!confirm(`Xóa đề thi "${exam.title}"?`)) return
+    const now = new Date()
+    const end = exam.endTime ? new Date(exam.endTime) : null
+    const isLive = exam.status === 'PUBLISHED' && (!end || now <= end)
+
+    if (isLive) {
+      alert('Đề đang mở — không thể xóa. Hãy đóng đề trước hoặc chờ hết thời gian.')
+      return
+    }
+    if (!confirm(`Xóa đề thi "${exam.title}"? Hành động này không thể hoàn tác.`)) return
     try {
       await examApi.delete(exam.id)
       setExams(prev => prev.filter(e => e.id !== exam.id))
-    } catch {
-      alert('Không thể xóa đề thi này')
+    } catch (err) {
+      const msg = err?.response?.data?.message || ''
+      alert(msg || 'Không thể xóa đề thi này')
+    }
+  }
+
+  const handleClose = async (exam) => {
+    if (!confirm(`Đóng đề thi "${exam.title}"? Sinh viên sẽ không thể làm bài nữa.`)) return
+    try {
+      await examApi.close(exam.id)
+      setExams(prev => prev.map(e => e.id === exam.id ? { ...e, status: 'CLOSED' } : e))
+    } catch (err) {
+      alert(err?.response?.data?.message || 'Không thể đóng đề thi')
     }
   }
 
@@ -620,6 +647,7 @@ export default function ExamsPage() {
             <ExamCard key={exam.id} exam={exam}
               onEdit={(e) => { setSelected(e); setModal('edit') }}
               onDelete={handleDelete}
+              onClose={handleClose}
               onPublish={handlePublish}
               onManageQuestions={async (e) => {
                 try {

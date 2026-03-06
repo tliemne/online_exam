@@ -14,6 +14,7 @@ import com.example.online_exam.exception.ErrorCode;
 import com.example.online_exam.question.entity.Answer;
 import com.example.online_exam.question.entity.Question;
 import com.example.online_exam.question.repository.QuestionRepository;
+import com.example.online_exam.attempt.repository.AttemptRepository;
 import com.example.online_exam.secutity.service.CurrentUserService;
 import com.example.online_exam.user.entity.User;
 import com.example.online_exam.user.repository.UserRepository;
@@ -80,8 +81,15 @@ public class ExamServiceImpl implements ExamService {
     @Override
     public void delete(Long id) {
         Exam exam = findExam(id);
-        if (exam.getStatus() == ExamStatus.PUBLISHED)
-            throw new AppException(ErrorCode.INVALID_REQUEST); // Không xóa đề đang mở
+        // Chỉ chặn nếu đề PUBLISHED và chưa hết hạn (đang mở thực sự)
+        if (exam.getStatus() == ExamStatus.PUBLISHED) {
+            boolean expired = exam.getEndTime() != null
+                    && exam.getEndTime().isBefore(java.time.LocalDateTime.now());
+            if (!expired) {
+                throw new AppException(ErrorCode.INVALID_REQUEST); // Đề đang mở, chưa hết hạn
+            }
+            // Đề hết hạn → cho phép xóa (cascade sẽ xóa exam_questions)
+        }
         examRepo.delete(exam);
     }
 

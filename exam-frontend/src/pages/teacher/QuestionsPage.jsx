@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { questionApi, courseApi } from '../../api/services'
+import Pagination from '../../components/common/Pagination'
 import { useAuth } from '../../context/AuthContext'
 
 // ══════════════════════════════════════════════════════════
@@ -469,6 +470,12 @@ export default function QuestionsPage() {
   const [filterDiff, setFilterDiff] = useState('')
   const [keyword, setKeyword] = useState('')
 
+  // Pagination
+  const [page, setPage]           = useState(0)
+  const [pageSize]                = useState(20)
+  const [totalPages, setTotalPages] = useState(0)
+  const [totalElements, setTotalElements] = useState(0)
+
   useEffect(() => {
     courseApi.getAll().then(r => {
       const list = r.data.data || []
@@ -484,10 +491,24 @@ export default function QuestionsPage() {
       type: filterType || undefined,
       difficulty: filterDiff || undefined,
       keyword: keyword || undefined,
-    }).then(r => setQuestions(r.data.data || []))
-      .finally(() => setLoading(false))
-  }, [selectedCourse, filterType, filterDiff, keyword])
+      paged: true,
+      page,
+      size: pageSize,
+    }).then(r => {
+      const data = r.data.data
+      // Spring Page object: { content, totalPages, totalElements, number, size }
+      if (data && data.content) {
+        setQuestions(data.content)
+        setTotalPages(data.totalPages)
+        setTotalElements(data.totalElements)
+      } else {
+        setQuestions(data || [])
+      }
+    }).finally(() => setLoading(false))
+  }, [selectedCourse, filterType, filterDiff, keyword, page, pageSize])
 
+  // Reset về trang 0 khi đổi filter
+  useEffect(() => { setPage(0) }, [selectedCourse, filterType, filterDiff, keyword])
   useEffect(() => { loadQuestions() }, [loadQuestions])
 
   const handleDelete = async (q) => {
@@ -495,7 +516,7 @@ export default function QuestionsPage() {
     setDeleting(q.id)
     try {
       await questionApi.delete(q.id)
-      setQuestions(prev => prev.filter(x => x.id !== q.id))
+      loadQuestions()
     } finally { setDeleting(null) }
   }
 
@@ -514,7 +535,7 @@ export default function QuestionsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-title">Ngân hàng câu hỏi</h1>
-          <p className="text-text-secondary text-sm mt-1">{questions.length} câu hỏi</p>
+          <p className="text-text-secondary text-sm mt-1">{totalElements || questions.length} câu hỏi</p>
         </div>
         {isTeacherOrAdmin && (
           <div className="flex items-center gap-2">
@@ -638,6 +659,17 @@ export default function QuestionsPage() {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          totalElements={totalElements}
+          size={pageSize}
+          onPageChange={setPage}
+        />
       )}
 
       {/* Modals */}
