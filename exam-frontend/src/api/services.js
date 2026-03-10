@@ -21,6 +21,9 @@ export const userApi = {
   delete: (id) => api.delete(`/users/${id}`),
   updateStudentProfile: (data) => api.put('/users/me/student-profile', data),
   updateTeacherProfile: (data) => api.put('/users/me/teacher-profile', data),
+  changeMyPassword: (oldPassword, newPassword) => api.put('/users/me/password', { oldPassword, newPassword }),
+  resetPassword: (id, newPassword) => api.put(`/users/${id}/reset-password`, { newPassword }),
+  createStudent: (data) => api.post('/users/students', data),
 }
 
 // ── COURSES ─────────────────────────────────────────────
@@ -64,7 +67,7 @@ export const attemptApi = {
   start: (examId) => api.post(`/exams/${examId}/start`),
   submit: (attemptId, answers) => api.post(`/attempts/${attemptId}/submit`, { answers }),
   getResult: (attemptId) => api.get(`/attempts/${attemptId}/result`),
-  getMyAttempts: () => api.get('/attempts/me'),
+  getMyAttempts: () => api.get('/attempts/my'),
 }
 
 // ── LECTURES ──────────────────────────────────────────────

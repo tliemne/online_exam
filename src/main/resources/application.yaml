@@ -17,6 +17,21 @@ spring:
       hibernate:
         format_sql: true
 
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: thanhliem27diem@gmail.com
+    password: "cmml niwl jbho xwro"
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
 server:
   port: 8081
 
@@ -24,3 +39,7 @@ jwt:
   secret: mySecretKeyForJwtTokenMustBeLongEnough123456
   access-expire: 3600000
   refresh-expire: 604800000
+
+app:
+  mail:
+    from-name: ExamPortal

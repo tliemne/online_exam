@@ -11,9 +11,8 @@ public class UserRegisterRequest {
     private String username;
     @NotBlank
     private String password;
-    @NotBlank
     @Email
-    private String email;  // bắt buộc, không được null
+    private String email;  // tuỳ chọn
     private String fullName;
     private RoleName role;
     // ── Thêm mới: Admin điền khi tạo tài khoản ──

@@ -1,5 +1,8 @@
 package com.example.online_exam.user.service;
 
+import com.example.online_exam.user.dto.ChangePasswordRequest;
+import com.example.online_exam.user.dto.CreateStudentRequest;
+import com.example.online_exam.user.dto.CreateStudentResult;
 import com.example.online_exam.user.dto.MyProfileResponse;
 import com.example.online_exam.user.dto.UserRegisterRequest;
 import com.example.online_exam.user.dto.UserResponse;
@@ -29,4 +32,13 @@ public interface UserService {
 
     TeacherProfileResponse updateMyTeacherProfile(TeacherProfileUpdateRequest request);
     List<UserResponse> getAllByRole(RoleName role);
+
+    // Teacher tạo student (+ tùy chọn gắn vào lớp ngay)
+    CreateStudentResult createStudent(CreateStudentRequest request);
+
+    // User tự đổi mật khẩu (cần xác nhận mật khẩu cũ)
+    void changeMyPassword(String oldPassword, String newPassword);
+
+    // Admin/Teacher reset mật khẩu cho user bất kỳ
+    void resetPassword(Long userId, String newPassword);
 }

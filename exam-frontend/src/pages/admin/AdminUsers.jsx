@@ -1,5 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { userApi } from '../../api/services'
+import api from '../../api/client'
+import ResetPasswordModal from '../../components/common/ResetPasswordModal'
+import Pagination from '../../components/common/Pagination'
 
 const ROLE_TABS = [
   { key: 'ALL',     label: 'Tất cả' },
@@ -13,10 +16,78 @@ const emptyForm = {
   phone: '',  // Mã SV/GV sẽ được tự động tạo
 }
 
+// ── Tab Import Excel (Admin) ──────────────────────────────
+function TabImportAdmin({ onClose, onImported }) {
+  const [file, setFile]         = useRef ? useState(null) : useState(null)
+  const [dragging, setDragging] = useState(false)
+  const [loading, setLoading]   = useState(false)
+  const [result, setResult]     = useState(null)
+  const [error, setError]       = useState('')
+  const inputRef                = useRef()
+
+  const handleFile = (f) => { if (!f) return; if (!f.name.endsWith('.xlsx')) return setError('Chỉ hỗ trợ .xlsx'); setFile(f); setError('') }
+  const handleImport = async () => {
+    if (!file) return setError('Chọn file Excel trước')
+    setLoading(true); setError('')
+    try {
+      const fd = new FormData(); fd.append('file', file)
+      const r = await api.post('/users/import', fd, { headers: {'Content-Type':'multipart/form-data'} })
+      setResult(r.data.data); onImported?.()
+    } catch (err) { setError(err?.response?.data?.message||'Import thất bại') } finally { setLoading(false) }
+  }
+
+  if (result) return (
+    <div className="p-6 space-y-4">
+      <div className="text-center"><div className="text-4xl mb-2">{result.errorCount===0?'✅':'⚠️'}</div><p className="font-semibold text-text-primary">Import hoàn tất</p></div>
+      <div className="grid grid-cols-3 gap-3">
+        {[{label:'Thành công',value:result.successCount,color:'text-green-accent'},{label:'Lỗi',value:result.errorCount,color:'text-red-accent'},{label:'Gửi email',value:result.emailSentCount,color:'text-accent'}].map(s=>(
+          <div key={s.label} className="bg-surface-700 rounded-xl p-3 text-center"><p className={`text-2xl font-bold ${s.color}`}>{s.value}</p><p className="text-text-muted text-xs mt-0.5">{s.label}</p></div>
+        ))}
+      </div>
+      {result.errors?.length>0 && <div className="bg-red-accent/5 border border-red-accent/20 rounded-xl p-3 max-h-32 overflow-y-auto"><p className="text-xs text-red-accent font-medium mb-2">Chi tiết lỗi:</p>{result.errors.map((e,i)=><p key={i} className="text-xs text-text-muted">• {e}</p>)}</div>}
+      {result.created?.length>0 && <div className="bg-surface-700 rounded-xl p-3 max-h-36 overflow-y-auto"><p className="text-xs text-text-muted font-medium mb-2 uppercase">Đã tạo ({result.created.length})</p>{result.created.map((u,i)=><div key={i} className="flex justify-between py-1 border-b border-surface-600 last:border-0"><span className="text-sm text-text-primary">{u.fullName}</span><span className="text-xs font-mono text-accent">{u.username}</span></div>)}</div>}
+      <button onClick={onClose} className="btn-primary w-full">Đóng</button>
+    </div>
+  )
+
+  return (
+    <div className="p-6 space-y-4">
+      <div className="flex items-center justify-between bg-surface-700 rounded-xl px-4 py-3">
+        <div><p className="text-sm font-medium text-text-primary">File mẫu Excel (Admin)</p><p className="text-xs text-text-muted">Hỗ trợ cả Student và Teacher</p></div>
+        <a href="/template_import_users.xlsx" download className="btn-ghost text-xs px-3 py-1.5 text-accent border border-accent/30 rounded-lg hover:bg-accent/10">⬇ Tải mẫu</a>
+      </div>
+      <div className="bg-surface-700/50 rounded-xl p-3">
+        <p className="text-xs text-text-muted font-medium mb-2 uppercase tracking-wider">Cột trong file Excel</p>
+        <div className="grid grid-cols-2 gap-1.5">
+          {[['A','Họ và tên *'],['B','Username'],['C','Mật khẩu'],['D','Email'],['E','Role (STUDENT/TEACHER)'],['F','Mã SV/GV'],['G','Lớp/Khoa']].map(([col,lbl])=>(
+            <div key={col} className="flex items-center gap-1.5"><span className="w-5 h-5 rounded bg-accent/20 text-accent text-xs font-mono font-bold flex items-center justify-center shrink-0">{col}</span><span className="text-xs text-text-muted">{lbl}</span></div>
+          ))}
+        </div>
+        <p className="text-xs text-text-muted mt-2 opacity-70">* bắt buộc · B,C để trống = tự sinh · E để trống = STUDENT</p>
+      </div>
+      <div onDragOver={e=>{e.preventDefault();setDragging(true)}} onDragLeave={()=>setDragging(false)} onDrop={e=>{e.preventDefault();setDragging(false);handleFile(e.dataTransfer.files[0])}} onClick={()=>inputRef.current?.click()}
+        className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${dragging?'border-accent bg-accent/10':'border-surface-500 hover:border-accent/50 hover:bg-surface-700/30'}`}>
+        <input ref={inputRef} type="file" accept=".xlsx" className="hidden" onChange={e=>handleFile(e.target.files[0])}/>
+        <div className="text-3xl mb-2">{file?'📊':'📁'}</div>
+        {file?<><p className="text-text-primary font-medium text-sm">{file.name}</p><p className="text-text-muted text-xs mt-1">{(file.size/1024).toFixed(1)} KB</p></>:<><p className="text-text-secondary text-sm">Kéo thả hoặc click để chọn</p><p className="text-text-muted text-xs mt-1">chỉ .xlsx</p></>}
+      </div>
+      {error && <div className="bg-red-accent/10 border border-red-accent/30 rounded-lg px-4 py-2.5"><p className="text-red-accent text-sm">⚠ {error}</p></div>}
+      <div className="flex gap-3">
+        <button onClick={onClose} className="btn-secondary flex-1">Hủy</button>
+        <button onClick={handleImport} disabled={!file||loading} className="btn-primary flex-1">
+          {loading?<span className="flex items-center justify-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Đang import...</span>:'⬆ Import người dùng'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+
 function CreateUserModal({ onClose, onCreated }) {
   const [form, setForm] = useState(emptyForm)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [modalTab, setModalTab] = useState('create')
 
   const f = (field) => (e) => setForm(p => ({ ...p, [field]: e.target.value }))
 
@@ -40,12 +111,7 @@ function CreateUserModal({ onClose, onCreated }) {
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-surface-600 shrink-0">
-          <div>
-            <h2 className="section-title">Tạo tài khoản mới</h2>
-            <p className="text-text-muted text-xs mt-0.5">
-              {isStudent ? 'Sinh viên' : isTeacher ? 'Giảng viên' : 'Quản trị viên'}
-            </p>
-          </div>
+          <h2 className="section-title">Thêm tài khoản</h2>
           <button onClick={onClose} className="btn-ghost p-1.5">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
@@ -53,6 +119,17 @@ function CreateUserModal({ onClose, onCreated }) {
           </button>
         </div>
 
+        {/* Tabs */}
+        <div className="flex border-b border-surface-600 shrink-0">
+          {[{key:'create',label:'✏️ Tạo thủ công'},{key:'import',label:'📊 Import Excel'}].map(t=>(
+            <button key={t.key} type="button" onClick={()=>setModalTab(t.key)}
+              className={`flex-1 py-2.5 text-sm font-medium transition-colors ${modalTab===t.key?'text-accent border-b-2 border-accent -mb-px':'text-text-muted hover:text-text-secondary'}`}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
+        {modalTab==='import' ? <TabImportAdmin onClose={onClose} onImported={()=>{onCreated();onClose()}}/> :
         <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4">
           {error && (
             <div className="px-3 py-2 rounded-lg bg-red-accent/10 border border-red-accent/30 text-red-accent text-sm">{error}</div>
@@ -91,8 +168,8 @@ function CreateUserModal({ onClose, onCreated }) {
           </div>
 
           <div>
-            <label className="label">Email *</label>
-            <input type="email" className="input-field" value={form.email} onChange={f('email')} required placeholder="vd: nguyenvana@email.com" />
+            <label className="label">Email <span className="text-text-muted font-normal">(tuỳ chọn)</span></label>
+            <input type="email" className="input-field" value={form.email} onChange={f('email')} placeholder="vd: nguyenvana@email.com" />
           </div>
 
           <div>
@@ -122,8 +199,10 @@ function CreateUserModal({ onClose, onCreated }) {
             </div>
           )}
         </form>
+        }
 
         {/* Footer */}
+        {modalTab !== 'import' && (
         <div className="flex gap-3 px-6 py-4 border-t border-surface-600 shrink-0">
           <button onClick={handleSubmit} disabled={saving} className="btn-primary flex-1">
             {saving ? (
@@ -135,6 +214,7 @@ function CreateUserModal({ onClose, onCreated }) {
           </button>
           <button type="button" onClick={onClose} className="btn-secondary">Hủy</button>
         </div>
+        )}
       </div>
     </div>
   )
@@ -148,6 +228,9 @@ export default function AdminUsers() {
   const [search, setSearch]     = useState('')
   const [deleting, setDeleting] = useState(null)
   const [showCreate, setShowCreate] = useState(false)
+  const [resetTarget, setResetTarget] = useState(null)  // user cần reset password
+  const [page, setPage] = useState(0)
+  const PAGE_SIZE = 15
   const [activeTab, setActiveTab]   = useState('ALL')
 
   const load = () => {
@@ -157,6 +240,7 @@ export default function AdminUsers() {
       .finally(() => setLoading(false))
   }
   useEffect(() => { load() }, [])
+  useEffect(() => { setPage(0) }, [activeTab, search])
 
   const handleDelete = async (id) => {
     if (!confirm('Bạn có chắc muốn xóa người dùng này?')) return
@@ -173,6 +257,8 @@ export default function AdminUsers() {
     u.fullName?.toLowerCase().includes(search.toLowerCase()) ||
     u.email?.toLowerCase().includes(search.toLowerCase())
   )
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+  const paginated = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
 
   const counts = {
     ALL:     users.length,
@@ -191,12 +277,18 @@ export default function AdminUsers() {
           <h1 className="page-title">Quản lý tài khoản</h1>
           <p className="text-text-secondary text-sm mt-1">{users.length} tài khoản trong hệ thống</p>
         </div>
-        <button onClick={() => setShowCreate(true)} className="btn-primary flex items-center gap-2">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
-          </svg>
-          Tạo tài khoản
-        </button>
+        <div className="flex gap-2">
+          {/* <button onClick={() => setShowImport(true)}
+            className="btn-ghost flex items-center gap-1.5 border border-surface-600 rounded-lg px-3 py-2 text-sm hover:border-accent hover:text-accent">
+            📊 Import Excel
+          </button> */}
+          <button onClick={() => setShowCreate(true)} className="btn-primary flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
+            </svg>
+            Tạo tài khoản
+          </button>
+        </div>
       </div>
 
       {/* Role tabs */}
@@ -251,11 +343,11 @@ export default function AdminUsers() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-700">
-                {filtered.map((u, idx) => {
+                {paginated.map((u, idx) => { const globalIdx = page * PAGE_SIZE + idx;
                   const code = u.studentProfile?.studentCode || u.teacherProfile?.teacherCode
                   return (
                     <tr key={u.id} className="hover:bg-surface-700/30 transition-colors">
-                      <td className="py-3 pr-4 text-xs text-text-muted font-mono">{idx + 1}</td>
+                      <td className="py-3 pr-4 text-xs text-text-muted font-mono">{globalIdx + 1}</td>
                       <td className="py-3 pr-4">
                         <div className="flex items-center gap-2.5">
                           <div className="w-7 h-7 rounded-full bg-accent/15 border border-accent/25 flex items-center justify-center shrink-0">
@@ -293,10 +385,16 @@ export default function AdminUsers() {
                         </span>
                       </td>
                       <td className="py-3">
-                        <button onClick={() => handleDelete(u.id)} disabled={deleting === u.id}
-                          className="btn-ghost text-red-accent/70 hover:text-red-accent hover:bg-red-accent/10 px-2 py-1 text-xs">
-                          {deleting === u.id ? '...' : 'Xóa'}
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => setResetTarget(u)}
+                            className="btn-ghost text-text-muted hover:text-accent hover:bg-accent/10 px-2 py-1 text-xs">
+                            🔑 Reset
+                          </button>
+                          <button onClick={() => handleDelete(u.id)} disabled={deleting === u.id}
+                            className="btn-ghost text-red-accent/70 hover:text-red-accent hover:bg-red-accent/10 px-2 py-1 text-xs">
+                            {deleting === u.id ? '...' : 'Xóa'}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )
@@ -312,11 +410,17 @@ export default function AdminUsers() {
         )}
 
         {filtered.length > 0 && (
-          <div className="mt-4 pt-3 border-t border-surface-700 text-xs text-text-muted">
-            Hiển thị {filtered.length} / {byTab.length} tài khoản
+          <div className="mt-4 pt-3 border-t border-surface-700 flex items-center justify-between">
+
+            {totalPages > 1 && (
+              <Pagination page={page} totalPages={totalPages} totalElements={filtered.length} size={PAGE_SIZE} onPageChange={p => setPage(p)} />
+            )}
           </div>
         )}
       </div>
+      {resetTarget && (
+        <ResetPasswordModal user={resetTarget} onClose={() => setResetTarget(null)} />
+      )}
     </div>
   )
 }

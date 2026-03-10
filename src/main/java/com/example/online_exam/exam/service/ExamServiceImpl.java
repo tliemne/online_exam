@@ -7,6 +7,7 @@ import com.example.online_exam.exam.entity.Exam;
 import com.example.online_exam.exam.entity.ExamQuestion;
 import com.example.online_exam.exam.enums.ExamStatus;
 import com.example.online_exam.exam.repository.ExamQuestionRepository;
+import com.example.online_exam.attempt.repository.AttemptRepository;
 import com.example.online_exam.exam.repository.ExamRepository;
 import com.example.online_exam.exception.AppException;
 import com.example.online_exam.exception.ErrorCode;
@@ -36,6 +37,7 @@ public class ExamServiceImpl implements ExamService {
     private final QuestionRepository     questionRepo;
     private final UserRepository         userRepo;
     private final CurrentUserService     currentUserService;
+    private final AttemptRepository     attemptRepo;
 
     // ── Create ────────────────────────────────────────────
     @Override
@@ -169,7 +171,13 @@ public class ExamServiceImpl implements ExamService {
     @Transactional(readOnly = true)
     public List<ExamResponse> getForStudent(Long studentId) {
         return examRepo.findPublishedForStudent(studentId).stream()
-                .map(e -> toResponse(e, false, false)).collect(Collectors.toList());
+                .map(e -> {
+                    ExamResponse r = toResponse(e, false, false);
+                    long cnt = attemptRepo.countByExamIdAndStudentId(e.getId(), studentId);
+                    r.setMyAttemptCount((int) cnt);
+                    return r;
+                })
+                .collect(Collectors.toList());
     }
 
     // ── Manage questions ──────────────────────────────────

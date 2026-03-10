@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import CreateStudentModal from '../../components/common/CreateStudentModal'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { courseApi, userApi, lectureApi } from '../../api/services'
 import { useAuth } from '../../context/AuthContext'
@@ -250,6 +251,7 @@ function TabStudents({ course, isTeacher, onRefresh }) {
   const [students, setStudents] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
+  const [showCreateStudent, setShowCreateStudent] = useState(false)
   const [removing, setRemoving] = useState(null)
   const [search, setSearch] = useState('')
 
@@ -279,6 +281,14 @@ function TabStudents({ course, isTeacher, onRefresh }) {
 
   return (
     <div className="space-y-4">
+      {showCreateStudent && (
+        <CreateStudentModal
+          courseId={course.id}
+          courseName={course?.name}
+          onClose={() => setShowCreateStudent(false)}
+          onCreated={load}
+        />
+      )}
       {showAdd && (
         <AddStudentModal
           courseId={course.id}
@@ -295,9 +305,15 @@ function TabStudents({ course, isTeacher, onRefresh }) {
             value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         {isTeacher && (
-          <button onClick={() => setShowAdd(true)} className="btn-primary flex items-center gap-2 shrink-0">
-            {Icon.plus} Thêm sinh viên
-          </button>
+          <div className="flex gap-2 shrink-0">
+            <button onClick={() => setShowCreateStudent(true)}
+              className="btn-secondary flex items-center gap-1.5 text-sm">
+              ✚ Tạo tài khoản
+            </button>
+            <button onClick={() => setShowAdd(true)} className="btn-primary flex items-center gap-2">
+              {Icon.plus} Thêm sinh viên có sẵn
+            </button>
+          </div>
         )}
       </div>
 
@@ -310,7 +326,10 @@ function TabStudents({ course, isTeacher, onRefresh }) {
           <div className="text-3xl mb-3">👥</div>
           <p className="text-text-secondary text-sm">{search ? 'Không tìm thấy' : 'Chưa có sinh viên nào trong lớp'}</p>
           {isTeacher && !search && (
-            <button onClick={() => setShowAdd(true)} className="btn-primary mt-4">{Icon.plus} Thêm sinh viên</button>
+            <div className="flex gap-2 justify-center mt-4">
+              <button onClick={() => setShowCreateStudent(true)} className="btn-secondary text-sm">✚ Tạo tài khoản</button>
+              <button onClick={() => setShowAdd(true)} className="btn-primary">{Icon.plus} Thêm sinh viên có sẵn</button>
+            </div>
           )}
         </div>
       ) : (
@@ -544,6 +563,7 @@ const STUDENT_TABS = [
 ]
 
 export default function CourseDetailPage() {
+  const { id: courseId } = useParams ? useParams() : {}
   const { id } = useParams()
   const navigate = useNavigate()
   const { hasRole } = useAuth()

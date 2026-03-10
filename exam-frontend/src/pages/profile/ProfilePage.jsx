@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { userApi } from '../../api/services'
 import { useAuth } from '../../context/AuthContext'
+import ChangePasswordModal from '../../components/common/ChangePasswordModal'
 
 export default function ProfilePage() {
   const { user, hasRole } = useAuth()
@@ -11,14 +12,17 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
+  const [showChangePwd, setShowChangePwd] = useState(false)
 
   useEffect(() => {
     userApi.myProfile()
       .then(r => {
         setProfile(r.data.data)
         const p = r.data.data
-        if (p.studentProfile) setForm(p.studentProfile)
-        if (p.teacherProfile) setForm(p.teacherProfile)
+        const base = { email: p.account?.email || '' }
+        if (p.studentProfile) setForm({ ...base, ...p.studentProfile })
+        else if (p.teacherProfile) setForm({ ...base, ...p.teacherProfile })
+        else setForm(base)
       })
       .finally(() => setLoading(false))
   }, [])
@@ -37,8 +41,10 @@ export default function ProfilePage() {
       const r = await userApi.myProfile()
       setProfile(r.data.data)
       const p = r.data.data
-      if (p.studentProfile) setForm(p.studentProfile)
-      if (p.teacherProfile) setForm(p.teacherProfile)
+      const base = { email: p.account?.email || '' }
+      if (p.studentProfile) setForm({ ...base, ...p.studentProfile })
+      else if (p.teacherProfile) setForm({ ...base, ...p.teacherProfile })
+      else setForm(base)
       setSuccess(true)
       setEditing(false)
       setTimeout(() => setSuccess(false), 3000)
@@ -112,9 +118,15 @@ export default function ProfilePage() {
               {hasRole('STUDENT') ? 'Thông tin sinh viên' : 'Thông tin giảng viên'}
             </h2>
             {!editing && (
-              <button onClick={() => setEditing(true)} className="btn-secondary text-sm py-1.5">
-                Chỉnh sửa
-              </button>
+              <div className="flex gap-2">
+                <button onClick={() => setShowChangePwd(true)}
+                  className="btn-ghost text-sm py-1.5 px-3 text-text-muted hover:text-accent border border-surface-600 rounded-lg">
+                  🔑 Đổi mật khẩu
+                </button>
+                <button onClick={() => setEditing(true)} className="btn-secondary text-sm py-1.5">
+                  Chỉnh sửa
+                </button>
+              </div>
             )}
           </div>
 
@@ -138,6 +150,12 @@ export default function ProfilePage() {
             </div>
           ) : (
             <form onSubmit={handleSave} className="space-y-4">
+              <div>
+                <label className="label">Email *</label>
+                <input type="email" className="input-field" value={form.email || ''}
+                  onChange={e => setForm({...form, email: e.target.value})}
+                  placeholder="example@gmail.com" required />
+              </div>
               {hasRole('STUDENT') ? (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -199,6 +217,9 @@ export default function ProfilePage() {
             </form>
           )}
         </div>
+      )}
+      {showChangePwd && (
+        <ChangePasswordModal onClose={() => setShowChangePwd(false)} />
       )}
     </div>
   )

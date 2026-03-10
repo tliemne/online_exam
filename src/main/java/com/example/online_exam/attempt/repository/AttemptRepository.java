@@ -3,6 +3,9 @@ package com.example.online_exam.attempt.repository;
 import com.example.online_exam.attempt.entity.Attempt;
 import com.example.online_exam.attempt.enums.AttemptStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -33,5 +36,14 @@ public interface AttemptRepository extends JpaRepository<Attempt, Long> {
     List<Attempt> findSubmittedByStudent(@Param("studentId") Long studentId);
 
     // Xóa toàn bộ bài thi của 1 student (dùng khi xóa tài khoản)
-    void deleteByStudentId(Long studentId);
+    @Modifying
+    @Query("DELETE FROM Attempt a WHERE a.student.id = :studentId")
+    void deleteByStudentId(@Param("studentId") Long studentId);
+    @Modifying
+    @Query("DELETE FROM Attempt a WHERE a.exam.id = :examId")
+    void deleteByExamId(@Param("examId") Long examId);
+
+    @Modifying
+    @Query(value = "DELETE a FROM attempts a JOIN exams e ON e.id = a.exam_id WHERE e.created_by = :userId", nativeQuery = true)
+    void deleteByExamCreatedById(@Param("userId") Long userId);
 }
