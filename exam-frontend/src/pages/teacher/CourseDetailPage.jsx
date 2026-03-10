@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import CreateStudentModal from '../../components/common/CreateStudentModal'
+import ResetPasswordModal from '../../components/common/ResetPasswordModal'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { courseApi, userApi, lectureApi } from '../../api/services'
 import { useAuth } from '../../context/AuthContext'
@@ -195,17 +196,17 @@ function AddLectureModal({ onClose, onSaved, lecture }) {
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
           <div>
-            <label className="label">Tiêu đề *</label>
+            <label className="input-label">Tiêu đề *</label>
             <input className="input-field" value={form.title} onChange={f('title')}
               placeholder="vd: Bài 1 — Giới thiệu Java" required />
           </div>
           <div>
-            <label className="label">Mô tả</label>
+            <label className="input-label">Mô tả</label>
             <textarea className="input-field resize-none" rows={2} value={form.description}
               onChange={f('description')} placeholder="Mô tả ngắn về nội dung bài giảng..." />
           </div>
           <div>
-            <label className="label">Link video</label>
+            <label className="input-label">Link video</label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">{Icon.link}</span>
               <input className="input-field pl-9" value={form.videoUrl} onChange={f('videoUrl')}
@@ -214,7 +215,7 @@ function AddLectureModal({ onClose, onSaved, lecture }) {
             {form.videoUrl && (
               <p className={`text-xs mt-1.5 flex items-center gap-1 ${isYoutube ? 'text-red-400' : isDrive ? 'text-blue-400' : 'text-text-muted'}`}>
                 {isYoutube ? <>{Icon.youtube} YouTube detected</>
-                  : isDrive ? '📁 Google Drive detected'
+                  : isDrive ? 'Google Drive detected'
                   : '🔗 Link thường'}
               </p>
             )}
@@ -229,7 +230,7 @@ function AddLectureModal({ onClose, onSaved, lecture }) {
           )}
 
           <div>
-            <label className="label">Thứ tự</label>
+            <label className="input-label">Thứ tự</label>
             <input type="number" min={1} className="input-field w-24" value={form.order}
               onChange={f('order')} />
           </div>
@@ -253,6 +254,7 @@ function TabStudents({ course, isTeacher, onRefresh }) {
   const [showAdd, setShowAdd] = useState(false)
   const [showCreateStudent, setShowCreateStudent] = useState(false)
   const [removing, setRemoving] = useState(null)
+  const [resetTarget, setResetTarget] = useState(null)
   const [search, setSearch] = useState('')
 
   const load = useCallback(() => {
@@ -323,7 +325,7 @@ function TabStudents({ course, isTeacher, onRefresh }) {
         </div>
       ) : filtered.length === 0 ? (
         <div className="card text-center py-12">
-          <div className="text-3xl mb-3">👥</div>
+          
           <p className="text-text-secondary text-sm">{search ? 'Không tìm thấy' : 'Chưa có sinh viên nào trong lớp'}</p>
           {isTeacher && !search && (
             <div className="flex gap-2 justify-center mt-4">
@@ -333,7 +335,7 @@ function TabStudents({ course, isTeacher, onRefresh }) {
           )}
         </div>
       ) : (
-        <div className="card p-0 overflow-hidden">
+        <div className="card-bare">
           <table className="w-full">
             <thead>
               <tr className="border-b border-surface-600 bg-surface-700">
@@ -342,17 +344,17 @@ function TabStudents({ course, isTeacher, onRefresh }) {
                 <th className="text-left text-xs text-text-muted uppercase tracking-wider px-5 py-3 font-mono">Mã SV</th>
                 <th className="text-left text-xs text-text-muted uppercase tracking-wider px-5 py-3 font-mono">Email</th>
                 <th className="text-left text-xs text-text-muted uppercase tracking-wider px-5 py-3 font-mono">Lớp</th>
-                {isTeacher && <th className="px-5 py-3"/>}
+                {isTeacher && <th className="px-6 py-3.5"/>}
               </tr>
             </thead>
             <tbody className="divide-y divide-surface-700">
               {filtered.map((s, idx) => (
                 <tr key={s.id} className="hover:bg-surface-700/40 transition-colors">
-                  <td className="px-5 py-3.5 text-xs text-text-muted font-mono">{idx + 1}</td>
-                  <td className="px-5 py-3.5">
+                  <td className="px-6 py-4.5 text-xs text-text-muted font-mono">{idx + 1}</td>
+                  <td className="px-6 py-4.5">
                     <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-full bg-green-accent/15 border border-green-accent/25 flex items-center justify-center shrink-0">
-                        <span className="text-green-accent text-xs font-bold">
+                      <div className="w-8 h-8 rounded-full bg-success/15 border border-success/25 flex items-center justify-center shrink-0">
+                        <span className="text-success text-xs font-bold">
                           {s.fullName?.[0]?.toUpperCase() || s.username?.[0]?.toUpperCase()}
                         </span>
                       </div>
@@ -362,21 +364,28 @@ function TabStudents({ course, isTeacher, onRefresh }) {
                       </div>
                     </div>
                   </td>
-                  <td className="px-5 py-3.5">
+                  <td className="px-6 py-4.5">
                     {s.studentCode
                       ? <span className="text-xs font-mono bg-surface-700 border border-surface-500 px-2 py-0.5 rounded">{s.studentCode}</span>
                       : <span className="text-text-muted text-xs">—</span>}
                   </td>
-                  <td className="px-5 py-3.5 text-sm text-text-secondary">{s.email || '—'}</td>
-                  <td className="px-5 py-3.5 text-sm text-text-secondary">{s.className || '—'}</td>
+                  <td className="px-6 py-4.5 text-sm text-text-secondary">{s.email || '—'}</td>
+                  <td className="px-6 py-4.5 text-sm text-text-secondary">{s.className || '—'}</td>
                   {isTeacher && (
-                    <td className="px-5 py-3.5">
-                      <button onClick={() => handleRemove(s.id)} disabled={removing === s.id}
-                        className="btn-ghost p-1.5 text-text-muted hover:text-red-accent hover:bg-red-accent/10">
-                        {removing === s.id
-                          ? <span className="w-4 h-4 border border-red-accent border-t-transparent rounded-full animate-spin block"/>
-                          : Icon.trash}
-                      </button>
+                    <td className="px-6 py-4.5">
+                      <div className="flex items-center gap-1">
+                        <button onClick={() => setResetTarget(s)}
+                          className="btn-ghost p-1.5 text-text-muted hover:text-yellow-400 hover:bg-yellow-400/10"
+                          title="Reset mật khẩu">
+                          
+                        </button>
+                        <button onClick={() => handleRemove(s.id)} disabled={removing === s.id}
+                          className="btn-ghost p-1.5 text-text-muted hover:text-danger hover:bg-danger/10">
+                          {removing === s.id
+                            ? <span className="w-4 h-4 border border-danger border-t-transparent rounded-full animate-spin block"/>
+                            : Icon.trash}
+                        </button>
+                      </div>
                     </td>
                   )}
                 </tr>
@@ -387,6 +396,9 @@ function TabStudents({ course, isTeacher, onRefresh }) {
             {filtered.length} sinh viên
           </div>
         </div>
+      )}
+      {resetTarget && (
+        <ResetPasswordModal user={resetTarget} onClose={() => setResetTarget(null)} />
       )}
     </div>
   )
@@ -458,19 +470,19 @@ function TabLectures({ course, isTeacher }) {
 
       {sorted.length === 0 ? (
         <div className="card text-center py-12">
-          <div className="text-3xl mb-3">🎬</div>
+          
           <p className="text-text-secondary text-sm">Chưa có bài giảng nào</p>
           {isTeacher && (
             <button onClick={() => setShowAdd(true)} className="btn-primary mt-4">{Icon.plus} Thêm bài giảng</button>
           )}
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {sorted.map((l, idx) => {
             const embedUrl = getEmbedUrl(l.videoUrl)
             const isPlaying = playing === l.id
             return (
-              <div key={l.id} className="card p-0 overflow-hidden">
+              <div key={l.id} className="card-bare">
                 <div className="flex items-start gap-4 p-4">
                   {/* Order badge */}
                   <div className="w-8 h-8 rounded-lg bg-accent/15 border border-accent/25 flex items-center justify-center shrink-0 mt-0.5">
@@ -484,7 +496,7 @@ function TabLectures({ course, isTeacher }) {
                       <div className="flex items-center gap-1.5 mt-1.5">
                         <span className="text-xs text-text-muted">{Icon.link}</span>
                         <span className="text-xs text-accent truncate max-w-xs">
-                          {l.videoUrl.includes('youtube') ? '▶ YouTube' : l.videoUrl.includes('drive') ? '📁 Google Drive' : l.videoUrl}
+                          {l.videoUrl.includes('youtube') ? 'YouTube' : l.videoUrl.includes('drive') ? 'Google Drive' : l.videoUrl}
                         </span>
                       </div>
                     )}
@@ -494,7 +506,7 @@ function TabLectures({ course, isTeacher }) {
                     {embedUrl && (
                       <button onClick={() => setPlaying(isPlaying ? null : l.id)}
                         className={`btn-ghost px-3 py-1.5 text-xs font-medium ${isPlaying ? 'text-accent' : ''}`}>
-                        {isPlaying ? '⏹ Ẩn' : '▶ Xem'}
+                        {isPlaying ? 'Ẩn' : 'Xem'}
                       </button>
                     )}
                     {isTeacher && (
@@ -502,7 +514,7 @@ function TabLectures({ course, isTeacher }) {
                         <button onClick={() => setEditing(l)} className="btn-ghost p-1.5 text-text-muted hover:text-accent">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/></svg>
                         </button>
-                        <button onClick={() => handleDelete(l.id)} className="btn-ghost p-1.5 text-text-muted hover:text-red-accent hover:bg-red-accent/10">
+                        <button onClick={() => handleDelete(l.id)} className="btn-ghost p-1.5 text-text-muted hover:text-danger hover:bg-danger/10">
                           {Icon.trash}
                         </button>
                       </>
@@ -552,14 +564,14 @@ function TabExams({ course, isTeacher }) {
 
 // ── MAIN PAGE ─────────────────────────────────────────────
 const TEACHER_TABS = [
-  { key: 'students', label: 'Sinh viên',  icon: '👥' },
-  { key: 'lectures', label: 'Bài giảng',  icon: '🎬' },
-  { key: 'exams',    label: 'Đề thi',     icon: '📝' },
+  { key: 'students', label: 'Sinh viên'  },
+  { key: 'lectures', label: 'Bài giảng'  },
+  { key: 'exams',    label: 'Đề thi'     },
 ]
 
 const STUDENT_TABS = [
-  { key: 'lectures', label: 'Bài giảng',  icon: '🎬' },
-  { key: 'exams',    label: 'Đề thi',     icon: '📝' },
+  { key: 'lectures', label: 'Bài giảng' },
+  { key: 'exams',    label: 'Đề thi'    },
 ]
 
 export default function CourseDetailPage() {
@@ -608,8 +620,8 @@ export default function CourseDetailPage() {
 
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-accent/15 border border-accent/25 flex items-center justify-center shrink-0">
-              <span className="text-accent text-lg font-bold font-display">
+            <div className="w-12 h-12 rounded-xl bg-surface-600 border border-surface-500 flex items-center justify-center shrink-0">
+              <span className="text-text-primary text-base font-semibold">
                 {course.name?.[0]?.toUpperCase()}
               </span>
             </div>
@@ -618,10 +630,10 @@ export default function CourseDetailPage() {
               {course.description && (
                 <p className="text-text-secondary text-sm mt-1">{course.description}</p>
               )}
-              <div className="flex items-center gap-3 mt-2 text-xs text-text-muted">
-                <span>👨‍🏫 {course.teacherName || 'Chưa có giảng viên'}</span>
+              <div className="flex items-center gap-3 mt-2.5 text-sm text-text-muted">
+                <span>Giáo viên: {course.teacherName || 'Chưa có giảng viên'}</span>
                 <span>·</span>
-                <span>👥 {course.studentCount ?? 0} sinh viên</span>
+                <span>{course.studentCount ?? 0} Sinh viên</span>
               </div>
             </div>
           </div>
@@ -629,15 +641,14 @@ export default function CourseDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-surface-700">
+      <div className="flex gap-1 border-b border-surface-700 -mx-1">
         {TABS.map(t => (
           <button key={t.key} onClick={() => setTab(t.key)}
-            className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors -mb-px ${
+            className={`flex items-center gap-2 px-5 py-3.5 text-sm font-medium border-b-2 transition-colors -mb-px ${
               tab === t.key
                 ? 'border-accent text-accent'
                 : 'border-transparent text-text-muted hover:text-text-secondary'
             }`}>
-            <span>{t.icon}</span>
             {t.label}
           </button>
         ))}

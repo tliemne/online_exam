@@ -1,3 +1,4 @@
+import DateTimePicker from '../../components/common/DateTimePicker'
 import { useState, useEffect, useCallback } from 'react'
 import { examApi, courseApi, questionApi } from '../../api/services'
 import { useAuth } from '../../context/AuthContext'
@@ -20,9 +21,9 @@ const Icon = {
 
 // ── Helpers ───────────────────────────────────────────────
 const STATUS_META = {
-  DRAFT:     { label: 'Nháp',       cls: 'badge-muted',  dot: 'bg-text-muted' },
-  PUBLISHED: { label: 'Đã xuất bản', cls: 'badge-green',  dot: 'bg-green-accent' },
-  CLOSED:    { label: 'Đã đóng',    cls: 'badge-red',    dot: 'bg-red-accent' },
+  DRAFT:     { label: 'Nháp',       cls: 'badge-neutral',  dot: 'bg-text-muted' },
+  PUBLISHED: { label: 'Đã xuất bản', cls: 'badge-green',  dot: 'bg-success' },
+  CLOSED:    { label: 'Đã đóng',    cls: 'badge-red',    dot: 'bg-danger' },
 }
 
 function StatusBadge({ status }) {
@@ -39,7 +40,7 @@ function StatusBadge({ status }) {
 function Modal({ title, onClose, children, wide }) {
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className={`bg-surface-800 border border-surface-600 rounded-2xl w-full shadow-xl animate-slide-up flex flex-col max-h-[90vh] ${wide ? 'max-w-2xl' : 'max-w-lg'}`}>
+      <div className={`bg-surface-800 border border-surface-600 rounded-xl w-full shadow-modal animate-slide-up flex flex-col max-h-[90vh] ${wide ? 'max-w-2xl' : 'max-w-lg'}`}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-surface-600 shrink-0">
           <h2 className="section-title">{title}</h2>
           <button onClick={onClose} className="btn-ghost p-1.5">{Icon.x}</button>
@@ -108,26 +109,26 @@ function ExamFormModal({ exam, courses, onClose, onSaved }) {
   return (
     <Modal title={exam ? 'Sửa đề thi' : 'Tạo đề thi mới'} onClose={onClose} wide>
       {error && (
-        <div className="mx-6 mt-4 px-4 py-3 rounded-lg bg-red-accent/10 border border-red-accent/30 text-red-accent text-sm">{error}</div>
+        <div className="mx-7 mt-4 px-4 py-3 rounded-lg bg-danger/10 border border-danger/30 text-danger text-sm">{error}</div>
       )}
-      <form onSubmit={handleSubmit} className="p-6 space-y-5">
+      <form onSubmit={handleSubmit} className="p-7 space-y-5">
         {/* Tên đề thi */}
         <div>
-          <label className="label">Tên đề thi <span className="text-red-accent">*</span></label>
+          <label className="input-label">Tên đề thi <span className="text-danger">*</span></label>
           <input className="input-field" placeholder="Kiểm tra giữa kỳ..." value={form.title}
             onChange={f('title')} required autoFocus />
         </div>
 
         {/* Mô tả */}
         <div>
-          <label className="label">Mô tả</label>
+          <label className="input-label">Mô tả</label>
           <textarea className="input-field resize-none" rows={2} placeholder="Ghi chú cho sinh viên..."
             value={form.description} onChange={f('description')} />
         </div>
 
         {/* Lớp học */}
         <div>
-          <label className="label">Lớp học <span className="text-red-accent">*</span></label>
+          <label className="input-label">Lớp học <span className="text-danger">*</span></label>
           <select className="input-field" value={form.courseId} onChange={f('courseId')} required>
             <option value="">-- Chọn lớp --</option>
             {courses.map(c => (
@@ -139,12 +140,12 @@ function ExamFormModal({ exam, courses, onClose, onSaved }) {
         {/* Thời gian làm bài + Số lần thi */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="label">Thời gian (phút) <span className="text-red-accent">*</span></label>
+            <label className="input-label">Thời gian (phút) <span className="text-danger">*</span></label>
             <input className="input-field" type="number" min={1} max={300}
               value={form.duration} onChange={f('duration')} required />
           </div>
           <div>
-            <label className="label">Số lần thi tối đa</label>
+            <label className="input-label">Số lần thi tối đa</label>
             <input className="input-field" type="number" min={1} max={10}
               value={form.maxAttempts} onChange={f('maxAttempts')} />
           </div>
@@ -153,14 +154,10 @@ function ExamFormModal({ exam, courses, onClose, onSaved }) {
         {/* Thời gian mở / đóng */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="label">Mở thi từ</label>
-            <input className="input-field" type="datetime-local"
-              value={form.startTime} onChange={f('startTime')} />
+            <DateTimePicker label="Mở thi từ" value={form.startTime} onChange={f('startTime')} />
           </div>
           <div>
-            <label className="label">Đóng thi lúc</label>
-            <input className="input-field" type="datetime-local"
-              value={form.endTime} onChange={f('endTime')} />
+          <DateTimePicker label="Đóng thi lúc" value={form.endTime} onChange={f('endTime')} />
           </div>
         </div>
 
@@ -182,7 +179,7 @@ function ExamFormModal({ exam, courses, onClose, onSaved }) {
           </label>
         </div>
 
-        <div className="flex gap-3 pt-2 border-t border-surface-600">
+        <div className="flex gap-3 px-7 py-4 border-t border-surface-600">
           <button type="submit" disabled={saving} className="btn-primary flex-1">
             {saving ? 'Đang lưu...' : exam ? 'Lưu thay đổi' : 'Tạo đề thi'}
           </button>
@@ -225,7 +222,7 @@ function AddQuestionsModal({ exam, onClose, onSaved }) {
 
   const DIFF_META = {
     EASY:   { label: 'Dễ',    cls: 'badge-green' },
-    MEDIUM: { label: 'TB',    cls: 'badge-accent' },
+    MEDIUM: { label: 'TB',    cls: 'badge-blue' },
     HARD:   { label: 'Khó',   cls: 'badge-red' },
   }
   const TYPE_META = {
@@ -284,7 +281,7 @@ function AddQuestionsModal({ exam, onClose, onSaved }) {
 
   return (
     <Modal title="Chọn câu hỏi cho đề thi" onClose={onClose} wide>
-      <div className="p-6 space-y-4">
+      <div className="p-7 space-y-5">
         {/* Toolbar */}
         <div className="flex gap-3">
           <div className="relative flex-1">
@@ -339,7 +336,7 @@ function AddQuestionsModal({ exam, onClose, onSaved }) {
                   <div className="flex gap-2 mt-1.5">
                     <span className="text-xs text-text-muted">{TYPE_META[q.type] || q.type}</span>
                     {q.difficulty && (
-                      <span className={`text-xs ${DIFF_META[q.difficulty]?.cls || 'badge-muted'}`}>
+                      <span className={`text-xs ${DIFF_META[q.difficulty]?.cls || 'badge-neutral'}`}>
                         {DIFF_META[q.difficulty]?.label || q.difficulty}
                       </span>
                     )}
@@ -350,7 +347,7 @@ function AddQuestionsModal({ exam, onClose, onSaved }) {
           </div>
         )}
 
-        <div className="flex gap-3 pt-2 border-t border-surface-600">
+        <div className="flex gap-3 px-7 py-4 border-t border-surface-600">
           <button onClick={handleSave} disabled={saving || selected.size === 0} className="btn-primary flex-1">
             {saving ? 'Đang lưu...' : `Lưu ${selected.size} câu hỏi`}
           </button>
@@ -368,7 +365,7 @@ function ExamCard({ exam, onEdit, onDelete, onPublish, onClose, onManageQuestion
   const isPublished = exam.status === 'PUBLISHED'
 
   return (
-    <div className="card flex flex-col gap-4 hover:border-accent/30 transition-all duration-200">
+    <div className="card flex flex-col gap-5 hover:border-surface-500 transition-all duration-200">
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
@@ -384,7 +381,9 @@ function ExamCard({ exam, onEdit, onDelete, onPublish, onClose, onManageQuestion
           )}
         </div>
         <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
-          <span className="text-lg">📝</span>
+          <span className="text-accent font-semibold text-sm">
+            {exam.title?.charAt(0).toUpperCase()}
+          </span>
         </div>
       </div>
 
@@ -439,12 +438,12 @@ function ExamCard({ exam, onEdit, onDelete, onPublish, onClose, onManageQuestion
         {(isDraft || exam.status === 'CLOSED') && (
         <button onClick={() => onPublish(exam)}
             title={exam.status === 'CLOSED' ? 'Mở lại đề thi' : 'Xuất bản đề thi'}
-            className="btn-ghost px-2.5 py-1.5 text-green-accent hover:bg-green-accent/10">
+            className="btn-ghost px-2.5 py-1.5 text-success hover:bg-success/10">
             {Icon.send}
         </button>
         )}
         {isPublished && (
-          <span className="flex items-center px-2.5 py-1.5 text-green-accent text-xs">
+          <span className="flex items-center px-2.5 py-1.5 text-success text-xs">
             {Icon.check}
           </span>
         )}
@@ -454,7 +453,7 @@ function ExamCard({ exam, onEdit, onDelete, onPublish, onClose, onManageQuestion
           {Icon.edit}
         </button>
         <button onClick={() => onDelete(exam)}
-          className="btn-ghost px-2.5 py-1.5 text-text-secondary hover:text-red-accent hover:bg-red-accent/10">
+          className="btn-ghost px-2.5 py-1.5 text-text-secondary hover:text-danger hover:bg-danger/10">
           {Icon.trash}
         </button>
       </div>
@@ -576,9 +575,9 @@ export default function ExamsPage() {
 
       {/* Backend warning */}
       {!backendReady && (
-        <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-amber-accent/10 border border-amber-accent/25">
-          <span className="text-amber-accent shrink-0 mt-0.5">{Icon.warn}</span>
-          <p className="text-amber-accent text-sm">
+        <div className="flex items-start gap-3 px-5 py-3.5 rounded-xl bg-warning/10 border border-warning/20">
+          <span className="text-warning shrink-0 mt-0.5">{Icon.warn}</span>
+          <p className="text-warning text-sm">
             <span className="font-semibold">Backend Exam chưa sẵn sàng</span> — đang hiển thị dữ liệu mẫu.
             Khi backend hoàn thiện, dữ liệu thật sẽ tự động hiển thị.
           </p>
@@ -589,10 +588,10 @@ export default function ExamsPage() {
       <div className="grid grid-cols-3 gap-4">
         {[
           { label: 'Tổng đề thi', value: stats.total, color: 'text-accent' },
-          { label: 'Đã xuất bản', value: stats.published, color: 'text-green-accent' },
+          { label: 'Đã xuất bản', value: stats.published, color: 'text-success' },
           { label: 'Đang soạn', value: stats.draft, color: 'text-text-muted' },
         ].map(s => (
-          <div key={s.label} className="card py-4 text-center">
+          <div key={s.label} className="card-bare py-5 px-4 text-center">
             <div className={`text-2xl font-display font-bold ${s.color}`}>{s.value}</div>
             <div className="text-text-muted text-xs mt-1">{s.label}</div>
           </div>
@@ -631,7 +630,7 @@ export default function ExamsPage() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="card text-center py-16">
-          <div className="text-4xl mb-3">📝</div>
+          
           <p className="text-text-secondary">
             {exams.length === 0 ? 'Chưa có đề thi nào. Hãy tạo đề thi đầu tiên!' : 'Không tìm thấy đề thi phù hợp'}
           </p>

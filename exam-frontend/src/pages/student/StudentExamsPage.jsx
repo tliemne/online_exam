@@ -27,12 +27,12 @@ function ResultHistoryModal({ exam, onClose }) {
       .finally(() => setLoading(false))
   }, [exam.id])
 
-  const statusColor = (s) => s === 'GRADED' ? 'text-green-accent' : 'text-yellow-400'
+  const statusColor = (s) => s === 'GRADED' ? 'text-success' : 'text-warning'
   const statusLabel = (s) => s === 'GRADED' ? 'Đã chấm' : s === 'SUBMITTED' ? 'Chờ chấm' : 'Đang làm'
 
   if (detail) return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-surface-800 border border-surface-600 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+      <div className="bg-surface-800 border border-surface-600 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-modal">
         <div className="flex items-center justify-between px-6 py-4 border-b border-surface-700">
           <div>
             <h3 className="font-semibold text-text-primary">Chi tiết bài làm</h3>
@@ -45,14 +45,14 @@ function ResultHistoryModal({ exam, onClose }) {
           <div className="bg-surface-700 rounded-xl p-4 flex items-center justify-between">
             <div>
               <p className="text-xs text-text-muted mb-1">Điểm số</p>
-              <p className={`text-3xl font-bold ${detail.passed ? 'text-green-accent' : 'text-red-accent'}`}>
+              <p className={`text-2xl font-bold ${detail.passed ? 'text-success' : 'text-danger'}`}>
                 {detail.score != null ? `${detail.score}/${detail.totalScore}` : 'Chờ chấm'}
               </p>
             </div>
             <div className="text-right">
               <p className="text-xs text-text-muted mb-1">Kết quả</p>
-              <p className={`text-sm font-semibold ${detail.passed ? 'text-green-accent' : detail.passed === false ? 'text-red-accent' : 'text-yellow-400'}`}>
-                {detail.passed == null ? '—' : detail.passed ? '✓ Đạt' : '✗ Chưa đạt'}
+              <p className={`text-sm font-semibold ${detail.passed ? 'text-success' : detail.passed === false ? 'text-danger' : 'text-warning'}`}>
+                {detail.passed == null ? '—' : detail.passed ? 'Đạt' : 'Chưa đạt'}
               </p>
             </div>
             <div className="text-right">
@@ -64,8 +64,8 @@ function ResultHistoryModal({ exam, onClose }) {
           {/* Answer details */}
           {(detail.answers || []).map((a, i) => (
             <div key={a.id} className={`border rounded-xl p-4 ${
-              a.isCorrect === true  ? 'border-green-accent/30 bg-green-accent/5'
-              : a.isCorrect === false ? 'border-red-accent/30 bg-red-accent/5'
+              a.isCorrect === true  ? 'border-success/30 bg-success/5'
+              : a.isCorrect === false ? 'border-danger/30 bg-danger/5'
               : 'border-surface-600 bg-surface-700/30'
             }`}>
               <div className="flex items-center gap-2 mb-2">
@@ -74,8 +74,8 @@ function ResultHistoryModal({ exam, onClose }) {
                   a.questionType === 'MULTIPLE_CHOICE' ? 'Trắc nghiệm'
                   : a.questionType === 'TRUE_FALSE' ? 'Đúng/Sai' : 'Tự luận'
                 }</span>
-                <span className={`ml-auto text-xs font-medium ${a.isCorrect === true ? 'text-green-accent' : a.isCorrect === false ? 'text-red-accent' : 'text-yellow-400'}`}>
-                  {a.isCorrect === true ? '✓ Đúng' : a.isCorrect === false ? '✗ Sai' : '○ Chờ chấm'}
+                <span className={`ml-auto text-xs font-medium ${a.isCorrect === true ? 'text-success' : a.isCorrect === false ? 'text-danger' : 'text-warning'}`}>
+                  {a.isCorrect === true ? 'Đúng' : a.isCorrect === false ? 'Sai' : 'Chờ chấm'}
                   {a.score != null ? ` · ${a.score}đ` : ''}
                 </span>
               </div>
@@ -87,7 +87,7 @@ function ResultHistoryModal({ exam, onClose }) {
                 <p className="text-xs text-text-muted">Câu trả lời: <span className="text-text-secondary">{a.textAnswer}</span></p>
               )}
               {a.correctAnswerContent && a.isCorrect === false && (
-                <p className="text-xs text-green-accent mt-1">Đáp án đúng: {a.correctAnswerContent}</p>
+                <p className="text-xs text-success mt-1">Đáp án đúng: {a.correctAnswerContent}</p>
               )}
               {a.teacherComment && (
                 <p className="text-xs text-accent mt-1 italic">💬 GV: {a.teacherComment}</p>
@@ -101,7 +101,7 @@ function ResultHistoryModal({ exam, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-surface-800 border border-surface-600 rounded-2xl w-full max-w-lg shadow-2xl">
+      <div className="bg-surface-800 border border-surface-600 rounded-xl w-full max-w-lg shadow-modal">
         <div className="flex items-center justify-between px-6 py-4 border-b border-surface-700">
           <div>
             <h3 className="font-semibold text-text-primary">Lịch sử bài làm</h3>
@@ -130,7 +130,7 @@ function ResultHistoryModal({ exam, onClose }) {
                     </div>
                     <p className="text-text-primary font-semibold text-sm">
                       {a.score != null ? `${a.score}/${a.totalScore} điểm` : 'Chờ chấm tự luận'}
-                      {a.passed != null && <span className={`ml-2 text-xs ${a.passed ? 'text-green-accent' : 'text-red-accent'}`}>{a.passed ? '✓ Đạt' : '✗ Chưa đạt'}</span>}
+                      {a.passed != null && <span className={`ml-2 text-xs ${a.passed ? 'text-success' : 'text-danger'}`}>{a.passed ? 'Đạt' : 'Chưa đạt'}</span>}
                     </p>
                   </div>
                   <button
@@ -240,18 +240,18 @@ function TakeExamModal({ exam, onClose, onSubmitted }) {
   // Màn hình kết quả
   if (submitted && result) return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-surface-800 border border-surface-600 rounded-2xl w-full max-w-md p-8 text-center shadow-xl">
-        <div className="w-16 h-16 rounded-full bg-green-accent/15 border border-green-accent/30 flex items-center justify-center mx-auto mb-4">
-          <span className="text-green-accent">{Icon.check}</span>
+      <div className="bg-surface-800 border border-surface-600 rounded-xl w-full max-w-md p-8 text-center shadow-xl">
+        <div className="w-16 h-16 rounded-full bg-success/15 border border-success/30 flex items-center justify-center mx-auto mb-4">
+          <span className="text-success">{Icon.check}</span>
         </div>
         <h2 className="text-xl font-bold text-text-primary mb-2">Nộp bài thành công!</h2>
         {result.score != null ? (
           <div className="mb-4">
-            <p className={`text-4xl font-bold mb-1 ${result.passed ? 'text-green-accent' : 'text-red-accent'}`}>
+            <p className={`text-4xl font-bold mb-1 ${result.passed ? 'text-success' : 'text-danger'}`}>
               {result.score}/{result.totalScore}
             </p>
-            <p className={`text-sm font-medium ${result.passed ? 'text-green-accent' : 'text-red-accent'}`}>
-              {result.passed ? '✓ Đạt' : '✗ Chưa đạt'}
+            <p className={`text-sm font-medium ${result.passed ? 'text-success' : 'text-danger'}`}>
+              {result.passed ? 'Đạt' : 'Chưa đạt'}
             </p>
           </div>
         ) : (
@@ -292,7 +292,7 @@ function TakeExamModal({ exam, onClose, onSubmitted }) {
         <div className="flex items-center gap-4">
           {/* Timer */}
           <div className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono font-bold text-lg border ${
-            urgent ? 'bg-red-accent/10 border-red-accent/30 text-red-accent animate-pulse'
+            urgent ? 'bg-danger/10 border-danger/30 text-danger animate-pulse'
                    : 'bg-surface-700 border-surface-600 text-text-primary'
           }`}>
             {Icon.clock} {fmt(timeLeft)}
@@ -302,7 +302,7 @@ function TakeExamModal({ exam, onClose, onSubmitted }) {
             <span className="text-accent font-semibold">{answered}</span>/{questions.length} đã trả lời
           </div>
           <button onClick={() => confirm('Thoát? Bài làm sẽ không được lưu.') && onClose()}
-            className="btn-ghost p-2 text-text-muted hover:text-red-accent">
+            className="btn-ghost p-2 text-text-muted hover:text-danger">
             {Icon.x}
           </button>
         </div>
@@ -319,7 +319,7 @@ function TakeExamModal({ exam, onClose, onSubmitted }) {
                   current === i
                     ? 'bg-accent text-white'
                     : answers[q.questionId] !== undefined
-                    ? 'bg-green-accent/20 border border-green-accent/40 text-green-accent'
+                    ? 'bg-success/20 border border-success/40 text-success'
                     : 'bg-surface-700 border border-surface-600 text-text-muted hover:border-accent/50'
                 }`}>
                 {i + 1}
@@ -340,7 +340,7 @@ function TakeExamModal({ exam, onClose, onSubmitted }) {
                 <div className="flex items-center gap-2">
                   <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                     q.type === 'MULTIPLE_CHOICE' ? 'bg-blue-500/15 text-blue-400 border border-blue-500/25'
-                    : q.type === 'TRUE_FALSE'    ? 'bg-green-accent/15 text-green-accent border border-green-accent/25'
+                    : q.type === 'TRUE_FALSE'    ? 'bg-success/15 text-success border border-success/25'
                     : 'bg-orange-400/15 text-orange-400 border border-orange-400/25'
                   }`}>
                     {q.type === 'MULTIPLE_CHOICE' ? 'Trắc nghiệm'
@@ -348,9 +348,9 @@ function TakeExamModal({ exam, onClose, onSubmitted }) {
                      : 'Tự luận'}
                   </span>
                   <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    q.difficulty === 'EASY'   ? 'bg-green-accent/10 text-green-accent'
-                    : q.difficulty === 'HARD' ? 'bg-red-accent/10 text-red-accent'
-                    : 'bg-yellow-400/10 text-yellow-400'
+                    q.difficulty === 'EASY'   ? 'bg-success/10 text-success'
+                    : q.difficulty === 'HARD' ? 'bg-danger/10 text-danger'
+                    : 'bg-yellow-400/10 text-warning'
                   }`}>
                     {q.difficulty === 'EASY' ? 'Dễ' : q.difficulty === 'HARD' ? 'Khó' : 'TB'}
                   </span>
@@ -386,7 +386,7 @@ function TakeExamModal({ exam, onClose, onSubmitted }) {
 
               {q.type === 'TRUE_FALSE' && (
                 <div className="flex gap-4">
-                  {[{ id: 'true', label: '✓ Đúng' }, { id: 'false', label: '✗ Sai' }].map(opt => (
+                  {[{ id: 'true', label: 'Đúng' }, { id: 'false', label: 'Sai' }].map(opt => (
                     <button key={opt.id} onClick={() => handleAnswer(q.questionId, opt.id)}
                       className={`flex-1 py-4 rounded-xl border text-sm font-medium transition-all ${
                         answers[q.questionId] === opt.id
@@ -421,8 +421,8 @@ function TakeExamModal({ exam, onClose, onSubmitted }) {
                   </button>
                 ) : (
                   <button onClick={() => handleSubmit(false)} disabled={submitting}
-                    className="btn-primary bg-green-accent/80 hover:bg-green-accent border-green-accent/50">
-                    {submitting ? 'Đang nộp...' : '✓ Nộp bài'}
+                    className="btn-primary bg-success/80 hover:bg-success border-success/50">
+                    {submitting ? 'Đang nộp...' : 'Nộp bài'}
                   </button>
                 )}
               </div>
@@ -436,12 +436,12 @@ function TakeExamModal({ exam, onClose, onSubmitted }) {
       {/* Footer submit bar */}
       <div className="border-t border-surface-700 bg-surface-800 px-6 py-3 flex items-center justify-between shrink-0">
         <p className="text-sm text-text-muted">
-          {urgent && <span className="text-red-accent font-medium mr-2">⚠ Sắp hết giờ!</span>}
+          {urgent && <span className="text-danger font-medium mr-2">Sắp hết giờ!</span>}
           Đã trả lời <span className="text-accent font-semibold">{answered}/{questions.length}</span> câu
         </p>
         <button onClick={() => handleSubmit(false)} disabled={submitting}
           className="btn-primary">
-          {submitting ? 'Đang nộp...' : '✓ Nộp bài thi'}
+          {submitting ? 'Đang nộp...' : 'Nộp bài thi'}
         </button>
       </div>
     </div>
@@ -489,9 +489,9 @@ function StudentExamCard({ exam, onTake, onViewResult }) {
           <span className={`shrink-0 text-xs px-2.5 py-1 rounded-full font-medium border ${
             isEnded  ? 'bg-surface-700 border-surface-500 text-text-muted'
             : isOpen ? 'bg-accent/15 border-accent/30 text-accent'
-            : 'bg-yellow-400/15 border-yellow-400/30 text-yellow-400'
+            : 'bg-yellow-400/15 border-yellow-400/30 text-warning'
           }`}>
-            {isEnded ? 'Đã kết thúc' : isOpen ? '● Đang mở' : '○ Chưa mở'}
+            {isEnded ? 'Đã kết thúc' : isOpen ? 'Đang mở' : 'Chưa mở'}
           </span>
         </div>
 
@@ -523,7 +523,7 @@ function StudentExamCard({ exam, onTake, onViewResult }) {
         {/* Attempt count badge */}
         {maxCount > 0 && (
           <div className="flex items-center justify-between text-xs mb-3">
-            <span className="text-text-muted">Lần thi: <span className={`font-semibold ${limitHit ? 'text-red-accent' : 'text-accent'}`}>{myCount}/{maxCount}</span></span>
+            <span className="text-text-muted">Lần thi: <span className={`font-semibold ${limitHit ? 'text-danger' : 'text-accent'}`}>{myCount}/{maxCount}</span></span>
             {myCount > 0 && (
               <button onClick={() => onViewResult(exam)} className="text-accent hover:underline text-xs">Xem kết quả →</button>
             )}
@@ -536,7 +536,7 @@ function StudentExamCard({ exam, onTake, onViewResult }) {
             canTake
               ? 'bg-accent text-white hover:bg-accent/90 cursor-pointer'
               : limitHit
-              ? 'bg-red-accent/10 text-red-accent cursor-not-allowed border border-red-accent/30'
+              ? 'bg-danger/10 text-danger cursor-not-allowed border border-danger/30'
               : 'bg-surface-700 text-text-muted cursor-not-allowed border border-surface-600'
           }`}>
           {Icon.play}
@@ -593,7 +593,7 @@ export default function StudentExamsPage() {
       <div className="grid grid-cols-3 gap-4">
         {[
           { label: 'Tổng đề thi', value: exams.length, color: 'text-accent' },
-          { label: 'Đang mở',     value: openCount,    color: 'text-green-accent' },
+          { label: 'Đang mở',     value: openCount,    color: 'text-success' },
           { label: 'Đã kết thúc', value: exams.length - openCount, color: 'text-text-muted' },
         ].map(s => (
           <div key={s.label} className="card text-center py-4">
@@ -607,7 +607,7 @@ export default function StudentExamsPage() {
       <div className="flex gap-2">
         {[
           { key: 'all',   label: 'Tất cả' },
-          { key: 'open',  label: '● Đang mở' },
+          { key: 'open',  label: 'Đang mở' },
           { key: 'ended', label: 'Đã kết thúc' },
         ].map(f => (
           <button key={f.key} onClick={() => setFilter(f.key)}
@@ -628,7 +628,7 @@ export default function StudentExamsPage() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="card text-center py-16">
-          <div className="text-4xl mb-3">📋</div>
+          
           <p className="text-text-secondary font-medium">
             {exams.length === 0 ? 'Chưa có đề thi nào được giao' : 'Không có đề thi nào trong mục này'}
           </p>

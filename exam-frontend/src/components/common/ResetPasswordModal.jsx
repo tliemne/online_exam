@@ -44,8 +44,8 @@ export default function ResetPasswordModal({ user, onClose }) {
       <div className="bg-surface-800 border border-surface-600 rounded-2xl w-full max-w-md shadow-2xl">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-surface-700">
-          <h3 className="font-semibold text-text-primary">🔐 Reset mật khẩu</h3>
+        <div className="flex items-center justify-between px-7 py-5 border-b border-surface-700">
+          <h3 className="font-semibold text-text-primary">Xác nhận</h3>
           <button onClick={onClose} className="btn-ghost p-1.5 text-text-muted hover:text-text-primary">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
@@ -53,25 +53,25 @@ export default function ResetPasswordModal({ user, onClose }) {
           </button>
         </div>
 
-        <div className="p-6">
+        <div className="p-7 space-y-5">
           {done ? (
             <div className="text-center py-4">
-              <div className="text-5xl mb-4">✅</div>
+              <div className="text-5xl mb-4"></div>
               <p className="text-text-primary font-semibold mb-1">Reset thành công!</p>
               <p className="text-text-muted text-sm mb-2">
                 Mật khẩu mới của <span className="text-text-primary font-medium">{user.fullName || user.username}</span>:
               </p>
-              {/* Hiện mật khẩu mới để admin thông báo cho user */}
-              <div className="bg-surface-700 border border-surface-500 rounded-xl px-4 py-3 mb-6 font-mono text-lg text-accent tracking-widest">
+              <div className="bg-surface-700 border border-surface-500 rounded-xl px-4 py-3 mb-3 font-mono text-lg text-accent tracking-widest">
                 {newPassword}
               </div>
-              <p className="text-xs text-text-muted mb-6">
-                ⚠ Lưu lại và thông báo cho người dùng. Mật khẩu chỉ hiện một lần.
-              </p>
-              <button onClick={onClose} className="btn-primary w-full">Đã thông báo, đóng</button>
+              {user.email && !user.email.endsWith('@school.edu.vn')
+                ? <p className="text-xs text-accent mb-4">✉ Đã gửi thông báo tới {user.email}</p>
+                : <p className="text-xs text-yellow-400 mb-4"> Tài khoản không có email — cần thông báo thủ công</p>
+              }
+              <button onClick={onClose} className="btn-primary w-full">Đóng</button>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-5">
               {/* User info */}
               <div className="flex items-center gap-3 bg-surface-700 rounded-xl p-3">
                 <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent font-bold text-base shrink-0">
@@ -84,13 +84,13 @@ export default function ResetPasswordModal({ user, onClose }) {
               </div>
 
               <div className="text-xs text-yellow-400 bg-yellow-400/10 border border-yellow-400/25 rounded-lg px-3 py-2">
-                ⚠ Mật khẩu hiện tại sẽ bị thay thế ngay lập tức. Thông báo cho người dùng sau khi reset.
+                 Mật khẩu hiện tại sẽ bị thay thế ngay lập tức. Thông báo cho người dùng sau khi reset.
               </div>
 
               {/* Generate button */}
               <button onClick={suggest}
                 className="w-full py-2 rounded-lg border border-dashed border-surface-500 text-text-muted text-sm hover:border-accent hover:text-accent transition-all">
-                🎲 Tạo mật khẩu ngẫu nhiên
+                Tạo ngẫu nhiên
               </button>
 
               {/* New password */}
@@ -122,20 +122,20 @@ export default function ResetPasswordModal({ user, onClose }) {
                   onKeyDown={e => e.key === 'Enter' && handleSubmit()}
                   className={`input-field font-mono tracking-wider ${
                     confirm && confirm !== newPassword
-                      ? 'border-red-accent/50' : confirm && confirm === newPassword
-                      ? 'border-green-accent/50' : ''
+                      ? 'border-danger/50' : confirm && confirm === newPassword
+                      ? 'border-success/50' : ''
                   }`}
                   placeholder="Nhập lại mật khẩu mới"
                 />
                 {confirm && confirm === newPassword && (
-                  <p className="text-xs text-green-accent mt-1">✓ Khớp</p>
+                  <p className="text-xs text-success mt-1">Khớp</p>
                 )}
               </div>
 
               {/* Error */}
               {error && (
-                <div className="bg-red-accent/10 border border-red-accent/30 rounded-lg px-4 py-2.5">
-                  <p className="text-red-accent text-sm">⚠ {error}</p>
+                <div className="bg-danger/10 border border-danger/30 rounded-lg px-4 py-2.5">
+                  <p className="text-danger text-sm"> {error}</p>
                 </div>
               )}
 
@@ -147,7 +147,7 @@ export default function ResetPasswordModal({ user, onClose }) {
                         <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
                         Đang lưu...
                       </span>
-                    : '🔐 Reset mật khẩu'}
+                    : 'Xác nhận'}
                 </button>
               </div>
             </div>

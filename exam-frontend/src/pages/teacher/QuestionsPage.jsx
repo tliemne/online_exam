@@ -8,9 +8,9 @@ import { useAuth } from '../../context/AuthContext'
 // ══════════════════════════════════════════════════════════
 
 const TABS = [
-  { key: 'excel', label: '📊 Excel', accept: '.xlsx' },
+  { key: 'excel', label: 'Excel', accept: '.xlsx' },
   { key: 'csv',   label: '📄 CSV',   accept: '.csv'  },
-  { key: 'json',  label: '📋 JSON',  accept: '.json' },
+  { key: 'json',  label: 'JSON',  accept: '.json' },
 ]
 
 function ImportQuestionsModal({ courseId, onClose, onImported }) {
@@ -61,7 +61,7 @@ function ImportQuestionsModal({ courseId, onClose, onImported }) {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-surface-800 border border-surface-600 rounded-2xl w-full max-w-2xl shadow-glow-md max-h-[90vh] flex flex-col">
+      <div className="bg-surface-800 border border-surface-600 rounded-2xl w-full max-w-2xl shadow-md max-h-[90vh] flex flex-col">
 
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-surface-600 shrink-0">
@@ -123,7 +123,7 @@ function ImportQuestionsModal({ courseId, onClose, onImported }) {
               onClick={() => fileRef.current.click()}
               className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
                 dragging ? 'border-accent bg-accent/5'
-                : file ? 'border-green-accent/40 bg-green-accent/5'
+                : file ? 'border-success/40 bg-success/5'
                 : 'border-surface-500 hover:border-accent/40'
               }`}>
               <input ref={fileRef} type="file"
@@ -132,12 +132,12 @@ function ImportQuestionsModal({ courseId, onClose, onImported }) {
                 onChange={e => setFile(e.target.files[0])} />
               {file ? (
                 <div>
-                  <div className="text-green-accent text-2xl mb-2">✓</div>
+                  
                   <p className="text-text-primary font-medium text-sm">{file.name}</p>
                   <p className="text-text-muted text-xs mt-1">
                     {(file.size / 1024).toFixed(1)} KB ·
                     <button onClick={e => { e.stopPropagation(); setFile(null) }}
-                      className="text-red-accent ml-2 hover:underline">Xóa</button>
+                      className="text-danger ml-2 hover:underline">Xóa</button>
                   </p>
                 </div>
               ) : (
@@ -167,39 +167,39 @@ function ImportQuestionsModal({ courseId, onClose, onImported }) {
 
           {/* Error */}
           {error && (
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-accent/10 border border-red-accent/30 text-red-accent text-sm">
-              ⚠ {error}
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-danger/10 border border-danger/30 text-danger text-sm">
+              {error}
             </div>
           )}
 
           {/* Result */}
           {result && (
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div className="grid grid-cols-3 gap-3">
                 <div className="bg-surface-700 border border-surface-600 rounded-xl p-4 text-center">
                   <div className="text-2xl font-bold font-mono">{result.totalRows}</div>
                   <div className="text-xs text-text-muted mt-1">Tổng dòng</div>
                 </div>
-                <div className="bg-green-accent/5 border border-green-accent/25 rounded-xl p-4 text-center">
-                  <div className="text-2xl font-bold font-mono text-green-accent">{result.successCount}</div>
-                  <div className="text-xs text-green-accent/70 mt-1">Thành công</div>
+                <div className="bg-success/5 border border-success/25 rounded-xl p-4 text-center">
+                  <div className="text-2xl font-bold font-mono text-success">{result.successCount}</div>
+                  <div className="text-xs text-success/70 mt-1">Thành công</div>
                 </div>
-                <div className={`rounded-xl p-4 text-center border ${result.failCount > 0 ? 'bg-red-accent/5 border-red-accent/25' : 'bg-surface-700 border-surface-600'}`}>
-                  <div className={`text-2xl font-bold font-mono ${result.failCount > 0 ? 'text-red-accent' : 'text-text-muted'}`}>{result.failCount}</div>
+                <div className={`rounded-xl p-4 text-center border ${result.failCount > 0 ? 'bg-danger/5 border-danger/25' : 'bg-surface-700 border-surface-600'}`}>
+                  <div className={`text-2xl font-bold font-mono ${result.failCount > 0 ? 'text-danger' : 'text-text-muted'}`}>{result.failCount}</div>
                   <div className="text-xs text-text-muted mt-1">Lỗi</div>
                 </div>
               </div>
               {result.errors?.length > 0 && (
-                <div className="bg-red-accent/5 border border-red-accent/20 rounded-xl p-4 max-h-36 overflow-y-auto">
-                  <p className="text-xs font-semibold text-red-accent mb-2">Chi tiết lỗi</p>
+                <div className="bg-danger/5 border border-danger/20 rounded-xl p-4 max-h-36 overflow-y-auto">
+                  <p className="text-xs font-semibold text-danger mb-2">Chi tiết lỗi</p>
                   {result.errors.map((e, i) => (
-                    <p key={i} className="text-xs text-red-accent/80 font-mono py-0.5">{e}</p>
+                    <p key={i} className="text-xs text-danger/80 font-mono py-0.5">{e}</p>
                   ))}
                 </div>
               )}
               {result.successCount > 0 && (
-                <div className="flex items-center gap-2 text-green-accent text-sm">
-                  ✓ Đã thêm {result.successCount} câu hỏi thành công!
+                <div className="flex items-center gap-2 text-success text-sm">
+                  Đã thêm {result.successCount} câu hỏi thành công!
                 </div>
               )}
             </div>
@@ -251,14 +251,14 @@ const Icon = {
 }
 
 const TYPE_LABELS = { MULTIPLE_CHOICE: 'Trắc nghiệm', TRUE_FALSE: 'Đúng / Sai', ESSAY: 'Tự luận' }
-const TYPE_COLORS = { MULTIPLE_CHOICE: 'badge-accent', TRUE_FALSE: 'badge-cyan', ESSAY: 'badge-muted' }
+const TYPE_COLORS = { MULTIPLE_CHOICE: 'badge-blue', TRUE_FALSE: 'badge-cyan', ESSAY: 'badge-neutral' }
 const DIFF_LABELS = { EASY: 'Dễ', MEDIUM: 'Trung bình', HARD: 'Khó' }
 const DIFF_COLORS = { EASY: 'badge-green', MEDIUM: 'badge-amber', HARD: 'badge-red' }
 
 function Modal({ title, onClose, children, maxWidth = 'max-w-2xl' }) {
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className={`bg-surface-800 border border-surface-600 rounded-2xl w-full ${maxWidth} shadow-glow-md max-h-[90vh] flex flex-col`}>
+      <div className={`bg-surface-800 border border-surface-600 rounded-2xl w-full ${maxWidth} shadow-md max-h-[90vh] flex flex-col`}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-surface-600 shrink-0">
           <h2 className="section-title">{title}</h2>
           <button onClick={onClose} className="btn-ghost p-1.5">{Icon.x}</button>
@@ -272,12 +272,12 @@ function Modal({ title, onClose, children, maxWidth = 'max-w-2xl' }) {
 function AnswerRow({ answer, index, onChange, onRemove, canRemove }) {
   return (
     <div className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
-      answer.correct ? 'border-green-accent/40 bg-green-accent/5' : 'border-surface-600 bg-surface-700'
+      answer.correct ? 'border-success/40 bg-success/5' : 'border-surface-600 bg-surface-700'
     }`}>
       <button type="button"
         onClick={() => onChange(index, 'correct', !answer.correct)}
         className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
-          answer.correct ? 'bg-green-accent border-green-accent text-white' : 'border-surface-400 hover:border-green-accent'
+          answer.correct ? 'bg-success border-success text-white' : 'border-surface-400 hover:border-success'
         }`}>
         {answer.correct && <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>}
       </button>
@@ -286,7 +286,7 @@ function AnswerRow({ answer, index, onChange, onRemove, canRemove }) {
         value={answer.content}
         onChange={e => onChange(index, 'content', e.target.value)} />
       {canRemove && (
-        <button type="button" onClick={() => onRemove(index)} className="btn-ghost p-1 text-text-muted hover:text-red-accent shrink-0">
+        <button type="button" onClick={() => onRemove(index)} className="btn-ghost p-1 text-text-muted hover:text-danger shrink-0">
           {Icon.x}
         </button>
       )}
@@ -344,10 +344,10 @@ function QuestionFormModal({ question, courses, onClose, onSaved }) {
 
   return (
     <Modal title={question ? 'Sửa câu hỏi' : 'Tạo câu hỏi mới'} onClose={onClose}>
-      {error && <div className="mb-4 px-3 py-2 rounded-lg bg-red-accent/10 border border-red-accent/30 text-red-accent text-sm">{error}</div>}
+      {error && <div className="mb-4 px-3 py-2 rounded-lg bg-danger/10 border border-danger/30 text-danger text-sm">{error}</div>}
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="label">Lớp học *</label>
+          <label className="input-label">Lớp học *</label>
           <select className="input-field" value={form.courseId} onChange={e => setForm({...form, courseId: e.target.value})} required>
             <option value="">-- Chọn lớp --</option>
             {courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -355,7 +355,7 @@ function QuestionFormModal({ question, courses, onClose, onSaved }) {
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="label">Loại câu hỏi *</label>
+            <label className="input-label">Loại câu hỏi *</label>
             <select className="input-field" value={form.type} onChange={e => handleTypeChange(e.target.value)}>
               <option value="MULTIPLE_CHOICE">Trắc nghiệm</option>
               <option value="TRUE_FALSE">Đúng / Sai</option>
@@ -363,7 +363,7 @@ function QuestionFormModal({ question, courses, onClose, onSaved }) {
             </select>
           </div>
           <div>
-            <label className="label">Độ khó</label>
+            <label className="input-label">Độ khó</label>
             <select className="input-field" value={form.difficulty} onChange={e => setForm({...form, difficulty: e.target.value})}>
               <option value="EASY">Dễ</option>
               <option value="MEDIUM">Trung bình</option>
@@ -372,7 +372,7 @@ function QuestionFormModal({ question, courses, onClose, onSaved }) {
           </div>
         </div>
         <div>
-          <label className="label">Nội dung câu hỏi *</label>
+          <label className="input-label">Nội dung câu hỏi *</label>
           <textarea className="input-field resize-none" rows={3} placeholder="Nhập nội dung câu hỏi..."
             value={form.content} onChange={e => setForm({...form, content: e.target.value})} required />
         </div>
@@ -424,14 +424,14 @@ function PreviewModal({ question, onClose }) {
         <div className="flex gap-2 flex-wrap">
           <span className={TYPE_COLORS[question.type]}>{TYPE_LABELS[question.type]}</span>
           <span className={DIFF_COLORS[question.difficulty]}>{DIFF_LABELS[question.difficulty]}</span>
-          <span className="badge-muted text-xs">{question.courseName}</span>
+          <span className="badge-neutral text-xs">{question.courseName}</span>
         </div>
         <p className="text-text-primary leading-relaxed">{question.content}</p>
         {question.type !== 'ESSAY' && question.answers?.length > 0 && (
           <div className="space-y-2">
             {question.answers.map((a, i) => (
               <div key={a.id} className={`flex items-center gap-3 p-3 rounded-lg border ${
-                a.correct ? 'border-green-accent/40 bg-green-accent/5 text-green-accent' : 'border-surface-600 bg-surface-700 text-text-secondary'
+                a.correct ? 'border-success/40 bg-success/5 text-success' : 'border-surface-600 bg-surface-700 text-text-secondary'
               }`}>
                 <span className="text-xs font-mono font-bold w-5 shrink-0">{String.fromCharCode(65+i)}.</span>
                 <span className="text-sm flex-1">{a.content}</span>
@@ -610,7 +610,7 @@ export default function QuestionsPage() {
         </div>
       ) : questions.length === 0 ? (
         <div className="card text-center py-16">
-          <div className="text-4xl mb-3">❓</div>
+          
           <p className="text-text-secondary">Chưa có câu hỏi nào. {isTeacherOrAdmin && 'Hãy tạo hoặc import câu hỏi!'}</p>
           {isTeacherOrAdmin && (
             <div className="flex gap-3 justify-center mt-4">
@@ -620,7 +620,7 @@ export default function QuestionsPage() {
           )}
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           {questions.map((q, index) => (
             <div key={q.id} className="card hover:border-accent/20 transition-all">
               <div className="flex items-start gap-4">
@@ -635,7 +635,7 @@ export default function QuestionsPage() {
                     <div className="mt-2 flex gap-2 flex-wrap">
                       {q.answers.map((a, i) => (
                         <span key={a.id} className={`text-xs px-2 py-0.5 rounded border ${
-                          a.correct ? 'border-green-accent/40 bg-green-accent/10 text-green-accent' : 'border-surface-600 text-text-muted'
+                          a.correct ? 'border-success/40 bg-success/10 text-success' : 'border-surface-600 text-text-muted'
                         }`}>
                           {String.fromCharCode(65+i)}. {a.content.length > 20 ? a.content.slice(0,20)+'…' : a.content}
                         </span>
@@ -648,9 +648,9 @@ export default function QuestionsPage() {
                     <button onClick={() => { setSelected(q); setModal('preview') }} className="btn-ghost p-1.5 text-text-muted hover:text-accent">{Icon.eye}</button>
                     <button onClick={() => { setSelected(q); setModal('edit') }} className="btn-ghost p-1.5 text-text-muted hover:text-accent">{Icon.edit}</button>
                     <button onClick={() => handleDelete(q)} disabled={deleting === q.id}
-                      className="btn-ghost p-1.5 text-text-muted hover:text-red-accent hover:bg-red-accent/10">
+                      className="btn-ghost p-1.5 text-text-muted hover:text-danger hover:bg-danger/10">
                       {deleting === q.id
-                        ? <span className="w-4 h-4 border border-red-accent border-t-transparent rounded-full animate-spin block"/>
+                        ? <span className="w-4 h-4 border border-danger border-t-transparent rounded-full animate-spin block"/>
                         : Icon.trash}
                     </button>
                   </div>

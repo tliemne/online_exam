@@ -15,18 +15,18 @@ export function ProtectedRoute({ children, roles }) {
   )
 
   if (!user) {
-    console.warn('🚫 ProtectedRoute: no user, redirect to login')
+    console.warn('ProtectedRoute: no user, redirect to login')
     return <Navigate to="/login" state={{ from: location }} replace />
   }
 
   if (roles) {
     const userRoles = user.roles || []
-    console.log('🔐 ProtectedRoute check - required:', roles, '| user roles:', userRoles)
+    console.log('ProtectedRoute check - required:', roles, '| user roles:', userRoles)
     const hasAccess = roles.some((r) =>
       userRoles.some((ur) => (typeof ur === 'string' ? ur : ur.name) === r)
     )
     if (!hasAccess) {
-      console.warn('🚫 Access denied - user roles:', userRoles, '| required:', roles)
+      console.warn('Access denied - user roles:', userRoles, '| required:', roles)
       return <Navigate to="/unauthorized" replace />
     }
   }

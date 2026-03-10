@@ -45,7 +45,7 @@ function AttemptDetailModal({ attempt, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-surface-800 border border-surface-600 rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-2xl">
+      <div className="bg-surface-800 border border-surface-600 rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-modal">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-surface-700 shrink-0">
           <div>
@@ -74,8 +74,8 @@ function AttemptDetailModal({ attempt, onClose }) {
                   </div>
                   <div>
                     <p className="text-xs text-text-muted mb-1">Kết quả</p>
-                    <p className={`font-semibold text-sm ${detail.passed ? 'text-green-accent' : detail.passed === false ? 'text-red-accent' : 'text-yellow-400'}`}>
-                      {detail.passed == null ? '—' : detail.passed ? '✓ Đạt' : '✗ Chưa đạt'}
+                    <p className={`font-semibold text-sm ${detail.passed ? 'text-success' : detail.passed === false ? 'text-danger' : 'text-warning'}`}>
+                      {detail.passed == null ? '—' : detail.passed ? 'Đạt' : 'Chưa đạt'}
                     </p>
                   </div>
                   <div>
@@ -89,8 +89,8 @@ function AttemptDetailModal({ attempt, onClose }) {
               <p className="text-xs text-text-muted uppercase tracking-wider font-medium">Chi tiết từng câu</p>
               {(detail.answers || []).map((a, i) => (
                 <div key={a.id} className={`border rounded-xl p-4 ${
-                  a.isCorrect === true  ? 'border-green-accent/30 bg-green-accent/5'
-                  : a.isCorrect === false ? 'border-red-accent/30 bg-red-accent/5'
+                  a.isCorrect === true  ? 'border-success/30 bg-success/5'
+                  : a.isCorrect === false ? 'border-danger/30 bg-danger/5'
                   : 'border-yellow-400/30 bg-yellow-400/5'
                 }`}>
                   <div className="flex items-center gap-2 mb-2">
@@ -99,11 +99,11 @@ function AttemptDetailModal({ attempt, onClose }) {
                       {a.questionType === 'MULTIPLE_CHOICE' ? 'Trắc nghiệm' : a.questionType === 'TRUE_FALSE' ? 'Đúng/Sai' : 'Tự luận'}
                     </span>
                     <span className={`ml-auto text-xs font-semibold ${
-                      a.isCorrect === true ? 'text-green-accent'
-                      : a.isCorrect === false ? 'text-red-accent'
-                      : 'text-yellow-400'
+                      a.isCorrect === true ? 'text-success'
+                      : a.isCorrect === false ? 'text-danger'
+                      : 'text-warning'
                     }`}>
-                      {a.isCorrect === true ? '✓ Đúng' : a.isCorrect === false ? '✗ Sai' : '○ Chờ chấm'}
+                      {a.isCorrect === true ? 'Đúng' : a.isCorrect === false ? 'Sai' : 'Chờ chấm'}
                       {a.score != null ? ` · ${a.score}đ` : ''}
                     </span>
                   </div>
@@ -111,7 +111,7 @@ function AttemptDetailModal({ attempt, onClose }) {
                   {a.selectedAnswerContent && (
                     <div className="text-xs">
                       <span className="text-text-muted">Bạn chọn: </span>
-                      <span className={a.isCorrect ? 'text-green-accent' : 'text-red-accent'}>{a.selectedAnswerContent}</span>
+                      <span className={a.isCorrect ? 'text-success' : 'text-danger'}>{a.selectedAnswerContent}</span>
                     </div>
                   )}
                   {a.textAnswer && (
@@ -123,7 +123,7 @@ function AttemptDetailModal({ attempt, onClose }) {
                   {a.correctAnswerContent && a.isCorrect === false && (
                     <div className="text-xs mt-1">
                       <span className="text-text-muted">Đáp án đúng: </span>
-                      <span className="text-green-accent font-medium">{a.correctAnswerContent}</span>
+                      <span className="text-success font-medium">{a.correctAnswerContent}</span>
                     </div>
                   )}
                   {a.teacherComment && (
@@ -172,12 +172,12 @@ export default function StudentResultsPage() {
   })
 
   const statusColor = (a) => {
-    if (a.status === 'GRADED') return a.passed ? 'text-green-accent' : 'text-red-accent'
-    return 'text-yellow-400'
+    if (a.status === 'GRADED') return a.passed ? 'text-success' : 'text-danger'
+    return 'text-warning'
   }
   const statusLabel = (a) => {
-    if (a.status === 'GRADED') return a.passed ? '✓ Đạt' : '✗ Chưa đạt'
-    return '○ Chờ chấm'
+    if (a.status === 'GRADED') return a.passed ? 'Đạt' : 'Chưa đạt'
+    return 'Chờ chấm'
   }
   const fmtDate = (d) => d ? new Date(d).toLocaleString('vi-VN', {
     day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'
@@ -194,8 +194,8 @@ export default function StudentResultsPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
           { label: 'Bài đã nộp',    value: attempts.length, color: 'text-accent' },
-          { label: 'Đã chấm',       value: graded.length,   color: 'text-green-accent' },
-          { label: 'Chờ chấm',      value: pending.length,  color: 'text-yellow-400' },
+          { label: 'Đã chấm',       value: graded.length,   color: 'text-success' },
+          { label: 'Chờ chấm',      value: pending.length,  color: 'text-warning' },
           { label: 'Điểm TB',       value: avgScore ?? '—', color: 'text-text-primary' },
         ].map(s => (
           <div key={s.label} className="card text-center py-4">

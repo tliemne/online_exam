@@ -20,7 +20,7 @@ const Icon = {
 function Modal({ title, onClose, children }) {
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-surface-800 border border-surface-600 rounded-2xl w-full max-w-lg shadow-glow-md animate-slide-up">
+      <div className="bg-surface-800 border border-surface-600 rounded-xl w-full max-w-lg shadow-modal animate-slide-up">
         <div className="flex items-center justify-between px-6 py-4 border-b border-surface-600">
           <h2 className="section-title">{title}</h2>
           <button onClick={onClose} className="btn-ghost p-1.5">{Icon.x}</button>
@@ -67,7 +67,7 @@ function CourseFormModal({ course, onClose, onSaved, isAdmin, allUsers }) {
 
   return (
     <Modal title={course ? 'Sửa lớp học' : 'Tạo lớp học mới'} onClose={onClose}>
-      {error && <div className="mb-4 px-4 py-3 rounded-lg bg-red-accent/10 border border-red-accent/30 text-red-accent text-sm">{error}</div>}
+      {error && <div className="mb-4 px-4 py-3 rounded-lg bg-danger/10 border border-danger/30 text-danger text-sm">{error}</div>}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="label">Tên lớp học</label>
@@ -138,7 +138,7 @@ function AddStudentsModal({ courseId, currentStudents, onClose, onSaved, allUser
 
   return (
     <Modal title="Thêm sinh viên vào lớp" onClose={onClose}>
-      {error && <div className="mb-4 px-4 py-3 rounded-lg bg-red-accent/10 border border-red-accent/30 text-red-accent text-sm">{error}</div>}
+      {error && <div className="mb-4 px-4 py-3 rounded-lg bg-danger/10 border border-danger/30 text-danger text-sm">{error}</div>}
       <div className="space-y-4">
         <div className="relative">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">{Icon.search}</span>
@@ -166,7 +166,7 @@ function AddStudentsModal({ courseId, currentStudents, onClose, onSaved, allUser
                 <p className="text-text-primary text-sm font-medium">{u.fullName || u.username}</p>
                 <p className="text-text-muted text-xs font-mono">@{u.username}</p>
               </div>
-              {selected.includes(u.id) && <span className="badge-accent text-xs">Đã chọn</span>}
+              {selected.includes(u.id) && <span className="badge-blue text-xs">Đã chọn</span>}
             </label>
           ))}
         </div>
@@ -251,8 +251,8 @@ function StudentsModal({ course, onClose, onUpdated, allUsers }) {
             <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
               {filtered.map(s => (
                 <div key={s.id} className="flex items-center gap-3 p-3 rounded-lg bg-surface-700 border border-surface-600">
-                  <div className="w-9 h-9 rounded-full bg-green-accent/15 border border-green-accent/25 flex items-center justify-center shrink-0">
-                    <span className="text-green-accent text-xs font-bold">
+                  <div className="w-9 h-9 rounded-full bg-success/15 border border-success/25 flex items-center justify-center shrink-0">
+                    <span className="text-success text-xs font-bold">
                       {s.fullName?.[0]?.toUpperCase() || s.username?.[0]?.toUpperCase()}
                     </span>
                   </div>
@@ -264,8 +264,8 @@ function StudentsModal({ course, onClose, onUpdated, allUsers }) {
                     </div>
                   </div>
                   <button onClick={() => handleRemove(s.id)} disabled={removing === s.id}
-                    className="btn-ghost text-red-accent/70 hover:text-red-accent hover:bg-red-accent/10 p-1.5">
-                    {removing === s.id ? <span className="w-4 h-4 border border-red-accent border-t-transparent rounded-full animate-spin block"/> : Icon.trash}
+                    className="btn-ghost text-danger/70 hover:text-danger hover:bg-danger/10 p-1.5">
+                    {removing === s.id ? <span className="w-4 h-4 border border-danger border-t-transparent rounded-full animate-spin block"/> : Icon.trash}
                   </button>
                 </div>
               ))}
@@ -301,14 +301,14 @@ function CourseCard({ course, onEdit, onDelete, onDetail, isOwner }) {
           <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-accent/20 to-cyan-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
             <span className="text-accent font-bold font-display">{course.name?.[0]?.toUpperCase()}</span>
           </div>
-          {isOwner && <span className="badge-accent">Của tôi</span>}
+          {isOwner && <span className="badge-blue">Của tôi</span>}
         </div>
         <h3 className="font-display font-semibold text-text-primary group-hover:text-accent transition-colors">{course.name}</h3>
         <p className="text-text-muted text-sm mt-1 line-clamp-2">{course.description || 'Không có mô tả'}</p>
         {course.teacherName && (
-          <p className="text-text-secondary text-xs mt-2">👨‍🏫 {course.teacherName}</p>
+          <p className="text-text-secondary text-xs mt-2">Giáo viên: {course.teacherName}</p>
         )}
-        <p className="text-accent text-xs mt-2 opacity-0 group-hover:opacity-100 transition-opacity">Xem chi tiết →</p>
+        {/* <p className="text-accent text-xs mt-2 opacity-0 group-hover:opacity-100 transition-opacity">Xem chi tiết →</p> */}
       </div>
       <div className="flex gap-2 pt-3 border-t border-surface-600">
         <button onClick={() => onDetail(course)} className="btn-ghost flex-1 text-xs py-1.5">
@@ -317,7 +317,7 @@ function CourseCard({ course, onEdit, onDelete, onDetail, isOwner }) {
         <button onClick={() => onEdit(course)} className="btn-ghost px-2.5 py-1.5 text-text-secondary hover:text-accent">
           {Icon.edit}
         </button>
-        <button onClick={() => onDelete(course)} className="btn-ghost px-2.5 py-1.5 text-text-secondary hover:text-red-accent hover:bg-red-accent/10">
+        <button onClick={() => onDelete(course)} className="btn-ghost px-2.5 py-1.5 text-text-secondary hover:text-danger hover:bg-danger/10">
           {Icon.trash}
         </button>
       </div>
@@ -465,7 +465,7 @@ export default function CoursesPage() {
                       <button onClick={() => { setSelected(c); setModal('edit') }}
                         className="btn-ghost px-2 py-1.5 text-xs text-text-secondary hover:text-accent">{Icon.edit}</button>
                       <button onClick={() => handleDelete(c)} disabled={deleting === c.id}
-                        className="btn-ghost px-2 py-1.5 text-xs text-text-secondary hover:text-red-accent hover:bg-red-accent/10">
+                        className="btn-ghost px-2 py-1.5 text-xs text-text-secondary hover:text-danger hover:bg-danger/10">
                         {deleting === c.id ? '...' : Icon.trash}
                       </button>
                     </div>

@@ -71,61 +71,86 @@ public class EmailService {
     private String buildCredentialsEmail(String name, String username,
                                          String password, String courseName) {
         return """
-            <!DOCTYPE html>
-            <html lang="vi">
-            <head><meta charset="UTF-8"/></head>
-            <body style="font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:20px">
-              <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
+        <!DOCTYPE html>
+        <html lang="vi">
+        <head>
+          <meta charset="UTF-8"/>
+        </head>
+        <body style="margin:0;background:#f5f7fb;font-family:Arial,Helvetica,sans-serif">
 
-                <!-- Header -->
-                <div style="background:linear-gradient(135deg,#6c63ff,#4f46e5);padding:32px 32px 24px;text-align:center">
-                  <h1 style="color:#fff;margin:0;font-size:24px">📋 ExamPortal</h1>
-                  <p style="color:rgba(255,255,255,0.85);margin:8px 0 0;font-size:14px">Hệ thống thi trực tuyến</p>
+        <div style="max-width:560px;margin:40px auto;background:#ffffff;border-radius:14px;
+                    box-shadow:0 6px 20px rgba(0,0,0,0.08);overflow:hidden">
+
+            <!-- Header -->
+            <div style="background:#4f46e5;padding:28px;text-align:center">
+                <h2 style="color:#ffffff;margin:0;font-size:22px">
+                    ExamPortal
+                </h2>
+                <p style="color:#e0e7ff;margin-top:6px;font-size:13px">
+                    Hệ thống thi trực tuyến
+                </p>
+            </div>
+
+            <!-- Content -->
+            <div style="padding:32px">
+
+                <p style="font-size:16px;color:#111;margin:0 0 10px">
+                    Xin chào <b>%s</b>,
+                </p>
+
+                <p style="color:#555;font-size:14px;line-height:1.6;margin-bottom:24px">
+                    Tài khoản của bạn trên hệ thống <b>ExamPortal</b> đã được tạo%s.
+                    Vui lòng sử dụng thông tin dưới đây để đăng nhập.
+                </p>
+
+                <!-- Credentials -->
+                <div style="background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:20px;margin-bottom:26px">
+
+                    <div style="margin-bottom:12px">
+                        <div style="font-size:12px;color:#6b7280">Tên đăng nhập</div>
+                        <div style="font-family:monospace;font-size:15px;font-weight:bold;color:#111">%s</div>
+                    </div>
+
+                    <div>
+                        <div style="font-size:12px;color:#6b7280">Mật khẩu</div>
+                        <div style="font-family:monospace;font-size:15px;font-weight:bold;color:#ef4444">%s</div>
+                    </div>
+
                 </div>
 
-                <!-- Body -->
-                <div style="padding:32px">
-                  <p style="color:#333;font-size:16px;margin:0 0 8px">Xin chào <strong>%s</strong>,</p>
-                  <p style="color:#666;font-size:14px;line-height:1.6;margin:0 0 24px">
-                    Tài khoản ExamPortal của bạn đã được tạo%s. Dưới đây là thông tin đăng nhập:
-                  </p>
+                <!-- Button -->
+                <div style="text-align:center;margin-bottom:26px">
+                    <a href="http://localhost:3000/login"
+                       style="background:#4f46e5;color:#ffffff;text-decoration:none;
+                       padding:14px 26px;border-radius:8px;font-weight:bold;font-size:14px;
+                       display:inline-block">
+                       Đăng nhập hệ thống
+                    </a>
+                </div>
 
-                  <!-- Credentials box -->
-                  <div style="background:#f8f7ff;border:1px solid #e0deff;border-radius:8px;padding:20px;margin-bottom:24px">
-                    <table style="width:100%;border-collapse:collapse">
-                      <tr>
-                        <td style="color:#888;font-size:13px;padding:6px 0">Tên đăng nhập</td>
-                        <td style="font-family:monospace;font-size:15px;font-weight:bold;color:#4f46e5;text-align:right">%s</td>
-                      </tr>
-                      <tr>
-                        <td style="color:#888;font-size:13px;padding:6px 0;border-top:1px solid #e0deff">Mật khẩu</td>
-                        <td style="font-family:monospace;font-size:15px;font-weight:bold;color:#e11d48;text-align:right;border-top:1px solid #e0deff">%s</td>
-                      </tr>
-                    </table>
-                  </div>
-
-                  <div style="background:#fff8f0;border-left:3px solid #f59e0b;padding:12px 16px;border-radius:4px;margin-bottom:24px">
-                    <p style="color:#92400e;font-size:13px;margin:0">
-                      ⚠ Vui lòng giữ bí mật thông tin này. Bạn có thể đổi mật khẩu sau khi đăng nhập trong phần <strong>Hồ sơ cá nhân</strong>.
+                <!-- Warning -->
+                <div style="background:#fff7ed;border:1px solid #fed7aa;padding:14px;border-radius:8px">
+                    <p style="margin:0;font-size:13px;color:#9a3412">
+                        Vì lý do bảo mật, bạn nên đổi mật khẩu sau khi đăng nhập lần đầu.
                     </p>
-                  </div>
-
-                  <a href="http://localhost:3000/login"
-                    style="display:block;background:#4f46e5;color:#fff;text-align:center;padding:14px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:15px">
-                    🚀 Đăng nhập ngay
-                  </a>
                 </div>
 
-                <!-- Footer -->
-                <div style="background:#f8f8f8;padding:16px 32px;text-align:center;border-top:1px solid #eee">
-                  <p style="color:#aaa;font-size:12px;margin:0">ExamPortal · Hệ thống thi trực tuyến</p>
-                </div>
-              </div>
-            </body>
-            </html>
-            """.formatted(
+            </div>
+
+            <!-- Footer -->
+            <div style="background:#f9fafb;padding:18px;text-align:center;border-top:1px solid #eee">
+                <p style="font-size:12px;color:#9ca3af;margin:0">
+                    © 2026 ExamPortal. All rights reserved.
+                </p>
+            </div>
+
+        </div>
+
+        </body>
+        </html>
+        """.formatted(
                 name,
-                courseName != null ? " và đã được thêm vào lớp <strong>" + courseName + "</strong>" : "",
+                courseName != null ? " và đã được thêm vào lớp <b>" + courseName + "</b>" : "",
                 username,
                 password
         );
@@ -133,36 +158,79 @@ public class EmailService {
 
     private String buildResetEmail(String name, String newPassword) {
         return """
-            <!DOCTYPE html>
-            <html lang="vi">
-            <head><meta charset="UTF-8"/></head>
-            <body style="font-family:Arial,sans-serif;background:#f4f4f4;margin:0;padding:20px">
-              <div style="max-width:520px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
-                <div style="background:linear-gradient(135deg,#ef4444,#dc2626);padding:32px;text-align:center">
-                  <h1 style="color:#fff;margin:0;font-size:24px">🔐 ExamPortal</h1>
-                  <p style="color:rgba(255,255,255,0.85);margin:8px 0 0;font-size:14px">Đặt lại mật khẩu</p>
+        <!DOCTYPE html>
+        <html lang="vi">
+        <head>
+          <meta charset="UTF-8"/>
+        </head>
+
+        <body style="margin:0;background:#f5f7fb;font-family:Arial,Helvetica,sans-serif">
+
+        <div style="max-width:560px;margin:40px auto;background:#ffffff;border-radius:14px;
+                    box-shadow:0 6px 20px rgba(0,0,0,0.08);overflow:hidden">
+
+            <!-- Header -->
+            <div style="background:#dc2626;padding:28px;text-align:center">
+                <h2 style="color:#ffffff;margin:0;font-size:22px">
+                    ExamPortal
+                </h2>
+                <p style="color:#fee2e2;margin-top:6px;font-size:13px">
+                    Đặt lại mật khẩu
+                </p>
+            </div>
+
+            <!-- Content -->
+            <div style="padding:32px">
+
+                <p style="font-size:16px;color:#111">
+                    Xin chào <b>%s</b>,
+                </p>
+
+                <p style="font-size:14px;color:#555;line-height:1.6">
+                    Mật khẩu của bạn đã được quản trị viên đặt lại.
+                </p>
+
+                <!-- Password Box -->
+                <div style="margin:24px 0;background:#fef2f2;border:1px solid #fecaca;
+                            border-radius:10px;padding:24px;text-align:center">
+
+                    <div style="font-size:12px;color:#7f1d1d;margin-bottom:6px">
+                        Mật khẩu mới
+                    </div>
+
+                    <div style="font-family:monospace;font-size:22px;
+                                font-weight:bold;color:#dc2626;letter-spacing:2px">
+                        %s
+                    </div>
+
                 </div>
-                <div style="padding:32px">
-                  <p style="color:#333;font-size:16px">Xin chào <strong>%s</strong>,</p>
-                  <p style="color:#666;font-size:14px;line-height:1.6">Mật khẩu của bạn vừa được đặt lại bởi quản trị viên.</p>
-                  <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:20px;margin:20px 0;text-align:center">
-                    <p style="color:#888;font-size:13px;margin:0 0 8px">Mật khẩu mới của bạn</p>
-                    <p style="font-family:monospace;font-size:22px;font-weight:bold;color:#dc2626;margin:0;letter-spacing:2px">%s</p>
-                  </div>
-                  <div style="background:#fff8f0;border-left:3px solid #f59e0b;padding:12px 16px;border-radius:4px;margin-bottom:24px">
-                    <p style="color:#92400e;font-size:13px;margin:0">⚠ Hãy đổi mật khẩu ngay sau khi đăng nhập để bảo mật tài khoản.</p>
-                  </div>
-                  <a href="http://localhost:3000/login"
-                    style="display:block;background:#dc2626;color:#fff;text-align:center;padding:14px;border-radius:8px;text-decoration:none;font-weight:bold">
-                    🔑 Đăng nhập với mật khẩu mới
-                  </a>
+
+                <div style="text-align:center;margin-bottom:20px">
+                    <a href="http://localhost:3000/login"
+                       style="background:#dc2626;color:#fff;text-decoration:none;
+                       padding:14px 26px;border-radius:8px;font-weight:bold;font-size:14px">
+                       Đăng nhập ngay
+                    </a>
                 </div>
-                <div style="background:#f8f8f8;padding:16px 32px;text-align:center;border-top:1px solid #eee">
-                  <p style="color:#aaa;font-size:12px;margin:0">ExamPortal · Hệ thống thi trực tuyến</p>
+
+                <div style="background:#fff7ed;border:1px solid #fed7aa;padding:14px;border-radius:8px">
+                    <p style="margin:0;font-size:13px;color:#9a3412">
+                        Hãy đổi mật khẩu ngay sau khi đăng nhập để đảm bảo an toàn tài khoản.
+                    </p>
                 </div>
-              </div>
-            </body>
-            </html>
-            """.formatted(name, newPassword);
+
+            </div>
+
+            <div style="background:#f9fafb;padding:18px;text-align:center;border-top:1px solid #eee">
+                <p style="font-size:12px;color:#9ca3af;margin:0">
+                    © 2026 ExamPortal. All rights reserved.
+                </p>
+            </div>
+
+        </div>
+
+        </body>
+        </html>
+        """.formatted(name, newPassword);
     }
 }

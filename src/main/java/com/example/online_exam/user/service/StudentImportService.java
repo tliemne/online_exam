@@ -59,12 +59,8 @@ public class StudentImportService {
                     CreateStudentRequest req = parseStudentRow(row, courseId, i);
                     CreateStudentResult r = userService.createStudent(req);
                     created.add(r);
-                    if (shouldSendEmail(req.getEmail())) {
-                        emailService.sendStudentCredentials(req.getEmail(), r.getFullName(),
-                                r.getUsername(), r.getPlainPassword(),
-                                course != null ? course.getName() : null);
-                        emailSent++;
-                    }
+                    // Email đã được gửi trong createStudent() — không gửi lại
+                    if (shouldSendEmail(req.getEmail())) emailSent++;
                 } catch (Exception e) {
                     errors.add("Dong " + (i + 1) + ": " + sanitizeError(e));
                 }
@@ -117,11 +113,8 @@ public class StudentImportService {
                             plainPwd, req.getStudentCode(), req.getClassName(), null);
                     created.add(r);
 
-                    if (shouldSendEmail(req.getEmail())) {
-                        emailService.sendStudentCredentials(req.getEmail(), r.getFullName(),
-                                r.getUsername(), r.getPlainPassword(), null);
-                        emailSent++;
-                    }
+                    // Email đã được gửi trong register() — không gửi lại
+                    if (shouldSendEmail(req.getEmail())) emailSent++;
                 } catch (Exception e) {
                     errors.add("Dong " + (i + 1) + ": " + sanitizeError(e));
                 }

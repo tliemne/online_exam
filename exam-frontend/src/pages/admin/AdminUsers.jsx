@@ -37,24 +37,24 @@ function TabImportAdmin({ onClose, onImported }) {
   }
 
   if (result) return (
-    <div className="p-6 space-y-4">
-      <div className="text-center"><div className="text-4xl mb-2">{result.errorCount===0?'✅':'⚠️'}</div><p className="font-semibold text-text-primary">Import hoàn tất</p></div>
+    <div className="p-7 space-y-5">
+      <div className="text-center"><p className="font-semibold text-text-primary">Import hoàn tất</p></div>
       <div className="grid grid-cols-3 gap-3">
-        {[{label:'Thành công',value:result.successCount,color:'text-green-accent'},{label:'Lỗi',value:result.errorCount,color:'text-red-accent'},{label:'Gửi email',value:result.emailSentCount,color:'text-accent'}].map(s=>(
+        {[{label:'Thành công',value:result.successCount,color:'text-success'},{label:'Lỗi',value:result.errorCount,color:'text-danger'},{label:'Gửi email',value:result.emailSentCount,color:'text-accent'}].map(s=>(
           <div key={s.label} className="bg-surface-700 rounded-xl p-3 text-center"><p className={`text-2xl font-bold ${s.color}`}>{s.value}</p><p className="text-text-muted text-xs mt-0.5">{s.label}</p></div>
         ))}
       </div>
-      {result.errors?.length>0 && <div className="bg-red-accent/5 border border-red-accent/20 rounded-xl p-3 max-h-32 overflow-y-auto"><p className="text-xs text-red-accent font-medium mb-2">Chi tiết lỗi:</p>{result.errors.map((e,i)=><p key={i} className="text-xs text-text-muted">• {e}</p>)}</div>}
+      {result.errors?.length>0 && <div className="bg-danger/8 border border-danger/20 rounded-xl p-3 max-h-32 overflow-y-auto"><p className="text-xs text-danger font-medium mb-2">Chi tiết lỗi:</p>{result.errors.map((e,i)=><p key={i} className="text-xs text-text-muted">• {e}</p>)}</div>}
       {result.created?.length>0 && <div className="bg-surface-700 rounded-xl p-3 max-h-36 overflow-y-auto"><p className="text-xs text-text-muted font-medium mb-2 uppercase">Đã tạo ({result.created.length})</p>{result.created.map((u,i)=><div key={i} className="flex justify-between py-1 border-b border-surface-600 last:border-0"><span className="text-sm text-text-primary">{u.fullName}</span><span className="text-xs font-mono text-accent">{u.username}</span></div>)}</div>}
       <button onClick={onClose} className="btn-primary w-full">Đóng</button>
     </div>
   )
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="p-7 space-y-5">
       <div className="flex items-center justify-between bg-surface-700 rounded-xl px-4 py-3">
         <div><p className="text-sm font-medium text-text-primary">File mẫu Excel (Admin)</p><p className="text-xs text-text-muted">Hỗ trợ cả Student và Teacher</p></div>
-        <a href="/template_import_users.xlsx" download className="btn-ghost text-xs px-3 py-1.5 text-accent border border-accent/30 rounded-lg hover:bg-accent/10">⬇ Tải mẫu</a>
+        <a href="/template_import_users.xlsx" download className="btn-ghost text-xs px-3 py-1.5 text-accent border border-accent/30 rounded-lg hover:bg-accent/10">Tải mẫu</a>
       </div>
       <div className="bg-surface-700/50 rounded-xl p-3">
         <p className="text-xs text-text-muted font-medium mb-2 uppercase tracking-wider">Cột trong file Excel</p>
@@ -68,14 +68,14 @@ function TabImportAdmin({ onClose, onImported }) {
       <div onDragOver={e=>{e.preventDefault();setDragging(true)}} onDragLeave={()=>setDragging(false)} onDrop={e=>{e.preventDefault();setDragging(false);handleFile(e.dataTransfer.files[0])}} onClick={()=>inputRef.current?.click()}
         className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${dragging?'border-accent bg-accent/10':'border-surface-500 hover:border-accent/50 hover:bg-surface-700/30'}`}>
         <input ref={inputRef} type="file" accept=".xlsx" className="hidden" onChange={e=>handleFile(e.target.files[0])}/>
-        <div className="text-3xl mb-2">{file?'📊':'📁'}</div>
+        
         {file?<><p className="text-text-primary font-medium text-sm">{file.name}</p><p className="text-text-muted text-xs mt-1">{(file.size/1024).toFixed(1)} KB</p></>:<><p className="text-text-secondary text-sm">Kéo thả hoặc click để chọn</p><p className="text-text-muted text-xs mt-1">chỉ .xlsx</p></>}
       </div>
-      {error && <div className="bg-red-accent/10 border border-red-accent/30 rounded-lg px-4 py-2.5"><p className="text-red-accent text-sm">⚠ {error}</p></div>}
+      {error && <div className="bg-danger/8 border border-danger/20 rounded-lg px-4 py-2.5"><p className="text-danger text-sm">⚠ {error}</p></div>}
       <div className="flex gap-3">
         <button onClick={onClose} className="btn-secondary flex-1">Hủy</button>
         <button onClick={handleImport} disabled={!file||loading} className="btn-primary flex-1">
-          {loading?<span className="flex items-center justify-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Đang import...</span>:'⬆ Import người dùng'}
+          {loading?<span className="flex items-center justify-center gap-2"><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Đang import...</span>:'Import người dùng'}
         </button>
       </div>
     </div>
@@ -88,6 +88,7 @@ function CreateUserModal({ onClose, onCreated }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [modalTab, setModalTab] = useState('create')
+  const [success, setSuccess] = useState(null)
 
   const f = (field) => (e) => setForm(p => ({ ...p, [field]: e.target.value }))
 
@@ -96,7 +97,11 @@ function CreateUserModal({ onClose, onCreated }) {
     setSaving(true); setError('')
     try {
       await userApi.createUser(form)
-      onCreated(); onClose()
+      onCreated()
+      setSuccess({
+        email: form.email,
+        hasRealEmail: form.email && !form.email.endsWith('@school.edu.vn')
+      })
     } catch (err) {
       setError(err.response?.data?.message || 'Có lỗi xảy ra')
     } finally { setSaving(false) }
@@ -110,7 +115,7 @@ function CreateUserModal({ onClose, onCreated }) {
       <div className="bg-surface-800 border border-surface-600 rounded-2xl w-full max-w-lg shadow-xl max-h-[90vh] flex flex-col">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-surface-600 shrink-0">
+        <div className="flex items-center justify-between px-7 py-5 border-b border-surface-600 shrink-0">
           <h2 className="section-title">Thêm tài khoản</h2>
           <button onClick={onClose} className="btn-ghost p-1.5">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -121,7 +126,7 @@ function CreateUserModal({ onClose, onCreated }) {
 
         {/* Tabs */}
         <div className="flex border-b border-surface-600 shrink-0">
-          {[{key:'create',label:'✏️ Tạo thủ công'},{key:'import',label:'📊 Import Excel'}].map(t=>(
+          {[{key:'create',label:'Tạo thủ công'},{key:'import',label:'Import Excel'}].map(t=>(
             <button key={t.key} type="button" onClick={()=>setModalTab(t.key)}
               className={`flex-1 py-2.5 text-sm font-medium transition-colors ${modalTab===t.key?'text-accent border-b-2 border-accent -mb-px':'text-text-muted hover:text-text-secondary'}`}>
               {t.label}
@@ -130,19 +135,33 @@ function CreateUserModal({ onClose, onCreated }) {
         </div>
 
         {modalTab==='import' ? <TabImportAdmin onClose={onClose} onImported={()=>{onCreated();onClose()}}/> :
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto space-y-4">
+        success ? (
+          <div className="p-7 space-y-4 text-center">
+            
+            <p className="text-text-primary font-semibold">Tạo tài khoản thành công!</p>
+            {success.hasRealEmail
+              ? <p className="text-xs text-accent">✉ Đã gửi thông tin đăng nhập tới {success.email}</p>
+              : <p className="text-xs text-text-muted">Không có email — tài khoản chưa nhận được thông báo</p>
+            }
+            <div className="flex gap-3 mt-4">
+              <button onClick={()=>{setSuccess(null);setForm(emptyForm)}} className="btn-secondary flex-1">➕ Tạo tiếp</button>
+              <button onClick={onClose} className="btn-primary flex-1">Đóng</button>
+            </div>
+          </div>
+        ) :
+        <form onSubmit={handleSubmit} className="p-7 overflow-y-auto space-y-5">
           {error && (
-            <div className="px-3 py-2 rounded-lg bg-red-accent/10 border border-red-accent/30 text-red-accent text-sm">{error}</div>
+            <div className="px-3 py-2 rounded-lg bg-danger/8 border border-danger/20 text-danger text-sm">{error}</div>
           )}
 
           {/* Vai trò — đặt lên đầu để các field bên dưới render đúng */}
           <div>
-            <label className="label">Vai trò *</label>
+            <label className="input-label">Vai trò *</label>
             <div className="flex gap-2">
               {[
-                { v: 'TEACHER', label: 'Giảng viên', cls: 'border-cyan-accent/40 bg-cyan-accent/10 text-cyan-accent' },
-                { v: 'STUDENT', label: 'Sinh viên',  cls: 'border-green-accent/40 bg-green-accent/10 text-green-accent' },
-                { v: 'ADMIN',   label: 'Admin',       cls: 'border-red-accent/40 bg-red-accent/10 text-red-accent' },
+                { v: 'TEACHER', label: 'Giảng viên', cls: 'border-info/40 bg-info/10 text-info' },
+                { v: 'STUDENT', label: 'Sinh viên',  cls: 'border-success/40 bg-success/t/10 text-success' },
+                { v: 'ADMIN',   label: 'Admin',       cls: 'border-danger/40 bg-danger/100 text-danger' },
               ].map(opt => (
                 <button key={opt.v} type="button"
                   onClick={() => setForm(p => ({ ...p, role: opt.v }))}
@@ -158,33 +177,33 @@ function CreateUserModal({ onClose, onCreated }) {
           {/* Thông tin đăng nhập */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="label">Username *</label>
+              <label className="input-label">Username *</label>
               <input className="input-field" value={form.username} onChange={f('username')} required autoFocus placeholder="vd: nguyenvana" />
             </div>
             <div>
-              <label className="label">Mật khẩu *</label>
+              <label className="input-label">Mật khẩu *</label>
               <input type="password" className="input-field" value={form.password} onChange={f('password')} required placeholder="Tối thiểu 6 ký tự" />
             </div>
           </div>
 
           <div>
-            <label className="label">Email <span className="text-text-muted font-normal">(tuỳ chọn)</span></label>
+            <label className="input-label">Email <span className="text-text-muted font-normal">(tuỳ chọn)</span></label>
             <input type="email" className="input-field" value={form.email} onChange={f('email')} placeholder="vd: nguyenvana@email.com" />
           </div>
 
           <div>
-            <label className="label">Họ tên</label>
+            <label className="input-label">Họ tên</label>
             <input className="input-field" value={form.fullName} onChange={f('fullName')} placeholder="Nhập họ và tên đầy đủ" />
           </div>
 
           {/* ── Số điện thoại (chung) ── */}
           {(isStudent || isTeacher) && (
             <div className="pt-2 border-t border-surface-600">
-              <p className={`text-xs font-semibold uppercase tracking-wider mb-3 ${isStudent ? 'text-green-accent' : 'text-cyan-accent'}`}>
+              <p className={`text-xs font-medium uppercase tracking-wider text-text-muted mb-3`}>
                 {isStudent ? 'Thông tin sinh viên' : 'Thông tin giảng viên'}
               </p>
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-surface-700 border border-surface-600 mb-3">
-                <svg className="w-4 h-4 text-amber-accent shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 text-warning shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/>
                 </svg>
                 <p className="text-xs text-text-secondary">
@@ -192,7 +211,7 @@ function CreateUserModal({ onClose, onCreated }) {
                 </p>
               </div>
               <div>
-                <label className="label">Số điện thoại</label>
+                <label className="input-label">Số điện thoại</label>
                 <input className="input-field" value={form.phone}
                   onChange={f('phone')} placeholder="vd: 0912345678" />
               </div>
@@ -200,10 +219,11 @@ function CreateUserModal({ onClose, onCreated }) {
           )}
         </form>
         }
+      
 
         {/* Footer */}
-        {modalTab !== 'import' && (
-        <div className="flex gap-3 px-6 py-4 border-t border-surface-600 shrink-0">
+        {modalTab !== 'import' && !success && (
+        <div className="flex gap-3 px-7 py-4 border-t border-surface-600 shrink-0">
           <button onClick={handleSubmit} disabled={saving} className="btn-primary flex-1">
             {saving ? (
               <span className="flex items-center justify-center gap-2">
@@ -230,7 +250,7 @@ export default function AdminUsers() {
   const [showCreate, setShowCreate] = useState(false)
   const [resetTarget, setResetTarget] = useState(null)  // user cần reset password
   const [page, setPage] = useState(0)
-  const PAGE_SIZE = 15
+  const PAGE_SIZE = 10
   const [activeTab, setActiveTab]   = useState('ALL')
 
   const load = () => {
@@ -278,11 +298,7 @@ export default function AdminUsers() {
           <p className="text-text-secondary text-sm mt-1">{users.length} tài khoản trong hệ thống</p>
         </div>
         <div className="flex gap-2">
-          {/* <button onClick={() => setShowImport(true)}
-            className="btn-ghost flex items-center gap-1.5 border border-surface-600 rounded-lg px-3 py-2 text-sm hover:border-accent hover:text-accent">
-            📊 Import Excel
-          </button> */}
-          <button onClick={() => setShowCreate(true)} className="btn-primary flex items-center gap-2">
+<button onClick={() => setShowCreate(true)} className="btn-primary flex items-center gap-2">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4"/>
             </svg>
@@ -320,12 +336,7 @@ export default function AdminUsers() {
             <input className="input-field pl-9" placeholder="Tìm tên, email, username..."
               value={search} onChange={e => setSearch(e.target.value)} />
           </div>
-          <button onClick={load} className="btn-secondary flex items-center gap-2">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-            </svg>
-            Làm mới
-          </button>
+          <button onClick={load} className="btn-secondary">Làm mới</button>
         </div>
 
         {loading ? (
@@ -350,8 +361,8 @@ export default function AdminUsers() {
                       <td className="py-3 pr-4 text-xs text-text-muted font-mono">{globalIdx + 1}</td>
                       <td className="py-3 pr-4">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-7 h-7 rounded-full bg-accent/15 border border-accent/25 flex items-center justify-center shrink-0">
-                            <span className="text-accent text-xs font-bold">
+                          <div className="w-7 h-7 rounded-full bg-surface-600 border border-surface-500 flex items-center justify-center shrink-0">
+                            <span className="text-text-secondary text-xs font-semibold">
                               {u.fullName?.[0]?.toUpperCase() || u.username?.[0]?.toUpperCase()}
                             </span>
                           </div>
@@ -391,7 +402,7 @@ export default function AdminUsers() {
                             🔑 Reset
                           </button>
                           <button onClick={() => handleDelete(u.id)} disabled={deleting === u.id}
-                            className="btn-ghost text-red-accent/70 hover:text-red-accent hover:bg-red-accent/10 px-2 py-1 text-xs">
+                            className="btn-ghost text-danger/70 hover:text-danger hover:bg-danger/8 px-2 py-1 text-xs">
                             {deleting === u.id ? '...' : 'Xóa'}
                           </button>
                         </div>

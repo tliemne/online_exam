@@ -41,11 +41,11 @@ export default function ChangePasswordModal({ onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-surface-800 border border-surface-600 rounded-2xl w-full max-w-md shadow-2xl">
+      <div className="bg-surface-800 border border-surface-600 rounded-xl w-full max-w-md shadow-modal">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-surface-700">
-          <h3 className="font-semibold text-text-primary">🔑 Đổi mật khẩu</h3>
+        <div className="flex items-center justify-between px-7 py-5 border-b border-surface-700">
+          <h3 className="font-semibold text-text-primary"> Đổi mật khẩu</h3>
           <button onClick={onClose}
             className="btn-ghost p-1.5 text-text-muted hover:text-text-primary">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -54,17 +54,17 @@ export default function ChangePasswordModal({ onClose }) {
           </button>
         </div>
 
-        <div className="p-6">
+        <div className="p-7 space-y-5">
           {done ? (
             /* Success */
             <div className="text-center py-4">
-              <div className="text-5xl mb-4">✅</div>
+              <div className="text-5xl mb-4"></div>
               <p className="text-text-primary font-semibold mb-1">Đổi mật khẩu thành công!</p>
               <p className="text-text-muted text-sm mb-6">Mật khẩu mới của bạn đã được cập nhật.</p>
               <button onClick={onClose} className="btn-primary w-full">Đóng</button>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-5">
               {/* Old password */}
               <div>
                 <label className="block text-sm text-text-secondary mb-1.5">Mật khẩu hiện tại</label>
@@ -106,7 +106,7 @@ export default function ChangePasswordModal({ onClose }) {
                     {[1,2,3].map(i => (
                       <div key={i} className={`h-1 flex-1 rounded-full transition-all ${
                         form.newPassword.length >= i * 4
-                          ? i === 1 ? 'bg-red-accent' : i === 2 ? 'bg-yellow-400' : 'bg-green-accent'
+                          ? i === 1 ? 'bg-danger' : i === 2 ? 'bg-yellow-400' : 'bg-success'
                           : 'bg-surface-600'
                       }`}/>
                     ))}
@@ -128,9 +128,9 @@ export default function ChangePasswordModal({ onClose }) {
                     onKeyDown={e => e.key === 'Enter' && handleSubmit()}
                     className={`input-field pr-10 ${
                       form.confirm && form.confirm !== form.newPassword
-                        ? 'border-red-accent/50 focus:border-red-accent'
+                        ? 'border-danger/50 focus:border-danger'
                         : form.confirm && form.confirm === form.newPassword
-                        ? 'border-green-accent/50 focus:border-green-accent'
+                        ? 'border-success/50 focus:border-success'
                         : ''
                     }`}
                     placeholder="Nhập lại mật khẩu mới"
@@ -141,14 +141,14 @@ export default function ChangePasswordModal({ onClose }) {
                   </button>
                 </div>
                 {form.confirm && form.confirm === form.newPassword && (
-                  <p className="text-xs text-green-accent mt-1">✓ Mật khẩu khớp</p>
+                  <p className="text-xs text-success mt-1">Khớp</p>
                 )}
               </div>
 
               {/* Error */}
               {error && (
-                <div className="bg-red-accent/10 border border-red-accent/30 rounded-lg px-4 py-2.5">
-                  <p className="text-red-accent text-sm">⚠ {error}</p>
+                <div className="bg-danger/10 border border-danger/30 rounded-lg px-4 py-2.5">
+                  <p className="text-danger text-sm"> {error}</p>
                 </div>
               )}
 
@@ -161,7 +161,7 @@ export default function ChangePasswordModal({ onClose }) {
                         <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>
                         Đang lưu...
                       </span>
-                    : '✓ Cập nhật mật khẩu'}
+                    : 'Cập nhật mật khẩu'}
                 </button>
               </div>
             </div>

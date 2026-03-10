@@ -86,7 +86,7 @@ function GradeModal({ attempt, onClose, onGraded }) {
                 </div>
                 <div>
                   <p className="text-text-muted text-xs mb-1">Trạng thái</p>
-                  <p className={`text-sm font-semibold ${detail.status === 'GRADED' ? 'text-green-accent' : 'text-yellow-400'}`}>
+                  <p className={`text-sm font-semibold ${detail.status === 'GRADED' ? 'text-success' : 'text-yellow-400'}`}>
                     {detail.status === 'GRADED' ? '✓ Đã chấm' : '○ Chờ chấm'}
                   </p>
                 </div>
@@ -111,7 +111,7 @@ function GradeModal({ attempt, onClose, onGraded }) {
                         {isEssay ? '✏ Tự luận — cần chấm' : isAutoGraded ? 'Trắc nghiệm' : 'Đúng/Sai'}
                       </span>
                       {!isEssay && (
-                        <span className={`ml-auto text-xs font-medium ${a.isCorrect ? 'text-green-accent' : 'text-red-accent'}`}>
+                        <span className={`ml-auto text-xs font-medium ${a.isCorrect ? 'text-success' : 'text-danger'}`}>
                           {a.isCorrect ? '✓ Đúng' : '✗ Sai'} · {a.score ?? 0}đ
                         </span>
                       )}
@@ -123,7 +123,7 @@ function GradeModal({ attempt, onClose, onGraded }) {
                     {a.selectedAnswerContent && (
                       <div className="mb-2 p-2 bg-surface-600 rounded-lg">
                         <p className="text-xs text-text-muted mb-0.5">Đáp án chọn:</p>
-                        <p className={`text-sm ${a.isCorrect ? 'text-green-accent' : 'text-red-accent'}`}>{a.selectedAnswerContent}</p>
+                        <p className={`text-sm ${a.isCorrect ? 'text-success' : 'text-danger'}`}>{a.selectedAnswerContent}</p>
                       </div>
                     )}
                     {a.textAnswer && (
@@ -259,7 +259,7 @@ export default function TeacherGradingPage() {
             {[
               { l: 'Tổng bài nộp', v: attempts.length, c: 'text-accent' },
               { l: 'Chờ chấm',     v: pendingCount,    c: 'text-yellow-400' },
-              { l: 'Đã chấm',      v: gradedCount,     c: 'text-green-accent' },
+              { l: 'Đã chấm',      v: gradedCount,     c: 'text-success' },
             ].map(s => (
               <div key={s.l} className="card text-center py-4">
                 <p className={`text-2xl font-bold ${s.c}`}>{s.v}</p>
@@ -325,7 +325,7 @@ export default function TeacherGradingPage() {
                           {a.score != null ? `${a.score}/${a.totalScore}` : '—'}
                         </span>
                         {a.passed != null && (
-                          <span className={`ml-2 text-xs ${a.passed ? 'text-green-accent' : 'text-red-accent'}`}>
+                          <span className={`ml-2 text-xs ${a.passed ? 'text-success' : 'text-danger'}`}>
                             {a.passed ? '✓' : '✗'}
                           </span>
                         )}
@@ -333,7 +333,7 @@ export default function TeacherGradingPage() {
                       <td className="px-5 py-3 text-center">
                         <span className={`text-xs px-2.5 py-1 rounded-full font-medium border ${
                           a.status === 'GRADED'
-                            ? 'bg-green-accent/10 border-green-accent/30 text-green-accent'
+                            ? 'bg-success/10 border-success/30 text-success'
                             : 'bg-yellow-400/10 border-yellow-400/30 text-yellow-400'
                         }`}>
                           {a.status === 'GRADED' ? '✓ Đã chấm' : '○ Chờ chấm'}

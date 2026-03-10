@@ -1,74 +1,59 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
+  darkMode: ['attribute', 'data-theme'],   // dùng data-theme="dark" / "light"
   theme: {
     extend: {
       fontFamily: {
-        display: ['"Syne"', 'sans-serif'],
-        body: ['"DM Sans"', 'sans-serif'],
-        mono: ['"JetBrains Mono"', 'monospace'],
+        display: ['"Plus Jakarta Sans"', 'sans-serif'],
+        body:    ['"Inter"', 'sans-serif'],
+        mono:    ['"JetBrains Mono"', 'monospace'],
       },
       colors: {
         surface: {
-          950: '#050508',
-          900: '#0a0a10',
-          800: '#111118',
-          700: '#1a1a24',
-          600: '#22222f',
-          500: '#2d2d3e',
+          950: '#0d0f14',
+          900: '#13151c',
+          800: '#191c25',
+          700: '#1f232e',
+          600: '#272b38',
+          500: '#333849',
+          400: '#454c63',
         },
         accent: {
-          DEFAULT: '#7c6aff',
-          hover: '#9a8bff',
-          dim: '#7c6aff22',
-          glow: '#7c6aff44',
-        },
-        cyan: {
-          accent: '#00d4ff',
-          dim: '#00d4ff22',
-        },
-        green: {
-          accent: '#00e5a0',
-          dim: '#00e5a022',
-        },
-        amber: {
-          accent: '#ffb800',
-          dim: '#ffb80022',
-        },
-        red: {
-          accent: '#ff4d6a',
-          dim: '#ff4d6a22',
+          DEFAULT: '#4f6ef7',
+          hover:   '#3d5de8',
+          subtle:  'rgba(79,110,247,0.12)',
+          border:  'rgba(79,110,247,0.25)',
         },
         text: {
-          primary: '#f0f0fa',
-          secondary: '#9090b0',
-          muted: '#555570',
-        }
-      },
-      backgroundImage: {
-        'grid-pattern': 'linear-gradient(rgba(124,106,255,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(124,106,255,0.04) 1px, transparent 1px)',
-        'glow-accent': 'radial-gradient(ellipse 60% 40% at 50% 0%, rgba(124,106,255,0.15), transparent)',
-      },
-      backgroundSize: {
-        'grid': '40px 40px',
+          primary:   '#e8eaf2',
+          secondary: '#8b90a8',
+          muted:     '#50546a',
+          disabled:  '#363a4d',
+        },
+        success: { DEFAULT: '#16a34a', subtle: 'rgba(22,163,74,0.1)',   border: 'rgba(22,163,74,0.2)'   },
+        warning: { DEFAULT: '#d97706', subtle: 'rgba(217,119,6,0.1)',   border: 'rgba(217,119,6,0.2)'   },
+        danger:  { DEFAULT: '#dc2626', subtle: 'rgba(220,38,38,0.1)',   border: 'rgba(220,38,38,0.2)'   },
+        info:    { DEFAULT: '#0891b2', subtle: 'rgba(8,145,178,0.1)',   border: 'rgba(8,145,178,0.2)'   },
       },
       boxShadow: {
-        'glow-sm': '0 0 20px rgba(124,106,255,0.2)',
-        'glow-md': '0 0 40px rgba(124,106,255,0.3)',
-        'glow-lg': '0 0 80px rgba(124,106,255,0.25)',
-        'card': '0 4px 24px rgba(0,0,0,0.4)',
+        'sm':    '0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06)',
+        'md':    '0 4px 12px rgba(0,0,0,0.1)',
+        'lg':    '0 8px 24px rgba(0,0,0,0.14)',
+        'modal': '0 24px 64px rgba(0,0,0,0.2)',
+        'focus': '0 0 0 3px rgba(79,110,247,0.2)',
+        // dark overrides applied via CSS variables
+        'sm-dark':    '0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2)',
+        'modal-dark': '0 24px 64px rgba(0,0,0,0.6)',
       },
       animation: {
-        'pulse-slow': 'pulse 3s ease-in-out infinite',
-        'fade-in': 'fadeIn 0.5s ease forwards',
-        'slide-up': 'slideUp 0.4s ease forwards',
-        'glow-pulse': 'glowPulse 2s ease-in-out infinite',
+        'fade-in':  'fadeIn 0.2s ease forwards',
+        'slide-up': 'slideUp 0.25s ease forwards',
       },
       keyframes: {
-        fadeIn: { from: { opacity: 0 }, to: { opacity: 1 } },
-        slideUp: { from: { opacity: 0, transform: 'translateY(16px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
-        glowPulse: { '0%,100%': { boxShadow: '0 0 20px rgba(124,106,255,0.2)' }, '50%': { boxShadow: '0 0 40px rgba(124,106,255,0.5)' } },
-      }
+        fadeIn:  { from: { opacity: 0 },                               to: { opacity: 1 } },
+        slideUp: { from: { opacity: 0, transform: 'translateY(8px)' }, to: { opacity: 1, transform: 'translateY(0)' } },
+      },
     }
   },
   plugins: []
