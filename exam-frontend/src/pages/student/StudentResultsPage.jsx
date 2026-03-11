@@ -4,25 +4,26 @@ import api from '../../api/client'
 const Icon = {
   x:      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>,
   check:  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4.5 12.75l6 6 9-13.5"/></svg>,
+  wrong:  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12"/></svg>,
   clock:  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>,
+  back:   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>,
+  eye:    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>,
 }
 
-// ── Score ring ────────────────────────────────────────────
+// ── Score Ring ────────────────────────────────────────────
 function ScoreRing({ score, total, size = 80 }) {
-  const pct     = total > 0 ? (score / total) : 0
-  const r       = (size - 10) / 2
-  const circ    = 2 * Math.PI * r
-  const offset  = circ * (1 - pct)
-  const color   = pct >= 0.8 ? '#4ade80' : pct >= 0.5 ? '#fb923c' : '#f87171'
+  const pct    = total > 0 && score != null ? score / total : 0
+  const r      = (size - 10) / 2
+  const circ   = 2 * Math.PI * r
+  const offset = circ * (1 - pct)
+  const color  = pct >= 0.8 ? '#16a34a' : pct >= 0.5 ? '#d97706' : '#dc2626'
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth={8}/>
+      <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--border-strong)" strokeWidth={8}/>
       <circle cx={size/2} cy={size/2} r={r} fill="none" stroke={color} strokeWidth={8}
-        strokeLinecap="round"
-        strokeDasharray={circ}
-        strokeDashoffset={offset}
+        strokeLinecap="round" strokeDasharray={circ} strokeDashoffset={offset}
         transform={`rotate(-90 ${size/2} ${size/2})`}
-        style={{transition:'stroke-dashoffset 0.8s ease'}}
+        style={{ transition: 'stroke-dashoffset 0.8s ease' }}
       />
       <text x="50%" y="50%" textAnchor="middle" dominantBaseline="central"
         fill={color} fontSize={size * 0.22} fontWeight="700" fontFamily="JetBrains Mono,monospace">
@@ -32,10 +33,22 @@ function ScoreRing({ score, total, size = 80 }) {
   )
 }
 
-// ── Attempt Detail Modal ──────────────────────────────────
-function AttemptDetailModal({ attempt, onClose }) {
-  const [detail, setDetail] = useState(null)
+// ── Question type label ───────────────────────────────────
+function QTypeLabel({ type }) {
+  const map = { MULTIPLE_CHOICE: 'Trắc nghiệm', TRUE_FALSE: 'Đúng/Sai', ESSAY: 'Tự luận' }
+  return (
+    <span className="text-xs px-2 py-0.5 rounded-full font-medium"
+      style={{ background: 'var(--bg-elevated)', color: 'var(--text-3)', border: '1px solid var(--border-base)' }}>
+      {map[type] || type}
+    </span>
+  )
+}
+
+// ── Detail Page (replaces modal) ──────────────────────────
+function AttemptDetailPage({ attempt, onBack }) {
+  const [detail, setDetail]   = useState(null)
   const [loading, setLoading] = useState(true)
+  const [filter, setFilter]   = useState('all') // all | correct | wrong | pending
 
   useEffect(() => {
     api.get(`/attempts/${attempt.id}`)
@@ -43,112 +56,215 @@ function AttemptDetailModal({ attempt, onClose }) {
       .finally(() => setLoading(false))
   }, [attempt.id])
 
+  const answers    = detail?.answers || []
+  const correct    = answers.filter(a => a.isCorrect === true)
+  const wrong      = answers.filter(a => a.isCorrect === false)
+  const pending    = answers.filter(a => a.isCorrect == null)
+  const pct        = answers.length > 0 ? Math.round(correct.length / answers.length * 100) : 0
+  const scoreColor = detail?.passed ? '#16a34a' : detail?.passed === false ? '#dc2626' : '#d97706'
+
+  const filtered = answers.filter(a => {
+    if (filter === 'correct') return a.isCorrect === true
+    if (filter === 'wrong')   return a.isCorrect === false
+    if (filter === 'pending') return a.isCorrect == null
+    return true
+  })
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-surface-800 border border-surface-600 rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-modal">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-surface-700 shrink-0">
-          <div>
-            <h3 className="font-semibold text-text-primary">Chi tiết bài làm</h3>
-            <p className="text-xs text-text-muted">{detail?.examTitle || attempt.examTitle}</p>
+    <div className="max-w-3xl mx-auto space-y-5 animate-fade-in">
+
+      {/* Back */}
+      <button onClick={onBack}
+        className="flex items-center gap-2 text-sm transition-colors"
+        style={{ color: 'var(--text-3)' }}
+        onMouseEnter={e => e.currentTarget.style.color = 'var(--text-1)'}
+        onMouseLeave={e => e.currentTarget.style.color = 'var(--text-3)'}>
+        {Icon.back}
+        <span>Quay lại danh sách</span>
+      </button>
+
+      {/* Header card */}
+      <div className="card">
+        <div className="flex items-start gap-5">
+          <ScoreRing score={detail?.score} total={detail?.totalScore || 10} size={72}/>
+          <div className="flex-1 min-w-0">
+            <h2 className="font-display font-semibold text-lg leading-tight mb-1"
+              style={{ color: 'var(--text-1)' }}>
+              {detail?.examTitle || attempt.examTitle}
+            </h2>
+            <p className="text-sm mb-3" style={{ color: 'var(--text-3)' }}>{attempt.courseName}</p>
+            <div className="flex flex-wrap gap-3 text-sm">
+              <span className="font-semibold" style={{ color: scoreColor }}>
+                {detail?.passed == null ? 'Chờ chấm' : detail.passed ? '✓ Đạt' : '✗ Chưa đạt'}
+              </span>
+              <span style={{ color: 'var(--text-3)' }}>·</span>
+              <span style={{ color: 'var(--text-2)' }}>
+                {detail?.score != null ? `${detail.score} / ${detail.totalScore} điểm` : 'Chưa có điểm'}
+              </span>
+              {attempt.submittedAt && (
+                <>
+                  <span style={{ color: 'var(--text-3)' }}>·</span>
+                  <span className="flex items-center gap-1" style={{ color: 'var(--text-3)' }}>
+                    {Icon.clock}
+                    {new Date(attempt.submittedAt).toLocaleString('vi-VN', {
+                      day: '2-digit', month: '2-digit', year: 'numeric',
+                      hour: '2-digit', minute: '2-digit'
+                    })}
+                  </span>
+                </>
+              )}
+            </div>
           </div>
-          <button onClick={onClose} className="btn-ghost p-2 text-text-muted hover:text-text-primary">{Icon.x}</button>
         </div>
 
-        <div className="overflow-y-auto flex-1 p-6">
-          {loading ? (
-            <div className="flex justify-center py-16">
-              <div className="w-8 h-8 rounded-full border-2 border-accent border-t-transparent animate-spin"/>
+        {/* Progress bar */}
+        {loading ? null : (
+          <div className="mt-5">
+            <div className="flex justify-between text-xs mb-1.5" style={{ color: 'var(--text-3)' }}>
+              <span>Tỉ lệ đúng</span>
+              <span>{correct.length}/{answers.length} câu ({pct}%)</span>
             </div>
-          ) : detail ? (
-            <div className="space-y-4">
-              {/* Score card */}
-              <div className="bg-surface-700 rounded-xl p-4 flex items-center gap-6">
-                <ScoreRing score={detail.score} total={detail.totalScore} />
-                <div className="flex-1 grid grid-cols-3 gap-4">
-                  <div>
-                    <p className="text-xs text-text-muted mb-1">Điểm</p>
-                    <p className="text-text-primary font-bold">
-                      {detail.score != null ? `${detail.score}/${detail.totalScore}` : 'Chờ chấm'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-text-muted mb-1">Kết quả</p>
-                    <p className={`font-semibold text-sm ${detail.passed ? 'text-success' : detail.passed === false ? 'text-danger' : 'text-warning'}`}>
-                      {detail.passed == null ? '—' : detail.passed ? 'Đạt' : 'Chưa đạt'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-text-muted mb-1">Đúng</p>
-                    <p className="text-text-primary font-bold">{detail.correctCount ?? '?'}/{detail.totalQuestions ?? '?'}</p>
-                  </div>
-                </div>
-              </div>
+            <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
+              <div className="h-full rounded-full transition-all duration-700"
+                style={{ width: `${pct}%`, background: pct >= 80 ? '#16a34a' : pct >= 50 ? '#d97706' : '#dc2626' }}/>
+            </div>
+          </div>
+        )}
+      </div>
 
-              {/* Question answers */}
-              <p className="text-xs text-text-muted uppercase tracking-wider font-medium">Chi tiết từng câu</p>
-              {(detail.answers || []).map((a, i) => (
-                <div key={a.id} className={`border rounded-xl p-4 ${
-                  a.isCorrect === true  ? 'border-success/30 bg-success/5'
-                  : a.isCorrect === false ? 'border-danger/30 bg-danger/5'
-                  : 'border-yellow-400/30 bg-yellow-400/5'
-                }`}>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="w-6 h-6 rounded-lg bg-surface-600 flex items-center justify-center text-xs font-mono text-text-muted font-bold shrink-0">{i+1}</span>
-                    <span className="text-xs text-text-muted px-2 py-0.5 rounded-full bg-surface-600">
-                      {a.questionType === 'MULTIPLE_CHOICE' ? 'Trắc nghiệm' : a.questionType === 'TRUE_FALSE' ? 'Đúng/Sai' : 'Tự luận'}
-                    </span>
-                    <span className={`ml-auto text-xs font-semibold ${
-                      a.isCorrect === true ? 'text-success'
-                      : a.isCorrect === false ? 'text-danger'
-                      : 'text-warning'
-                    }`}>
-                      {a.isCorrect === true ? 'Đúng' : a.isCorrect === false ? 'Sai' : 'Chờ chấm'}
-                      {a.score != null ? ` · ${a.score}đ` : ''}
-                    </span>
-                  </div>
-                  <p className="text-text-primary text-sm mb-2 leading-relaxed">{a.questionContent}</p>
+      {/* Summary chips */}
+      {!loading && (
+        <div className="grid grid-cols-3 gap-3">
+          <div className="card p-3 text-center">
+            <p className="text-xl font-bold" style={{ color: '#16a34a' }}>{correct.length}</p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>Đúng</p>
+          </div>
+          <div className="card p-3 text-center">
+            <p className="text-xl font-bold" style={{ color: '#dc2626' }}>{wrong.length}</p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>Sai</p>
+          </div>
+          <div className="card p-3 text-center">
+            <p className="text-xl font-bold" style={{ color: '#d97706' }}>{pending.length}</p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>Chờ chấm</p>
+          </div>
+        </div>
+      )}
+
+      {/* Filter tabs */}
+      {!loading && answers.length > 0 && (
+        <div className="flex gap-2 flex-wrap">
+          {[
+            { k: 'all',     l: `Tất cả (${answers.length})` },
+            { k: 'correct', l: `Đúng (${correct.length})` },
+            { k: 'wrong',   l: `Sai (${wrong.length})` },
+            ...(pending.length > 0 ? [{ k: 'pending', l: `Chờ chấm (${pending.length})` }] : []),
+          ].map(f => (
+            <button key={f.k} onClick={() => setFilter(f.k)}
+              className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
+              style={filter === f.k
+                ? { background: 'var(--accent)', color: '#fff' }
+                : { background: 'var(--bg-elevated)', color: 'var(--text-3)',
+                    border: '1px solid var(--border-base)' }}>
+              {f.l}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Questions */}
+      {loading ? (
+        <div className="flex justify-center py-16">
+          <div className="w-8 h-8 rounded-full border-2 animate-spin"
+            style={{ borderColor: 'var(--border-strong)', borderTopColor: 'var(--accent)' }}/>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((a, i) => {
+            const isCorrect  = a.isCorrect === true
+            const isWrong    = a.isCorrect === false
+            const isPending  = a.isCorrect == null
+            const borderClr  = isCorrect ? 'rgba(22,163,74,0.3)' : isWrong ? 'rgba(220,38,38,0.3)' : 'rgba(217,119,6,0.3)'
+            const bgClr      = isCorrect ? 'rgba(22,163,74,0.04)' : isWrong ? 'rgba(220,38,38,0.04)' : 'rgba(217,119,6,0.04)'
+            const accentClr  = isCorrect ? '#16a34a' : isWrong ? '#dc2626' : '#d97706'
+            const idx        = answers.indexOf(a)
+
+            return (
+              <div key={a.id} className="rounded-lg p-4"
+                style={{ border: `1px solid ${borderClr}`, background: bgClr }}>
+
+                {/* Question header */}
+                <div className="flex items-center gap-2 mb-2.5 flex-wrap">
+                  <span className="w-6 h-6 rounded-md flex items-center justify-center text-xs font-mono font-bold shrink-0"
+                    style={{ background: 'var(--bg-elevated)', color: 'var(--text-2)' }}>
+                    {idx + 1}
+                  </span>
+                  <QTypeLabel type={a.questionType}/>
+                  <span className="ml-auto flex items-center gap-1 text-xs font-semibold"
+                    style={{ color: accentClr }}>
+                    {isCorrect && Icon.check}
+                    {isWrong  && Icon.wrong}
+                    {isCorrect ? 'Đúng' : isWrong ? 'Sai' : 'Chờ chấm'}
+                    {a.score != null && <span className="font-normal ml-0.5" style={{ color: 'var(--text-3)' }}>· {a.score}đ</span>}
+                  </span>
+                </div>
+
+                {/* Question content */}
+                <p className="text-sm leading-relaxed mb-3" style={{ color: 'var(--text-1)' }}>
+                  {a.questionContent}
+                </p>
+
+                {/* Answers */}
+                <div className="space-y-1.5 text-sm">
                   {a.selectedAnswerContent && (
-                    <div className="text-xs">
-                      <span className="text-text-muted">Bạn chọn: </span>
-                      <span className={a.isCorrect ? 'text-success' : 'text-danger'}>{a.selectedAnswerContent}</span>
+                    <div className="flex items-start gap-2">
+                      <span className="text-xs shrink-0 mt-0.5 font-medium" style={{ color: 'var(--text-3)' }}>Bạn chọn:</span>
+                      <span className="font-medium" style={{ color: isCorrect ? '#16a34a' : isWrong ? '#dc2626' : 'var(--text-2)' }}>
+                        {a.selectedAnswerContent}
+                      </span>
                     </div>
                   )}
                   {a.textAnswer && (
-                    <div className="text-xs">
-                      <span className="text-text-muted">Trả lời: </span>
-                      <span className="text-text-secondary italic">"{a.textAnswer}"</span>
+                    <div className="flex items-start gap-2">
+                      <span className="text-xs shrink-0 mt-0.5 font-medium" style={{ color: 'var(--text-3)' }}>Trả lời:</span>
+                      <span className="italic" style={{ color: 'var(--text-2)' }}>"{a.textAnswer}"</span>
                     </div>
                   )}
-                  {a.correctAnswerContent && a.isCorrect === false && (
-                    <div className="text-xs mt-1">
-                      <span className="text-text-muted">Đáp án đúng: </span>
-                      <span className="text-success font-medium">{a.correctAnswerContent}</span>
-                    </div>
-                  )}
-                  {a.teacherComment && (
-                    <div className="mt-2 p-2 bg-accent/10 rounded-lg border border-accent/20">
-                      <span className="text-xs text-accent">💬 Nhận xét GV: </span>
-                      <span className="text-xs text-text-secondary">{a.teacherComment}</span>
+                  {a.correctAnswerContent && isWrong && (
+                    <div className="flex items-start gap-2">
+                      <span className="text-xs shrink-0 mt-0.5 font-medium" style={{ color: 'var(--text-3)' }}>Đáp án đúng:</span>
+                      <span className="font-semibold" style={{ color: '#16a34a' }}>{a.correctAnswerContent}</span>
                     </div>
                   )}
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-center text-text-muted py-8">Không tải được dữ liệu</p>
+
+                {/* Teacher comment */}
+                {a.teacherComment && (
+                  <div className="mt-3 px-3 py-2 rounded-lg text-xs"
+                    style={{ background: 'var(--accent-subtle)', border: '1px solid var(--accent-border)', color: 'var(--text-2)' }}>
+                    <span className="font-medium" style={{ color: 'var(--accent)' }}>Nhận xét GV: </span>
+                    {a.teacherComment}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+
+          {filtered.length === 0 && (
+            <p className="text-center py-8 text-sm" style={{ color: 'var(--text-3)' }}>
+              Không có câu nào trong mục này
+            </p>
           )}
         </div>
-      </div>
+      )}
     </div>
   )
 }
 
-// ── Main Page ─────────────────────────────────────────────
+// ── Main Results List ─────────────────────────────────────
 export default function StudentResultsPage() {
   const [attempts, setAttempts]   = useState([])
   const [loading, setLoading]     = useState(true)
-  const [detail, setDetail]       = useState(null)
+  const [selected, setSelected]   = useState(null)
   const [filterStatus, setFilter] = useState('all')
 
   useEffect(() => {
@@ -158,10 +274,15 @@ export default function StudentResultsPage() {
       .finally(() => setLoading(false))
   }, [])
 
-  const graded    = attempts.filter(a => a.status === 'GRADED')
-  const pending   = attempts.filter(a => a.status === 'SUBMITTED')
-  const passed    = graded.filter(a => a.passed)
-  const avgScore  = graded.length > 0
+  // Nếu đang xem chi tiết → render trang detail
+  if (selected) {
+    return <AttemptDetailPage attempt={selected} onBack={() => setSelected(null)}/>
+  }
+
+  const graded   = attempts.filter(a => a.status === 'GRADED')
+  const pending  = attempts.filter(a => a.status === 'SUBMITTED')
+  const passed   = graded.filter(a => a.passed)
+  const avgScore = graded.length > 0
     ? (graded.reduce((s, a) => s + (a.score || 0), 0) / graded.length).toFixed(1)
     : null
 
@@ -171,47 +292,52 @@ export default function StudentResultsPage() {
     return true
   })
 
-  const statusColor = (a) => {
-    if (a.status === 'GRADED') return a.passed ? 'text-success' : 'text-danger'
-    return 'text-warning'
-  }
-  const statusLabel = (a) => {
-    if (a.status === 'GRADED') return a.passed ? 'Đạt' : 'Chưa đạt'
-    return 'Chờ chấm'
-  }
   const fmtDate = (d) => d ? new Date(d).toLocaleString('vi-VN', {
-    day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
   }) : '—'
+
+  const statusColor = (a) =>
+    a.status === 'GRADED' ? (a.passed ? '#16a34a' : '#dc2626') : '#d97706'
+  const statusLabel = (a) =>
+    a.status === 'GRADED' ? (a.passed ? 'Đạt' : 'Chưa đạt') : 'Chờ chấm'
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+
       <div>
         <h1 className="page-title">Kết quả thi</h1>
-        <p className="text-text-secondary text-sm mt-1">Lịch sử và điểm số các bài thi</p>
+        <p className="text-sm mt-1" style={{ color: 'var(--text-3)' }}>Lịch sử và điểm số các bài thi</p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: 'Bài đã nộp',    value: attempts.length, color: 'text-accent' },
-          { label: 'Đã chấm',       value: graded.length,   color: 'text-success' },
-          { label: 'Chờ chấm',      value: pending.length,  color: 'text-warning' },
-          { label: 'Điểm TB',       value: avgScore ?? '—', color: 'text-text-primary' },
+          { label: 'Bài đã nộp',  value: attempts.length,         color: 'var(--accent)' },
+          { label: 'Đã chấm',     value: graded.length,           color: '#16a34a'       },
+          { label: 'Chờ chấm',    value: pending.length,          color: '#d97706'       },
+          { label: 'Điểm TB',     value: avgScore ?? '—',         color: 'var(--text-1)' },
         ].map(s => (
           <div key={s.label} className="card text-center py-4">
-            <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
-            <p className="text-text-muted text-xs mt-1">{s.label}</p>
+            <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
+            <p className="text-xs mt-1" style={{ color: 'var(--text-3)' }}>{s.label}</p>
           </div>
         ))}
       </div>
 
       {/* Filter */}
       <div className="flex gap-2">
-        {[{ k: 'all', l: 'Tất cả' }, { k: 'graded', l: 'Đã chấm' }, { k: 'pending', l: 'Chờ chấm' }].map(f => (
+        {[
+          { k: 'all',     l: `Tất cả (${attempts.length})` },
+          { k: 'graded',  l: `Đã chấm (${graded.length})` },
+          { k: 'pending', l: `Chờ chấm (${pending.length})` },
+        ].map(f => (
           <button key={f.k} onClick={() => setFilter(f.k)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              filterStatus === f.k ? 'bg-accent text-white' : 'bg-surface-700 text-text-muted hover:text-text-primary border border-surface-600'
-            }`}>
+            className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
+            style={filterStatus === f.k
+              ? { background: 'var(--accent)', color: '#fff' }
+              : { background: 'var(--bg-elevated)', color: 'var(--text-3)',
+                  border: '1px solid var(--border-base)' }}>
             {f.l}
           </button>
         ))}
@@ -220,53 +346,52 @@ export default function StudentResultsPage() {
       {/* List */}
       {loading ? (
         <div className="flex justify-center py-16">
-          <div className="w-8 h-8 rounded-full border-2 border-accent border-t-transparent animate-spin"/>
+          <div className="w-8 h-8 rounded-full border-2 animate-spin"
+            style={{ borderColor: 'var(--border-strong)', borderTopColor: 'var(--accent)' }}/>
         </div>
       ) : filtered.length === 0 ? (
         <div className="card text-center py-16">
-          <div className="text-4xl mb-3">📊</div>
-          <p className="text-text-secondary font-medium">
+          <p className="font-medium" style={{ color: 'var(--text-2)' }}>
             {attempts.length === 0 ? 'Chưa có bài thi nào' : 'Không có bài trong mục này'}
           </p>
         </div>
       ) : (
         <div className="space-y-3">
-          {filtered.map((a, idx) => (
-            <div key={a.id} className="card p-0 overflow-hidden hover:border-surface-500 transition-all">
+          {filtered.map(a => (
+            <div key={a.id} className="card p-0 overflow-hidden hover:border-[var(--border-strong)] transition-all">
               <div className="flex items-center gap-4 p-5">
-                {/* Score ring */}
                 <div className="shrink-0">
-                  <ScoreRing score={a.score} total={a.totalScore || 10} size={60} />
+                  <ScoreRing score={a.score} total={a.totalScore || 10} size={60}/>
                 </div>
-
-                {/* Info */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs text-text-muted">{a.courseName}</span>
-                    <span className="text-xs text-text-muted">·</span>
-                    <span className={`text-xs font-semibold ${statusColor(a)}`}>{statusLabel(a)}</span>
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className="text-xs" style={{ color: 'var(--text-3)' }}>{a.courseName}</span>
+                    <span style={{ color: 'var(--text-4)' }}>·</span>
+                    <span className="text-xs font-semibold" style={{ color: statusColor(a) }}>
+                      {statusLabel(a)}
+                    </span>
                   </div>
-                  <p className="text-text-primary font-semibold truncate">{a.examTitle}</p>
-                  <div className="flex items-center gap-3 mt-1 text-xs text-text-muted">
-                    <span>{Icon.clock} {fmtDate(a.submittedAt)}</span>
-                    <span>Đúng: {a.correctCount ?? '?'}/{a.totalQuestions ?? '?'} câu</span>
+                  <p className="font-semibold truncate" style={{ color: 'var(--text-1)' }}>{a.examTitle}</p>
+                  <div className="flex items-center gap-3 mt-1 text-xs flex-wrap" style={{ color: 'var(--text-3)' }}>
+                    <span className="flex items-center gap-1">{Icon.clock}{fmtDate(a.submittedAt)}</span>
+                    {a.totalQuestions > 0 && (
+                      <span>Đúng: {a.correctCount ?? 0}/{a.totalQuestions} câu</span>
+                    )}
                   </div>
                 </div>
-
-                {/* Action */}
-                <button
-                  onClick={() => setDetail(a)}
-                  className="btn-ghost text-sm px-4 py-2 text-accent border border-accent/30 rounded-xl hover:bg-accent/10 shrink-0">
-                  Xem chi tiết
+                <button onClick={() => setSelected(a)}
+                  className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all"
+                  style={{ color: 'var(--accent)', border: '1px solid var(--accent-border)',
+                           background: 'var(--accent-subtle)' }}
+                  onMouseEnter={e => e.currentTarget.style.background = 'rgba(79,110,247,0.15)'}
+                  onMouseLeave={e => e.currentTarget.style.background = 'var(--accent-subtle)'}>
+                  {Icon.eye}
+                  <span>Xem chi tiết</span>
                 </button>
               </div>
             </div>
           ))}
         </div>
-      )}
-
-      {detail && (
-        <AttemptDetailModal attempt={detail} onClose={() => setDetail(null)} />
       )}
     </div>
   )

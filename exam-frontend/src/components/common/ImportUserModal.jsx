@@ -42,15 +42,15 @@ export default function ImportUserModal({ onClose, onImported }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-surface-800 border border-surface-600 rounded-2xl w-full max-w-lg shadow-2xl">
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-base)] rounded-2xl w-full max-w-lg shadow-2xl">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-surface-700">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-subtle)]">
           <div>
-            <h3 className="font-semibold text-text-primary">📊 Import người dùng từ Excel</h3>
-            <p className="text-xs text-text-muted mt-0.5">Admin — có thể import cả Student và Teacher</p>
+            <h3 className="font-semibold text-[var(--text-1)]">📊 Import người dùng từ Excel</h3>
+            <p className="text-xs text-[var(--text-3)] mt-0.5">Admin — có thể import cả Student và Teacher</p>
           </div>
-          <button onClick={onClose} className="btn-ghost p-1.5 text-text-muted hover:text-text-primary">
+          <button onClick={onClose} className="btn-ghost p-1.5 text-[var(--text-3)] hover:text-[var(--text-1)]">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
             </svg>
@@ -62,7 +62,7 @@ export default function ImportUserModal({ onClose, onImported }) {
             <div className="space-y-4">
               <div className="text-center">
                 <div className="text-4xl mb-2">{result.errorCount === 0 ? '✅' : '⚠️'}</div>
-                <p className="text-text-primary font-semibold">Import hoàn tất</p>
+                <p className="text-[var(--text-1)] font-semibold">Import hoàn tất</p>
               </div>
 
               <div className="grid grid-cols-3 gap-3">
@@ -71,9 +71,9 @@ export default function ImportUserModal({ onClose, onImported }) {
                   { label: 'Lỗi',        value: result.errorCount,   color: 'text-red-accent'   },
                   { label: 'Gửi email',  value: result.emailSentCount, color: 'text-accent'      },
                 ].map(s => (
-                  <div key={s.label} className="bg-surface-700 rounded-xl p-3 text-center">
+                  <div key={s.label} className="bg-[var(--bg-elevated)] rounded-xl p-3 text-center">
                     <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
-                    <p className="text-text-muted text-xs mt-0.5">{s.label}</p>
+                    <p className="text-[var(--text-3)] text-xs mt-0.5">{s.label}</p>
                   </div>
                 ))}
               </div>
@@ -82,17 +82,17 @@ export default function ImportUserModal({ onClose, onImported }) {
                 <div className="bg-red-accent/5 border border-red-accent/20 rounded-xl p-3 max-h-32 overflow-y-auto">
                   <p className="text-xs text-red-accent font-medium mb-2">Chi tiết lỗi:</p>
                   {result.errors.map((e, i) => (
-                    <p key={i} className="text-xs text-text-muted py-0.5">• {e}</p>
+                    <p key={i} className="text-xs text-[var(--text-3)] py-0.5">• {e}</p>
                   ))}
                 </div>
               )}
 
               {result.created?.length > 0 && (
-                <div className="bg-surface-700 rounded-xl p-3 max-h-40 overflow-y-auto">
-                  <p className="text-xs text-text-muted font-medium mb-2 uppercase tracking-wider">Đã tạo ({result.created.length})</p>
+                <div className="bg-[var(--bg-elevated)] rounded-xl p-3 max-h-40 overflow-y-auto">
+                  <p className="text-xs text-[var(--text-3)] font-medium mb-2 uppercase tracking-wider">Đã tạo ({result.created.length})</p>
                   {result.created.map((u, i) => (
-                    <div key={i} className="flex justify-between items-center py-1 border-b border-surface-600 last:border-0">
-                      <span className="text-sm text-text-primary">{u.fullName}</span>
+                    <div key={i} className="flex justify-between items-center py-1 border-b border-[var(--border-base)] last:border-0">
+                      <span className="text-sm text-[var(--text-1)]">{u.fullName}</span>
                       <span className="text-xs font-mono text-accent">{u.username}</span>
                     </div>
                   ))}
@@ -104,10 +104,10 @@ export default function ImportUserModal({ onClose, onImported }) {
           ) : (
             <>
               {/* Template download */}
-              <div className="flex items-center justify-between bg-surface-700 rounded-xl px-4 py-3">
+              <div className="flex items-center justify-between bg-[var(--bg-elevated)] rounded-xl px-4 py-3">
                 <div>
-                  <p className="text-sm font-medium text-text-primary">File mẫu Excel (Admin)</p>
-                  <p className="text-xs text-text-muted">Có 2 sheet: hỗn hợp Student+Teacher và chỉ Student</p>
+                  <p className="text-sm font-medium text-[var(--text-1)]">File mẫu Excel (Admin)</p>
+                  <p className="text-xs text-[var(--text-3)]">Có 2 sheet: hỗn hợp Student+Teacher và chỉ Student</p>
                 </div>
                 <a href="/template_import_users.xlsx" download
                   className="btn-ghost text-xs px-3 py-1.5 text-accent border border-accent/30 rounded-lg hover:bg-accent/10">
@@ -116,8 +116,8 @@ export default function ImportUserModal({ onClose, onImported }) {
               </div>
 
               {/* Column guide */}
-              <div className="bg-surface-700/50 rounded-xl p-3">
-                <p className="text-xs text-text-muted font-medium mb-2 uppercase tracking-wider">Cột trong file Excel</p>
+              <div className="bg-[var(--bg-elevated)]/50 rounded-xl p-3">
+                <p className="text-xs text-[var(--text-3)] font-medium mb-2 uppercase tracking-wider">Cột trong file Excel</p>
                 <div className="grid grid-cols-2 gap-1.5">
                   {[
                     ['A', 'Họ và tên *'],
@@ -130,11 +130,11 @@ export default function ImportUserModal({ onClose, onImported }) {
                   ].map(([col, label]) => (
                     <div key={col} className="flex items-center gap-1.5">
                       <span className="w-5 h-5 rounded bg-accent/20 text-accent text-xs font-mono font-bold flex items-center justify-center shrink-0">{col}</span>
-                      <span className="text-xs text-text-muted">{label}</span>
+                      <span className="text-xs text-[var(--text-3)]">{label}</span>
                     </div>
                   ))}
                 </div>
-                <p className="text-xs text-text-muted mt-2 opacity-70">
+                <p className="text-xs text-[var(--text-3)] mt-2 opacity-70">
                   * bắt buộc · B,C để trống = tự sinh · E để trống = STUDENT
                 </p>
               </div>
@@ -146,20 +146,20 @@ export default function ImportUserModal({ onClose, onImported }) {
                 onDrop={handleDrop}
                 onClick={() => inputRef.current?.click()}
                 className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
-                  dragging ? 'border-accent bg-accent/10' : 'border-surface-500 hover:border-accent/50 hover:bg-surface-700/30'
+                  dragging ? 'border-accent bg-accent/10' : 'border-[var(--border-strong)] hover:border-accent/50 hover:bg-[var(--bg-elevated)]/30'
                 }`}>
                 <input ref={inputRef} type="file" accept=".xlsx" className="hidden"
                   onChange={e => handleFile(e.target.files[0])} />
                 <div className="text-3xl mb-2">{file ? '📊' : '📁'}</div>
                 {file ? (
                   <>
-                    <p className="text-text-primary font-medium text-sm">{file.name}</p>
-                    <p className="text-text-muted text-xs mt-1">{(file.size/1024).toFixed(1)} KB · Click để đổi file</p>
+                    <p className="text-[var(--text-1)] font-medium text-sm">{file.name}</p>
+                    <p className="text-[var(--text-3)] text-xs mt-1">{(file.size/1024).toFixed(1)} KB · Click để đổi file</p>
                   </>
                 ) : (
                   <>
-                    <p className="text-text-secondary text-sm">Kéo thả file Excel vào đây</p>
-                    <p className="text-text-muted text-xs mt-1">hoặc click để chọn · chỉ .xlsx</p>
+                    <p className="text-[var(--text-2)] text-sm">Kéo thả file Excel vào đây</p>
+                    <p className="text-[var(--text-3)] text-xs mt-1">hoặc click để chọn · chỉ .xlsx</p>
                   </>
                 )}
               </div>

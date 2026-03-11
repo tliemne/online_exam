@@ -20,8 +20,8 @@ const Icon = {
 function Modal({ title, onClose, children }) {
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-surface-800 border border-surface-600 rounded-xl w-full max-w-lg shadow-modal animate-slide-up">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-surface-600">
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-base)] rounded-xl w-full max-w-lg shadow-modal animate-slide-up">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-base)]">
           <h2 className="section-title">{title}</h2>
           <button onClick={onClose} className="btn-ghost p-1.5">{Icon.x}</button>
         </div>
@@ -141,30 +141,30 @@ function AddStudentsModal({ courseId, currentStudents, onClose, onSaved, allUser
       {error && <div className="mb-4 px-4 py-3 rounded-lg bg-danger/10 border border-danger/30 text-danger text-sm">{error}</div>}
       <div className="space-y-4">
         <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">{Icon.search}</span>
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-3)]">{Icon.search}</span>
           <input className="input-field pl-9" placeholder="Tìm sinh viên..." value={search}
             onChange={e => setSearch(e.target.value)} autoFocus />
         </div>
         <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
           {available.length === 0 ? (
-            <p className="text-center text-text-muted text-sm py-6">Không có sinh viên nào khả dụng</p>
+            <p className="text-center text-[var(--text-3)] text-sm py-6">Không có sinh viên nào khả dụng</p>
           ) : available.map(u => (
             <label key={u.id}
               className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
                 selected.includes(u.id)
                   ? 'border-accent bg-accent/10'
-                  : 'border-surface-600 bg-surface-700 hover:border-surface-500'
+                  : 'border-[var(--border-base)] bg-[var(--bg-elevated)] hover:border-[var(--border-strong)]'
               }`}>
               <input type="checkbox" className="hidden" checked={selected.includes(u.id)}
                 onChange={() => toggle(u.id)} />
               <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-                selected.includes(u.id) ? 'bg-accent border-accent' : 'border-surface-400'
+                selected.includes(u.id) ? 'bg-accent border-accent' : 'border-[var(--border-strong)]'
               }`}>
                 {selected.includes(u.id) && <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-text-primary text-sm font-medium">{u.fullName || u.username}</p>
-                <p className="text-text-muted text-xs font-mono">@{u.username}</p>
+                <p className="text-[var(--text-1)] text-sm font-medium">{u.fullName || u.username}</p>
+                <p className="text-[var(--text-3)] text-xs font-mono">@{u.username}</p>
               </div>
               {selected.includes(u.id) && <span className="badge-blue text-xs">Đã chọn</span>}
             </label>
@@ -225,7 +225,7 @@ function StudentsModal({ course, onClose, onUpdated, allUsers }) {
         <div className="space-y-4">
           <div className="flex gap-3">
             <div className="relative flex-1">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">{Icon.search}</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-3)]">{Icon.search}</span>
               <input className="input-field pl-9" placeholder="Tìm sinh viên..." value={search}
                 onChange={e => setSearch(e.target.value)} />
             </div>
@@ -240,7 +240,7 @@ function StudentsModal({ course, onClose, onUpdated, allUsers }) {
             </div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-text-muted text-sm">
+              <p className="text-[var(--text-3)] text-sm">
                 {students.length === 0 ? 'Chưa có sinh viên nào trong lớp' : 'Không tìm thấy'}
               </p>
               {students.length === 0 && (
@@ -250,17 +250,17 @@ function StudentsModal({ course, onClose, onUpdated, allUsers }) {
           ) : (
             <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
               {filtered.map(s => (
-                <div key={s.id} className="flex items-center gap-3 p-3 rounded-lg bg-surface-700 border border-surface-600">
+                <div key={s.id} className="flex items-center gap-3 p-3 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-base)]">
                   <div className="w-9 h-9 rounded-full bg-success/15 border border-success/25 flex items-center justify-center shrink-0">
                     <span className="text-success text-xs font-bold">
                       {s.fullName?.[0]?.toUpperCase() || s.username?.[0]?.toUpperCase()}
                     </span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-text-primary text-sm font-medium truncate">{s.fullName || s.username}</p>
+                    <p className="text-[var(--text-1)] text-sm font-medium truncate">{s.fullName || s.username}</p>
                     <div className="flex gap-2 mt-0.5">
-                      {s.studentCode && <span className="text-text-muted text-xs font-mono">{s.studentCode}</span>}
-                      {s.className && <span className="text-text-muted text-xs">· {s.className}</span>}
+                      {s.studentCode && <span className="text-[var(--text-3)] text-xs font-mono">{s.studentCode}</span>}
+                      {s.className && <span className="text-[var(--text-3)] text-xs">· {s.className}</span>}
                     </div>
                   </div>
                   <button onClick={() => handleRemove(s.id)} disabled={removing === s.id}
@@ -271,8 +271,8 @@ function StudentsModal({ course, onClose, onUpdated, allUsers }) {
               ))}
             </div>
           )}
-          <div className="flex justify-between items-center pt-2 border-t border-surface-600">
-            <span className="text-text-muted text-sm">{students.length} sinh viên</span>
+          <div className="flex justify-between items-center pt-2 border-t border-[var(--border-base)]">
+            <span className="text-[var(--text-3)] text-sm">{students.length} sinh viên</span>
             <button onClick={onClose} className="btn-secondary">Đóng</button>
           </div>
         </div>
@@ -303,21 +303,21 @@ function CourseCard({ course, onEdit, onDelete, onDetail, isOwner }) {
           </div>
           {isOwner && <span className="badge-blue">Của tôi</span>}
         </div>
-        <h3 className="font-display font-semibold text-text-primary group-hover:text-accent transition-colors">{course.name}</h3>
-        <p className="text-text-muted text-sm mt-1 line-clamp-2">{course.description || 'Không có mô tả'}</p>
+        <h3 className="font-display font-semibold text-[var(--text-1)] group-hover:text-accent transition-colors">{course.name}</h3>
+        <p className="text-[var(--text-3)] text-sm mt-1 line-clamp-2">{course.description || 'Không có mô tả'}</p>
         {course.teacherName && (
-          <p className="text-text-secondary text-xs mt-2">Giáo viên: {course.teacherName}</p>
+          <p className="text-[var(--text-2)] text-xs mt-2">Giáo viên: {course.teacherName}</p>
         )}
         {/* <p className="text-accent text-xs mt-2 opacity-0 group-hover:opacity-100 transition-opacity">Xem chi tiết →</p> */}
       </div>
-      <div className="flex gap-2 pt-3 border-t border-surface-600">
+      <div className="flex gap-2 pt-3 border-t border-[var(--border-base)]">
         <button onClick={() => onDetail(course)} className="btn-ghost flex-1 text-xs py-1.5">
           {Icon.users} <span>Chi tiết</span>
         </button>
-        <button onClick={() => onEdit(course)} className="btn-ghost px-2.5 py-1.5 text-text-secondary hover:text-accent">
+        <button onClick={() => onEdit(course)} className="btn-ghost px-2.5 py-1.5 text-[var(--text-2)] hover:text-accent">
           {Icon.edit}
         </button>
-        <button onClick={() => onDelete(course)} className="btn-ghost px-2.5 py-1.5 text-text-secondary hover:text-danger hover:bg-danger/10">
+        <button onClick={() => onDelete(course)} className="btn-ghost px-2.5 py-1.5 text-[var(--text-2)] hover:text-danger hover:bg-danger/10">
           {Icon.trash}
         </button>
       </div>
@@ -386,7 +386,7 @@ export default function CoursesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-title">Lớp học</h1>
-          <p className="text-text-secondary text-sm mt-1">{courses.length} lớp học trong hệ thống</p>
+          <p className="text-[var(--text-2)] text-sm mt-1">{courses.length} lớp học trong hệ thống</p>
         </div>
         <button onClick={() => { setSelected(null); setModal('create') }} className="btn-primary">
           {Icon.plus} Tạo lớp mới
@@ -396,19 +396,19 @@ export default function CoursesPage() {
       {/* Toolbar */}
       <div className="flex items-center gap-3">
         <div className="relative flex-1 max-w-sm">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">{Icon.search}</span>
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-3)]">{Icon.search}</span>
           <input className="input-field pl-9" placeholder="Tìm kiếm lớp học..." value={search}
             onChange={e => setSearch(e.target.value)} />
         </div>
         <button onClick={load} className="btn-secondary">{Icon.refresh}</button>
         {/* Toggle view */}
-        <div className="flex bg-surface-700 border border-surface-600 rounded-lg p-1 gap-1">
+        <div className="flex bg-[var(--bg-elevated)] border border-[var(--border-base)] rounded-lg p-1 gap-1">
           <button onClick={() => setView('grid')}
-            className={`p-1.5 rounded transition-all ${view === 'grid' ? 'bg-accent text-white' : 'text-text-muted hover:text-text-primary'}`}>
+            className={`p-1.5 rounded transition-all ${view === 'grid' ? 'bg-accent text-white' : 'text-[var(--text-3)] hover:text-[var(--text-1)]'}`}>
             {Icon.grid}
           </button>
           <button onClick={() => setView('table')}
-            className={`p-1.5 rounded transition-all ${view === 'table' ? 'bg-accent text-white' : 'text-text-muted hover:text-text-primary'}`}>
+            className={`p-1.5 rounded transition-all ${view === 'table' ? 'bg-accent text-white' : 'text-[var(--text-3)] hover:text-[var(--text-1)]'}`}>
             {Icon.list}
           </button>
         </div>
@@ -422,7 +422,7 @@ export default function CoursesPage() {
       ) : filtered.length === 0 ? (
         <div className="card text-center py-16">
           <div className="text-4xl mb-3">📚</div>
-          <p className="text-text-secondary">Chưa có lớp học nào. Hãy tạo lớp đầu tiên!</p>
+          <p className="text-[var(--text-2)]">Chưa có lớp học nào. Hãy tạo lớp đầu tiên!</p>
           <button onClick={() => { setSelected(null); setModal('create') }} className="btn-primary mt-4">Tạo lớp</button>
         </div>
       ) : view === 'grid' ? (
@@ -441,31 +441,31 @@ export default function CoursesPage() {
         <div className="card">
           <table className="w-full">
             <thead>
-              <tr className="border-b border-surface-600">
+              <tr className="border-b border-[var(--border-base)]">
                 {['#', 'Tên lớp', 'Mô tả', 'Giảng viên', ''].map(h => (
-                  <th key={h} className="text-left text-xs text-text-muted uppercase tracking-wider pb-3 pr-4 font-mono">{h}</th>
+                  <th key={h} className="text-left text-xs text-[var(--text-3)] uppercase tracking-wider pb-3 pr-4 font-mono">{h}</th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-surface-700">
+            <tbody className="divide-y divide-[var(--border-subtle)]">
               {filtered.map(c => (
-                <tr key={c.id} className="hover:bg-surface-700/30 transition-colors">
-                  <td className="py-3 pr-4 text-xs text-text-muted font-mono">#{c.id}</td>
+                <tr key={c.id} className="hover:bg-[var(--bg-elevated)]/30 transition-colors">
+                  <td className="py-3 pr-4 text-xs text-[var(--text-3)] font-mono">#{c.id}</td>
                   <td className="py-3 pr-4">
-                    <p className="text-text-primary font-medium text-sm">{c.name}</p>
+                    <p className="text-[var(--text-1)] font-medium text-sm">{c.name}</p>
                   </td>
-                  <td className="py-3 pr-4 text-text-secondary text-sm max-w-xs">
+                  <td className="py-3 pr-4 text-[var(--text-2)] text-sm max-w-xs">
                     <p className="truncate">{c.description || '—'}</p>
                   </td>
-                  <td className="py-3 pr-4 text-text-secondary text-sm">{c.teacherName || '—'}</td>
+                  <td className="py-3 pr-4 text-[var(--text-2)] text-sm">{c.teacherName || '—'}</td>
                   <td className="py-3">
                     <div className="flex items-center gap-1">
                       <button onClick={() => navigate(`${basePath}/courses/${c.id}`)}
                         className="btn-ghost px-2 py-1.5 text-xs">{Icon.users}</button>
                       <button onClick={() => { setSelected(c); setModal('edit') }}
-                        className="btn-ghost px-2 py-1.5 text-xs text-text-secondary hover:text-accent">{Icon.edit}</button>
+                        className="btn-ghost px-2 py-1.5 text-xs text-[var(--text-2)] hover:text-accent">{Icon.edit}</button>
                       <button onClick={() => handleDelete(c)} disabled={deleting === c.id}
-                        className="btn-ghost px-2 py-1.5 text-xs text-text-secondary hover:text-danger hover:bg-danger/10">
+                        className="btn-ghost px-2 py-1.5 text-xs text-[var(--text-2)] hover:text-danger hover:bg-danger/10">
                         {deleting === c.id ? '...' : Icon.trash}
                       </button>
                     </div>

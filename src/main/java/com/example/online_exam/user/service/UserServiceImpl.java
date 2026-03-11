@@ -5,6 +5,7 @@ import com.example.online_exam.exception.ErrorCode;
 import com.example.online_exam.secutity.service.CurrentUserService;
 import com.example.online_exam.common.service.EmailService;
 import com.example.online_exam.course.entity.Course;
+import com.example.online_exam.attempt.repository.AttemptAnswerRepository;
 import com.example.online_exam.attempt.repository.AttemptRepository;
 import com.example.online_exam.auth.repository.RefreshTokenRepository;
 import com.example.online_exam.course.repository.CourseRepository;
@@ -56,6 +57,7 @@ public class UserServiceImpl implements UserService {
     private final TeacherProfileRepository teacherProfileRepository;
     private final CurrentUserService currentUserService;
     private final CourseRepository courseRepository;
+    private final AttemptAnswerRepository attemptAnswerRepository;
     private final AttemptRepository attemptRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final ExamRepository examRepository;
@@ -266,9 +268,11 @@ public class UserServiceImpl implements UserService {
         courseRepository.nullifyTeacher(id);
         // 2b. Xóa khỏi course_students nếu user là student
         courseRepository.removeStudentFromAllCourses(id);
-        // 3. Xóa attempts của user với tư cách student
+        // 3. Xóa attempt_answers trước (FK constraint), rồi xóa attempts của student
+        attemptAnswerRepository.deleteByAttemptStudentId(id);
         attemptRepository.deleteByStudentId(id);
-        // 4. Xóa attempts + exam_questions của các exam do user tạo, rồi xóa exam
+        // 4. Xóa attempt_answers, attempts, exam_questions của các exam do user tạo
+        attemptAnswerRepository.deleteByAttemptExamCreatedById(id);
         examQuestionRepository.deleteByExamCreatedById(id);
         attemptRepository.deleteByExamCreatedById(id);
         examRepository.deleteByCreatedById(id);

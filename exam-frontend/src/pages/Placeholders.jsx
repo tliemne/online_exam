@@ -5,12 +5,12 @@ function ComingSoon({ title, desc, icon }) {
     <div className="max-w-5xl mx-auto">
       <div className="mb-6">
         <h1 className="page-title">{title}</h1>
-        <p className="text-text-secondary text-sm mt-1">{desc}</p>
+        <p className="text-[var(--text-2)] text-sm mt-1">{desc}</p>
       </div>
       <div className="card text-center py-16">
         <div className="text-5xl mb-4">{icon}</div>
-        <h2 className="font-display font-semibold text-text-primary text-xl mb-2">Đang phát triển</h2>
-        <p className="text-text-secondary text-sm max-w-md mx-auto">
+        <h2 className="font-display font-semibold text-[var(--text-1)] text-xl mb-2">Đang phát triển</h2>
+        <p className="text-[var(--text-2)] text-sm max-w-md mx-auto">
           Module này đang được xây dựng ở backend. UI đã sẵn sàng và sẽ được kết nối API khi backend hoàn thiện.
         </p>
         <div className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-accent/10 border border-amber-accent/20 text-amber-accent text-sm font-mono">
@@ -44,11 +44,11 @@ export function AdminCoursesPage() {
 
 export function UnauthorizedPage() {
   return (
-    <div className="min-h-screen bg-surface-950 flex items-center justify-center">
+    <div className="min-h-screen bg-[var(--bg-page)] flex items-center justify-center">
       <div className="text-center">
         <div className="text-6xl mb-4">🚫</div>
-        <h1 className="font-display font-bold text-2xl text-text-primary mb-2">Không có quyền truy cập</h1>
-        <p className="text-text-secondary text-sm mb-6">Bạn không có quyền truy cập trang này.</p>
+        <h1 className="font-display font-bold text-2xl text-[var(--text-1)] mb-2">Không có quyền truy cập</h1>
+        <p className="text-[var(--text-2)] text-sm mb-6">Bạn không có quyền truy cập trang này.</p>
         <a href="/" className="btn-primary">Về trang chủ</a>
       </div>
     </div>

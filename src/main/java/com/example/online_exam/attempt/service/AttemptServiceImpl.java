@@ -12,6 +12,7 @@ import com.example.online_exam.exception.ErrorCode;
 import com.example.online_exam.question.entity.Answer;
 import com.example.online_exam.question.entity.Question;
 import com.example.online_exam.question.repository.QuestionRepository;
+import com.example.online_exam.common.service.EmailService;
 import com.example.online_exam.secutity.service.CurrentUserService;
 import com.example.online_exam.user.entity.User;
 import com.example.online_exam.user.enums.RoleName;
@@ -33,6 +34,7 @@ public class AttemptServiceImpl implements AttemptService {
     private final ExamRepository          examRepo;
     private final QuestionRepository      questionRepo;
     private final CurrentUserService      currentUserService;
+    private final EmailService            emailService;
 
     // ── Submit ────────────────────────────────────────────
     @Override
@@ -110,6 +112,7 @@ public class AttemptServiceImpl implements AttemptService {
 
         answerRepo.saveAll(savedAnswers);
 
+        boolean autoGraded = false;
         if (!hasEssay) {
             double percent = exam.getExamQuestions().isEmpty() ? 0
                     : totalEarned / exam.getExamQuestions().stream()
@@ -118,9 +121,24 @@ public class AttemptServiceImpl implements AttemptService {
             attempt.setScore(finalScore);
             attempt.setPassed(exam.getPassScore() == null || finalScore >= exam.getPassScore());
             attempt.setStatus(AttemptStatus.GRADED);
+            autoGraded = true;
         }
 
         attempt = attemptRepo.save(attempt);
+
+        // Gửi email kết quả nếu đã auto-grade (toàn trắc nghiệm)
+        if (autoGraded && student.getEmail() != null) {
+            emailService.sendGradeResult(
+                    student.getEmail(),
+                    student.getFullName(),
+                    exam.getTitle(),
+                    exam.getCourse() != null ? exam.getCourse().getName() : null,
+                    attempt.getScore(),
+                    attempt.getTotalScore(),
+                    attempt.getPassed()
+            );
+        }
+
         return toResponse(attempt, true);
     }
 
@@ -174,8 +192,33 @@ public class AttemptServiceImpl implements AttemptService {
     }
 
     // ── Grade (tự luận) ───────────────────────────────────
+    // Tách làm 2 phase:
+    //   gradeAndSave()  → @Transactional (commit ngay, giải phóng DB connection)
+    //   grade()         → gọi gradeAndSave rồi gửi email NGOÀI transaction
     @Override
+    @org.springframework.transaction.annotation.Transactional(propagation =
+            org.springframework.transaction.annotation.Propagation.NEVER)
     public AttemptResponse grade(Long attemptId, GradeRequest req) {
+        AttemptResponse response = gradeAndSave(attemptId, req);
+
+        // Email gửi SAU khi transaction đã commit → không block DB connection
+        if (response.getStudentEmail() != null) {
+            emailService.sendGradeResult(
+                    response.getStudentEmail(),
+                    response.getStudentName(),
+                    response.getExamTitle(),
+                    response.getCourseName(),
+                    response.getScore(),
+                    response.getTotalScore(),
+                    response.getPassed()
+            );
+        }
+
+        return response;
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    public AttemptResponse gradeAndSave(Long attemptId, GradeRequest req) {
         Attempt attempt = findAttempt(attemptId);
         User caller = currentUserService.requireCurrentUser();
 
@@ -188,8 +231,8 @@ public class AttemptServiceImpl implements AttemptService {
             attempt.getAnswers().stream()
                     .filter(aa -> aa.getId().equals(ag.getAttemptAnswerId()))
                     .findFirst().ifPresent(aa -> {
-                        if (ag.getScore()         != null) aa.setScore(ag.getScore());
-                        if (ag.getIsCorrect()     != null) aa.setIsCorrect(ag.getIsCorrect());
+                        if (ag.getScore()          != null) aa.setScore(ag.getScore());
+                        if (ag.getIsCorrect()      != null) aa.setIsCorrect(ag.getIsCorrect());
                         if (ag.getTeacherComment() != null) aa.setTeacherComment(ag.getTeacherComment());
                     });
         }
@@ -252,6 +295,7 @@ public class AttemptServiceImpl implements AttemptService {
         }
         if (a.getStudent() != null) {
             r.setStudentName(a.getStudent().getFullName());
+            r.setStudentEmail(a.getStudent().getEmail());
             if (a.getStudent().getStudentProfile() != null)
                 r.setStudentCode(a.getStudent().getStudentProfile().getStudentCode());
         }

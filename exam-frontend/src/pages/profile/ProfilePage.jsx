@@ -10,7 +10,7 @@ function Field({ label, value, mono }) {
   return (
     <div>
       <p className="input-label">{label}</p>
-      <p className={`text-sm text-text-primary ${mono ? 'font-mono' : ''}`}>{value || '—'}</p>
+      <p className={`text-sm text-[var(--text-1)] ${mono ? 'font-mono' : ''}`}>{value || '—'}</p>
     </div>
   )
 }
@@ -78,17 +78,17 @@ export default function ProfilePage() {
 
       {/* Account */}
       <div className="card">
-        <div className="px-5 py-4 border-b border-surface-700">
+        <div className="px-5 py-4 border-b border-[var(--border-subtle)]">
           <h2 className="section-title">Tài khoản</h2>
         </div>
         <div className="px-5 py-4">
           <div className="flex items-center gap-4 mb-5">
-            <div className="w-12 h-12 rounded-xl bg-surface-600 border border-surface-500
-              flex items-center justify-center text-lg font-semibold text-text-primary shrink-0">
+            <div className="w-12 h-12 rounded-xl bg-[var(--border-base)] border border-[var(--border-strong)]
+              flex items-center justify-center text-lg font-semibold text-[var(--text-1)] shrink-0">
               {acc?.fullName?.[0]?.toUpperCase() || acc?.username?.[0]?.toUpperCase()}
             </div>
             <div>
-              <p className="text-base font-semibold text-text-primary">{acc?.fullName || acc?.username}</p>
+              <p className="text-base font-semibold text-[var(--text-1)]">{acc?.fullName || acc?.username}</p>
               <span className={`${ROLE_BADGE[userRole] || 'badge-neutral'} mt-0.5`}>
                 {ROLE_MAP[userRole] || userRole}
               </span>
@@ -106,7 +106,7 @@ export default function ProfilePage() {
       {/* Profile chi tiết */}
       {(hasRole('STUDENT') || hasRole('TEACHER')) && (
         <div className="card">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-surface-700">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border-subtle)]">
             <h2 className="section-title">
               {hasRole('STUDENT') ? 'Thông tin sinh viên' : 'Thông tin giảng viên'}
             </h2>
@@ -150,11 +150,11 @@ export default function ProfilePage() {
                   <label className="input-label">
                     {hasRole('STUDENT') ? 'Mã sinh viên' : 'Mã giảng viên'}
                   </label>
-                  <div className="input-field bg-surface-700 cursor-not-allowed flex items-center justify-between">
-                    <span className="font-mono text-text-primary text-sm">
+                  <div className="input-field bg-[var(--bg-elevated)] cursor-not-allowed flex items-center justify-between">
+                    <span className="font-mono text-[var(--text-1)] text-sm">
                       {hasRole('STUDENT') ? profile?.studentProfile?.studentCode : profile?.teacherProfile?.teacherCode || '—'}
                     </span>
-                    <span className="text-xs text-text-muted">Không thể thay đổi</span>
+                    <span className="text-xs text-[var(--text-3)]">Không thể thay đổi</span>
                   </div>
                 </div>
 

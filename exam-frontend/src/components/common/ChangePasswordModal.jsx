@@ -41,13 +41,13 @@ export default function ChangePasswordModal({ onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-surface-800 border border-surface-600 rounded-xl w-full max-w-md shadow-modal">
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-base)] rounded-xl w-full max-w-md shadow-modal">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-7 py-5 border-b border-surface-700">
-          <h3 className="font-semibold text-text-primary"> Đổi mật khẩu</h3>
+        <div className="flex items-center justify-between px-7 py-5 border-b border-[var(--border-subtle)]">
+          <h3 className="font-semibold text-[var(--text-1)]"> Đổi mật khẩu</h3>
           <button onClick={onClose}
-            className="btn-ghost p-1.5 text-text-muted hover:text-text-primary">
+            className="btn-ghost p-1.5 text-[var(--text-3)] hover:text-[var(--text-1)]">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
             </svg>
@@ -59,15 +59,15 @@ export default function ChangePasswordModal({ onClose }) {
             /* Success */
             <div className="text-center py-4">
               <div className="text-5xl mb-4"></div>
-              <p className="text-text-primary font-semibold mb-1">Đổi mật khẩu thành công!</p>
-              <p className="text-text-muted text-sm mb-6">Mật khẩu mới của bạn đã được cập nhật.</p>
+              <p className="text-[var(--text-1)] font-semibold mb-1">Đổi mật khẩu thành công!</p>
+              <p className="text-[var(--text-3)] text-sm mb-6">Mật khẩu mới của bạn đã được cập nhật.</p>
               <button onClick={onClose} className="btn-primary w-full">Đóng</button>
             </div>
           ) : (
             <div className="space-y-5">
               {/* Old password */}
               <div>
-                <label className="block text-sm text-text-secondary mb-1.5">Mật khẩu hiện tại</label>
+                <label className="block text-sm text-[var(--text-2)] mb-1.5">Mật khẩu hiện tại</label>
                 <div className="relative">
                   <input
                     type={show.old ? 'text' : 'password'}
@@ -78,7 +78,7 @@ export default function ChangePasswordModal({ onClose }) {
                     autoFocus
                   />
                   <button type="button" onClick={() => setShow(p => ({ ...p, old: !p.old }))}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary">
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-3)] hover:text-[var(--text-1)]">
                     <EyeIcon show={show.old} />
                   </button>
                 </div>
@@ -86,7 +86,7 @@ export default function ChangePasswordModal({ onClose }) {
 
               {/* New password */}
               <div>
-                <label className="block text-sm text-text-secondary mb-1.5">Mật khẩu mới</label>
+                <label className="block text-sm text-[var(--text-2)] mb-1.5">Mật khẩu mới</label>
                 <div className="relative">
                   <input
                     type={show.new ? 'text' : 'password'}
@@ -96,7 +96,7 @@ export default function ChangePasswordModal({ onClose }) {
                     placeholder="Ít nhất 6 ký tự"
                   />
                   <button type="button" onClick={() => setShow(p => ({ ...p, new: !p.new }))}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary">
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-3)] hover:text-[var(--text-1)]">
                     <EyeIcon show={show.new} />
                   </button>
                 </div>
@@ -107,10 +107,10 @@ export default function ChangePasswordModal({ onClose }) {
                       <div key={i} className={`h-1 flex-1 rounded-full transition-all ${
                         form.newPassword.length >= i * 4
                           ? i === 1 ? 'bg-danger' : i === 2 ? 'bg-yellow-400' : 'bg-success'
-                          : 'bg-surface-600'
+                          : 'bg-[var(--border-base)]'
                       }`}/>
                     ))}
-                    <span className="text-xs text-text-muted ml-1">
+                    <span className="text-xs text-[var(--text-3)] ml-1">
                       {form.newPassword.length < 4 ? 'Yếu' : form.newPassword.length < 8 ? 'Trung bình' : 'Mạnh'}
                     </span>
                   </div>
@@ -119,7 +119,7 @@ export default function ChangePasswordModal({ onClose }) {
 
               {/* Confirm */}
               <div>
-                <label className="block text-sm text-text-secondary mb-1.5">Xác nhận mật khẩu mới</label>
+                <label className="block text-sm text-[var(--text-2)] mb-1.5">Xác nhận mật khẩu mới</label>
                 <div className="relative">
                   <input
                     type={show.confirm ? 'text' : 'password'}
@@ -136,7 +136,7 @@ export default function ChangePasswordModal({ onClose }) {
                     placeholder="Nhập lại mật khẩu mới"
                   />
                   <button type="button" onClick={() => setShow(p => ({ ...p, confirm: !p.confirm }))}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary">
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-3)] hover:text-[var(--text-1)]">
                     <EyeIcon show={show.confirm} />
                   </button>
                 </div>

@@ -14,6 +14,7 @@ import com.example.online_exam.exception.ErrorCode;
 import com.example.online_exam.question.entity.Answer;
 import com.example.online_exam.question.entity.Question;
 import com.example.online_exam.question.repository.QuestionRepository;
+import com.example.online_exam.common.service.EmailService;
 import com.example.online_exam.secutity.service.CurrentUserService;
 import com.example.online_exam.user.entity.User;
 import com.example.online_exam.user.enums.RoleName;
@@ -37,7 +38,8 @@ public class ExamServiceImpl implements ExamService {
     private final QuestionRepository     questionRepo;
     private final UserRepository         userRepo;
     private final CurrentUserService     currentUserService;
-    private final AttemptRepository     attemptRepo;
+    private final AttemptRepository      attemptRepo;
+    private final EmailService            emailService;
 
     // ── Create ────────────────────────────────────────────
     @Override
@@ -237,9 +239,29 @@ public class ExamServiceImpl implements ExamService {
             throw new AppException(ErrorCode.INVALID_REQUEST); // Phải có ít nhất 1 câu
         }
 
-        // Cho phép publish từ bất kỳ status nào (kể cả CLOSED → mở lại)
         exam.setStatus(ExamStatus.PUBLISHED);
-        return toResponse(examRepo.save(exam), false, false);
+        ExamResponse response = toResponse(examRepo.save(exam), false, false);
+
+        // Gửi email thông báo tới tất cả sinh viên trong lớp
+        // Mỗi email dispatch vào emailExecutor thread pool riêng → không block HTTP
+        if (exam.getCourse() != null && exam.getCourse().getStudents() != null) {
+            String courseName = exam.getCourse().getName();
+            exam.getCourse().getStudents().forEach(student -> {
+                if (student.getEmail() != null) {
+                    emailService.sendExamPublished(
+                            student.getEmail(),
+                            student.getFullName(),
+                            exam.getTitle(),
+                            courseName,
+                            exam.getStartTime(),
+                            exam.getEndTime(),
+                            exam.getDurationMinutes()
+                    );
+                }
+            });
+        }
+
+        return response;
     }
 
     @Override

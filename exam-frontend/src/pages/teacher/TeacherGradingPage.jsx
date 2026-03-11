@@ -57,16 +57,16 @@ function GradeModal({ attempt, onClose, onGraded }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-surface-800 border border-surface-600 rounded-2xl w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl">
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-base)] rounded-2xl w-full max-w-2xl max-h-[92vh] flex flex-col shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-surface-700 shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-subtle)] shrink-0">
           <div>
-            <h3 className="font-semibold text-text-primary">Chấm điểm bài thi</h3>
-            <p className="text-xs text-text-muted">
+            <h3 className="font-semibold text-[var(--text-1)]">Chấm điểm bài thi</h3>
+            <p className="text-xs text-[var(--text-3)]">
               {attempt.studentName} · {attempt.studentCode && `${attempt.studentCode} · `}{fmtDate(attempt.submittedAt)}
             </p>
           </div>
-          <button onClick={onClose} className="btn-ghost p-2 text-text-muted">{Icon.x}</button>
+          <button onClick={onClose} className="btn-ghost p-2 text-[var(--text-3)]">{Icon.x}</button>
         </div>
 
         <div className="overflow-y-auto flex-1 p-6 space-y-4">
@@ -77,22 +77,22 @@ function GradeModal({ attempt, onClose, onGraded }) {
           ) : detail ? (
             <>
               {/* Summary */}
-              <div className="bg-surface-700 rounded-xl p-4 grid grid-cols-3 gap-4 text-center">
+              <div className="bg-[var(--bg-elevated)] rounded-xl p-4 grid grid-cols-3 gap-4 text-center">
                 <div>
-                  <p className="text-text-muted text-xs mb-1">Điểm hiện tại</p>
-                  <p className={`text-2xl font-bold ${detail.score != null ? 'text-accent' : 'text-text-muted'}`}>
+                  <p className="text-[var(--text-3)] text-xs mb-1">Điểm hiện tại</p>
+                  <p className={`text-2xl font-bold ${detail.score != null ? 'text-accent' : 'text-[var(--text-3)]'}`}>
                     {detail.score != null ? `${detail.score}/${detail.totalScore}` : 'Chưa chấm'}
                   </p>
                 </div>
                 <div>
-                  <p className="text-text-muted text-xs mb-1">Trạng thái</p>
+                  <p className="text-[var(--text-3)] text-xs mb-1">Trạng thái</p>
                   <p className={`text-sm font-semibold ${detail.status === 'GRADED' ? 'text-success' : 'text-yellow-400'}`}>
                     {detail.status === 'GRADED' ? '✓ Đã chấm' : '○ Chờ chấm'}
                   </p>
                 </div>
                 <div>
-                  <p className="text-text-muted text-xs mb-1">Câu đúng</p>
-                  <p className="text-text-primary text-sm font-semibold">{detail.correctCount}/{detail.totalQuestions}</p>
+                  <p className="text-[var(--text-3)] text-xs mb-1">Câu đúng</p>
+                  <p className="text-[var(--text-1)] text-sm font-semibold">{detail.correctCount}/{detail.totalQuestions}</p>
                 </div>
               </div>
 
@@ -103,11 +103,11 @@ function GradeModal({ attempt, onClose, onGraded }) {
                 const g = grades[a.id] || {}
                 return (
                   <div key={a.id} className={`border rounded-xl p-4 ${
-                    isEssay ? 'border-accent/25 bg-accent/5' : 'border-surface-600 bg-surface-700/30'
+                    isEssay ? 'border-accent/25 bg-accent/5' : 'border-[var(--border-base)] bg-[var(--bg-elevated)]/30'
                   }`}>
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="w-6 h-6 rounded-lg bg-surface-600 flex items-center justify-center text-xs font-mono font-bold text-text-muted">{i+1}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${isEssay ? 'bg-accent/15 text-accent border border-accent/25' : 'bg-surface-600 text-text-muted'}`}>
+                      <span className="w-6 h-6 rounded-lg bg-[var(--border-base)] flex items-center justify-center text-xs font-mono font-bold text-[var(--text-3)]">{i+1}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${isEssay ? 'bg-accent/15 text-accent border border-accent/25' : 'bg-[var(--border-base)] text-[var(--text-3)]'}`}>
                         {isEssay ? '✏ Tự luận — cần chấm' : isAutoGraded ? 'Trắc nghiệm' : 'Đúng/Sai'}
                       </span>
                       {!isEssay && (
@@ -117,19 +117,19 @@ function GradeModal({ attempt, onClose, onGraded }) {
                       )}
                     </div>
 
-                    <p className="text-text-primary text-sm mb-2">{a.questionContent}</p>
+                    <p className="text-[var(--text-1)] text-sm mb-2">{a.questionContent}</p>
 
                     {/* Student answer */}
                     {a.selectedAnswerContent && (
-                      <div className="mb-2 p-2 bg-surface-600 rounded-lg">
-                        <p className="text-xs text-text-muted mb-0.5">Đáp án chọn:</p>
+                      <div className="mb-2 p-2 bg-[var(--border-base)] rounded-lg">
+                        <p className="text-xs text-[var(--text-3)] mb-0.5">Đáp án chọn:</p>
                         <p className={`text-sm ${a.isCorrect ? 'text-success' : 'text-danger'}`}>{a.selectedAnswerContent}</p>
                       </div>
                     )}
                     {a.textAnswer && (
-                      <div className="mb-2 p-3 bg-surface-600 rounded-lg">
-                        <p className="text-xs text-text-muted mb-1">Câu trả lời:</p>
-                        <p className="text-sm text-text-primary leading-relaxed">{a.textAnswer}</p>
+                      <div className="mb-2 p-3 bg-[var(--border-base)] rounded-lg">
+                        <p className="text-xs text-[var(--text-3)] mb-1">Câu trả lời:</p>
+                        <p className="text-sm text-[var(--text-1)] leading-relaxed">{a.textAnswer}</p>
                       </div>
                     )}
 
@@ -137,17 +137,17 @@ function GradeModal({ attempt, onClose, onGraded }) {
                     {isEssay && (
                       <div className="mt-3 space-y-2">
                         <div className="flex gap-3 items-center">
-                          <label className="text-xs text-text-muted w-16 shrink-0">Điểm:</label>
+                          <label className="text-xs text-[var(--text-3)] w-16 shrink-0">Điểm:</label>
                           <input type="number" min="0" step="0.5"
                             value={g.score ?? ''}
                             onChange={e => setGrade(a.id, 'score', e.target.value)}
                             className="input-field py-1.5 w-24 text-sm"
                             placeholder="0.0"
                           />
-                          <span className="text-xs text-text-muted">/ {/* max score per question */}1.0đ</span>
+                          <span className="text-xs text-[var(--text-3)]">/ {/* max score per question */}1.0đ</span>
                         </div>
                         <div className="flex gap-3 items-start">
-                          <label className="text-xs text-text-muted w-16 shrink-0 mt-2">Nhận xét:</label>
+                          <label className="text-xs text-[var(--text-3)] w-16 shrink-0 mt-2">Nhận xét:</label>
                           <textarea
                             value={g.comment ?? ''}
                             onChange={e => setGrade(a.id, 'comment', e.target.value)}
@@ -163,12 +163,12 @@ function GradeModal({ attempt, onClose, onGraded }) {
               })}
             </>
           ) : (
-            <p className="text-center text-text-muted py-8">Không tải được dữ liệu</p>
+            <p className="text-center text-[var(--text-3)] py-8">Không tải được dữ liệu</p>
           )}
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-surface-700 flex justify-between shrink-0">
+        <div className="px-6 py-4 border-t border-[var(--border-subtle)] flex justify-between shrink-0">
           <button onClick={onClose} className="btn-secondary">Đóng</button>
           <button onClick={handleSave} disabled={saving || loading} className="btn-primary">
             {saving ? 'Đang lưu...' : '✓ Lưu điểm'}
@@ -223,12 +223,12 @@ export default function TeacherGradingPage() {
     <div className="max-w-5xl mx-auto space-y-6">
       <div>
         <h1 className="page-title">Chấm điểm</h1>
-        <p className="text-text-secondary text-sm mt-1">Xem danh sách bài nộp và chấm điểm tự luận</p>
+        <p className="text-[var(--text-2)] text-sm mt-1">Xem danh sách bài nộp và chấm điểm tự luận</p>
       </div>
 
       {/* Exam selector */}
       <div className="card p-4">
-        <p className="text-xs text-text-muted uppercase tracking-wider mb-3 font-medium">Chọn đề thi</p>
+        <p className="text-xs text-[var(--text-3)] uppercase tracking-wider mb-3 font-medium">Chọn đề thi</p>
         {loadingExams ? (
           <div className="h-10 flex items-center">
             <div className="w-5 h-5 rounded-full border-2 border-accent border-t-transparent animate-spin"/>
@@ -240,13 +240,13 @@ export default function TeacherGradingPage() {
                 className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
                   selectedExam?.id === e.id
                     ? 'bg-accent text-white border-accent'
-                    : 'bg-surface-700 text-text-secondary border-surface-600 hover:border-surface-500'
+                    : 'bg-[var(--bg-elevated)] text-[var(--text-2)] border-[var(--border-base)] hover:border-[var(--border-strong)]'
                 }`}>
                 {e.title}
                 <span className="ml-2 text-xs opacity-70">{e.courseName}</span>
               </button>
             ))}
-            {exams.length === 0 && <p className="text-text-muted text-sm">Chưa có đề thi nào</p>}
+            {exams.length === 0 && <p className="text-[var(--text-3)] text-sm">Chưa có đề thi nào</p>}
           </div>
         )}
       </div>
@@ -263,7 +263,7 @@ export default function TeacherGradingPage() {
             ].map(s => (
               <div key={s.l} className="card text-center py-4">
                 <p className={`text-2xl font-bold ${s.c}`}>{s.v}</p>
-                <p className="text-text-muted text-xs mt-1">{s.l}</p>
+                <p className="text-[var(--text-3)] text-xs mt-1">{s.l}</p>
               </div>
             ))}
           </div>
@@ -273,7 +273,7 @@ export default function TeacherGradingPage() {
             {[{ k: 'all', l: 'Tất cả' }, { k: 'pending', l: '○ Chờ chấm' }, { k: 'graded', l: '✓ Đã chấm' }].map(f => (
               <button key={f.k} onClick={() => setFilter(f.k)}
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  filterStatus === f.k ? 'bg-accent text-white' : 'bg-surface-700 text-text-muted border border-surface-600'
+                  filterStatus === f.k ? 'bg-accent text-white' : 'bg-[var(--bg-elevated)] text-[var(--text-3)] border border-[var(--border-base)]'
                 }`}>
                 {f.l}
                 {f.k === 'pending' && pendingCount > 0 && (
@@ -291,37 +291,37 @@ export default function TeacherGradingPage() {
           ) : filtered.length === 0 ? (
             <div className="card text-center py-12">
               <div className="text-4xl mb-3">📭</div>
-              <p className="text-text-muted">{attempts.length === 0 ? 'Chưa có sinh viên nào nộp bài' : 'Không có bài trong mục này'}</p>
+              <p className="text-[var(--text-3)]">{attempts.length === 0 ? 'Chưa có sinh viên nào nộp bài' : 'Không có bài trong mục này'}</p>
             </div>
           ) : (
             <div className="card p-0 overflow-hidden">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-surface-700">
-                    <th className="text-left px-5 py-3 text-xs text-text-muted uppercase tracking-wider">Sinh viên</th>
-                    <th className="text-left px-5 py-3 text-xs text-text-muted uppercase tracking-wider">Thời gian nộp</th>
-                    <th className="text-center px-5 py-3 text-xs text-text-muted uppercase tracking-wider">Điểm</th>
-                    <th className="text-center px-5 py-3 text-xs text-text-muted uppercase tracking-wider">Trạng thái</th>
-                    <th className="text-center px-5 py-3 text-xs text-text-muted uppercase tracking-wider">Hành động</th>
+                  <tr className="border-b border-[var(--border-subtle)]">
+                    <th className="text-left px-5 py-3 text-xs text-[var(--text-3)] uppercase tracking-wider">Sinh viên</th>
+                    <th className="text-left px-5 py-3 text-xs text-[var(--text-3)] uppercase tracking-wider">Thời gian nộp</th>
+                    <th className="text-center px-5 py-3 text-xs text-[var(--text-3)] uppercase tracking-wider">Điểm</th>
+                    <th className="text-center px-5 py-3 text-xs text-[var(--text-3)] uppercase tracking-wider">Trạng thái</th>
+                    <th className="text-center px-5 py-3 text-xs text-[var(--text-3)] uppercase tracking-wider">Hành động</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map((a, idx) => (
-                    <tr key={a.id} className={`border-b border-surface-700/50 hover:bg-surface-700/30 transition-colors ${idx % 2 === 0 ? '' : 'bg-surface-700/10'}`}>
+                    <tr key={a.id} className={`border-b border-[var(--border-subtle)]/50 hover:bg-[var(--bg-elevated)]/30 transition-colors ${idx % 2 === 0 ? '' : 'bg-[var(--bg-elevated)]/10'}`}>
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 rounded-full bg-accent/20 flex items-center justify-center text-accent text-sm font-bold shrink-0">
                             {a.studentName?.charAt(0) || '?'}
                           </div>
                           <div>
-                            <p className="text-text-primary text-sm font-medium">{a.studentName}</p>
-                            {a.studentCode && <p className="text-text-muted text-xs font-mono">{a.studentCode}</p>}
+                            <p className="text-[var(--text-1)] text-sm font-medium">{a.studentName}</p>
+                            {a.studentCode && <p className="text-[var(--text-3)] text-xs font-mono">{a.studentCode}</p>}
                           </div>
                         </div>
                       </td>
-                      <td className="px-5 py-3 text-text-secondary text-sm">{fmtDate(a.submittedAt)}</td>
+                      <td className="px-5 py-3 text-[var(--text-2)] text-sm">{fmtDate(a.submittedAt)}</td>
                       <td className="px-5 py-3 text-center">
-                        <span className={`font-semibold text-sm ${a.score != null ? 'text-text-primary' : 'text-text-muted'}`}>
+                        <span className={`font-semibold text-sm ${a.score != null ? 'text-[var(--text-1)]' : 'text-[var(--text-3)]'}`}>
                           {a.score != null ? `${a.score}/${a.totalScore}` : '—'}
                         </span>
                         {a.passed != null && (

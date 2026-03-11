@@ -41,12 +41,12 @@ export default function ResetPasswordModal({ user, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-surface-800 border border-surface-600 rounded-2xl w-full max-w-md shadow-2xl">
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-base)] rounded-2xl w-full max-w-md shadow-2xl">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-7 py-5 border-b border-surface-700">
-          <h3 className="font-semibold text-text-primary">Xác nhận</h3>
-          <button onClick={onClose} className="btn-ghost p-1.5 text-text-muted hover:text-text-primary">
+        <div className="flex items-center justify-between px-7 py-5 border-b border-[var(--border-subtle)]">
+          <h3 className="font-semibold text-[var(--text-1)]">Xác nhận</h3>
+          <button onClick={onClose} className="btn-ghost p-1.5 text-[var(--text-3)] hover:text-[var(--text-1)]">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
             </svg>
@@ -57,11 +57,11 @@ export default function ResetPasswordModal({ user, onClose }) {
           {done ? (
             <div className="text-center py-4">
               <div className="text-5xl mb-4"></div>
-              <p className="text-text-primary font-semibold mb-1">Reset thành công!</p>
-              <p className="text-text-muted text-sm mb-2">
-                Mật khẩu mới của <span className="text-text-primary font-medium">{user.fullName || user.username}</span>:
+              <p className="text-[var(--text-1)] font-semibold mb-1">Reset thành công!</p>
+              <p className="text-[var(--text-3)] text-sm mb-2">
+                Mật khẩu mới của <span className="text-[var(--text-1)] font-medium">{user.fullName || user.username}</span>:
               </p>
-              <div className="bg-surface-700 border border-surface-500 rounded-xl px-4 py-3 mb-3 font-mono text-lg text-accent tracking-widest">
+              <div className="bg-[var(--bg-elevated)] border border-[var(--border-strong)] rounded-xl px-4 py-3 mb-3 font-mono text-lg text-accent tracking-widest">
                 {newPassword}
               </div>
               {user.email && !user.email.endsWith('@school.edu.vn')
@@ -73,13 +73,13 @@ export default function ResetPasswordModal({ user, onClose }) {
           ) : (
             <div className="space-y-5">
               {/* User info */}
-              <div className="flex items-center gap-3 bg-surface-700 rounded-xl p-3">
+              <div className="flex items-center gap-3 bg-[var(--bg-elevated)] rounded-xl p-3">
                 <div className="w-10 h-10 rounded-full bg-accent/20 flex items-center justify-center text-accent font-bold text-base shrink-0">
                   {(user.fullName || user.username || '?').charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <p className="text-text-primary font-medium">{user.fullName || user.username}</p>
-                  <p className="text-text-muted text-xs">@{user.username} · {roleLabel}</p>
+                  <p className="text-[var(--text-1)] font-medium">{user.fullName || user.username}</p>
+                  <p className="text-[var(--text-3)] text-xs">@{user.username} · {roleLabel}</p>
                 </div>
               </div>
 
@@ -89,13 +89,13 @@ export default function ResetPasswordModal({ user, onClose }) {
 
               {/* Generate button */}
               <button onClick={suggest}
-                className="w-full py-2 rounded-lg border border-dashed border-surface-500 text-text-muted text-sm hover:border-accent hover:text-accent transition-all">
+                className="w-full py-2 rounded-lg border border-dashed border-[var(--border-strong)] text-[var(--text-3)] text-sm hover:border-accent hover:text-accent transition-all">
                 Tạo ngẫu nhiên
               </button>
 
               {/* New password */}
               <div>
-                <label className="block text-sm text-text-secondary mb-1.5">Mật khẩu mới</label>
+                <label className="block text-sm text-[var(--text-2)] mb-1.5">Mật khẩu mới</label>
                 <div className="relative">
                   <input
                     type={show ? 'text' : 'password'}
@@ -106,7 +106,7 @@ export default function ResetPasswordModal({ user, onClose }) {
                     autoFocus
                   />
                   <button type="button" onClick={() => setShow(p => !p)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary text-xs">
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-3)] hover:text-[var(--text-1)] text-xs">
                     {show ? '🙈' : '👁'}
                   </button>
                 </div>
@@ -114,7 +114,7 @@ export default function ResetPasswordModal({ user, onClose }) {
 
               {/* Confirm */}
               <div>
-                <label className="block text-sm text-text-secondary mb-1.5">Xác nhận mật khẩu mới</label>
+                <label className="block text-sm text-[var(--text-2)] mb-1.5">Xác nhận mật khẩu mới</label>
                 <input
                   type={show ? 'text' : 'password'}
                   value={confirm}

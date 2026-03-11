@@ -14,6 +14,7 @@ public class AttemptResponse {
     private String courseName;
 
     private String studentName;
+    private String studentEmail;
     private String studentCode;
 
     private AttemptStatus status;

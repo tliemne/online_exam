@@ -38,7 +38,7 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-surface-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[var(--bg-page)] flex items-center justify-center p-4">
       <div className="w-full max-w-sm animate-fade-in">
 
         {/* Logo */}
@@ -49,13 +49,13 @@ export default function LoginPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 3h10M5 7h8M5 11h9M5 15h6"/>
             </svg>
           </div>
-          <h1 className="font-display font-semibold text-lg text-text-primary">ExamPortal</h1>
-          <p className="text-text-muted text-sm mt-1">Hệ thống thi trực tuyến</p>
+          <h1 className="font-display font-semibold text-lg text-[var(--text-1)]">ExamPortal</h1>
+          <p className="text-[var(--text-3)] text-sm mt-1">Hệ thống thi trực tuyến</p>
         </div>
 
         {/* Card */}
         <div className="card p-6">
-          <h2 className="font-display font-semibold text-base text-text-primary mb-5">Đăng nhập</h2>
+          <h2 className="font-display font-semibold text-base text-[var(--text-1)] mb-5">Đăng nhập</h2>
 
           {error && (
             <div className="mb-4 px-3 py-2.5 rounded-md bg-danger/8 border border-danger/20 text-danger text-sm">
@@ -78,7 +78,7 @@ export default function LoginPage() {
                   value={form.password} onChange={e => setForm({...form, password: e.target.value})}
                   required autoComplete="current-password"/>
                 <button type="button" onClick={() => setShowPass(p => !p)}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-secondary transition-colors p-0.5">
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--text-3)] hover:text-[var(--text-2)] transition-colors p-0.5">
                   <EyeIcon open={showPass}/>
                 </button>
               </div>
@@ -93,7 +93,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="mt-5 pt-4 border-t border-surface-600 text-center text-sm text-text-muted">
+          <p className="mt-5 pt-4 border-t border-[var(--border-base)] text-center text-sm text-[var(--text-3)]">
             Chưa có tài khoản?{' '}
             <Link to="/register" className="text-accent hover:text-accent-hover transition-colors font-medium">
               Đăng ký

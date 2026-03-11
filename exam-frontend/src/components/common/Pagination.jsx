@@ -29,7 +29,7 @@ export default function Pagination({ page, totalPages, totalElements, size, onPa
   return (
     <div className="flex items-center justify-between mt-4">
       {/* Info */}
-      <p className="text-xs text-text-muted font-mono">
+      <p className="text-xs text-[var(--text-3)] font-mono">
         {from}–{to} / {totalElements} kết quả
       </p>
 
@@ -39,14 +39,14 @@ export default function Pagination({ page, totalPages, totalElements, size, onPa
         <button
           disabled={page === 0}
           onClick={() => onPageChange(page - 1)}
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-text-muted border border-surface-600 bg-surface-700 hover:border-surface-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-sm">
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--text-3)] border border-[var(--border-base)] bg-[var(--bg-elevated)] hover:border-[var(--border-strong)] disabled:opacity-30 disabled:cursor-not-allowed transition-all text-sm">
           ←
         </button>
 
         {/* Page numbers */}
         {getPages().map((p, i) =>
           p === '...' ? (
-            <span key={`dot-${i}`} className="w-8 h-8 flex items-center justify-center text-text-muted text-xs">…</span>
+            <span key={`dot-${i}`} className="w-8 h-8 flex items-center justify-center text-[var(--text-3)] text-xs">…</span>
           ) : (
             <button
               key={p}
@@ -54,7 +54,7 @@ export default function Pagination({ page, totalPages, totalElements, size, onPa
               className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-mono font-medium transition-all ${
                 p === page
                   ? 'bg-accent text-white border border-accent'
-                  : 'text-text-muted border border-surface-600 bg-surface-700 hover:border-surface-500'
+                  : 'text-[var(--text-3)] border border-[var(--border-base)] bg-[var(--bg-elevated)] hover:border-[var(--border-strong)]'
               }`}>
               {p + 1}
             </button>
@@ -65,7 +65,7 @@ export default function Pagination({ page, totalPages, totalElements, size, onPa
         <button
           disabled={page >= totalPages - 1}
           onClick={() => onPageChange(page + 1)}
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-text-muted border border-surface-600 bg-surface-700 hover:border-surface-500 disabled:opacity-30 disabled:cursor-not-allowed transition-all text-sm">
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--text-3)] border border-[var(--border-base)] bg-[var(--bg-elevated)] hover:border-[var(--border-strong)] disabled:opacity-30 disabled:cursor-not-allowed transition-all text-sm">
           →
         </button>
       </div>

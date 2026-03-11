@@ -21,7 +21,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-surface-950 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-[var(--bg-page)] flex items-center justify-center p-4">
       <div className="w-full max-w-sm animate-fade-in">
 
         {/* Logo */}
@@ -32,12 +32,12 @@ export default function RegisterPage() {
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 3h10M5 7h8M5 11h9M5 15h6"/>
             </svg>
           </div>
-          <h1 className="font-display font-semibold text-lg text-text-primary">ExamPortal</h1>
-          <p className="text-text-muted text-sm mt-1">Tạo tài khoản mới</p>
+          <h1 className="font-display font-semibold text-lg text-[var(--text-1)]">ExamPortal</h1>
+          <p className="text-[var(--text-3)] text-sm mt-1">Tạo tài khoản mới</p>
         </div>
 
         <div className="card p-6">
-          <h2 className="font-display font-semibold text-base text-text-primary mb-5">Đăng ký</h2>
+          <h2 className="font-display font-semibold text-base text-[var(--text-1)] mb-5">Đăng ký</h2>
 
           {error && (
             <div className="mb-4 px-3 py-2.5 rounded-md bg-danger/8 border border-danger/20 text-danger text-sm">
@@ -62,7 +62,7 @@ export default function RegisterPage() {
                 value={form.password} onChange={set('password')} required autoComplete="new-password"/>
             </div>
             <div>
-              <label className="input-label">Email <span className="text-text-muted font-normal normal-case">(tuỳ chọn)</span></label>
+              <label className="input-label">Email <span className="text-[var(--text-3)] font-normal normal-case">(tuỳ chọn)</span></label>
               <input type="email" className="input-field" placeholder="example@gmail.com"
                 value={form.email} onChange={set('email')}/>
             </div>
@@ -83,7 +83,7 @@ export default function RegisterPage() {
             </button>
           </form>
 
-          <p className="mt-5 pt-4 border-t border-surface-600 text-center text-sm text-text-muted">
+          <p className="mt-5 pt-4 border-t border-[var(--border-base)] text-center text-sm text-[var(--text-3)]">
             Đã có tài khoản?{' '}
             <Link to="/login" className="text-accent hover:text-accent-hover transition-colors font-medium">
               Đăng nhập

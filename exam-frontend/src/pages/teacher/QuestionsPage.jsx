@@ -61,13 +61,13 @@ function ImportQuestionsModal({ courseId, onClose, onImported }) {
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-surface-800 border border-surface-600 rounded-2xl w-full max-w-2xl shadow-md max-h-[90vh] flex flex-col">
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-base)] rounded-2xl w-full max-w-2xl shadow-md max-h-[90vh] flex flex-col">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-surface-600 shrink-0">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-base)] shrink-0">
           <div>
             <h2 className="section-title">Import câu hỏi</h2>
-            <p className="text-text-muted text-xs mt-0.5">Hỗ trợ Excel · CSV · JSON</p>
+            <p className="text-[var(--text-3)] text-xs mt-0.5">Hỗ trợ Excel · CSV · JSON</p>
           </div>
           <button onClick={onClose} className="btn-ghost p-1.5">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -84,7 +84,7 @@ function ImportQuestionsModal({ courseId, onClose, onImported }) {
                 className={`px-4 py-2 rounded-lg text-sm font-medium transition-all border ${
                   tab === t.key
                     ? 'bg-accent/10 border-accent/40 text-accent'
-                    : 'bg-surface-700 border-surface-600 text-text-muted hover:text-text-primary'
+                    : 'bg-[var(--bg-elevated)] border-[var(--border-base)] text-[var(--text-3)] hover:text-[var(--text-1)]'
                 }`}>
                 {t.label}
               </button>
@@ -92,19 +92,19 @@ function ImportQuestionsModal({ courseId, onClose, onImported }) {
           </div>
 
           {/* Format guide */}
-          <div className="bg-surface-700 border border-surface-600 rounded-xl p-4 text-xs font-mono text-text-muted space-y-1">
+          <div className="bg-[var(--bg-elevated)] border border-[var(--border-base)] rounded-xl p-4 text-xs font-mono text-[var(--text-3)] space-y-1">
             {tab === 'excel' && (<>
               <p className="text-accent font-semibold mb-2">Cấu trúc file Excel (.xlsx):</p>
-              <p><span className="text-text-secondary">Cột A:</span> content — nội dung câu hỏi</p>
-              <p><span className="text-text-secondary">Cột B:</span> type — MULTIPLE_CHOICE | TRUE_FALSE | ESSAY</p>
-              <p><span className="text-text-secondary">Cột C:</span> difficulty — EASY | MEDIUM | HARD</p>
-              <p><span className="text-text-secondary">Cột D-G:</span> A, B, C, D — các đáp án (chỉ cần cho MC)</p>
-              <p><span className="text-text-secondary">Cột H:</span> correct — A/B/C/D hoặc ĐÚNG/SAI</p>
+              <p><span className="text-[var(--text-2)]">Cột A:</span> content — nội dung câu hỏi</p>
+              <p><span className="text-[var(--text-2)]">Cột B:</span> type — MULTIPLE_CHOICE | TRUE_FALSE | ESSAY</p>
+              <p><span className="text-[var(--text-2)]">Cột C:</span> difficulty — EASY | MEDIUM | HARD</p>
+              <p><span className="text-[var(--text-2)]">Cột D-G:</span> A, B, C, D — các đáp án (chỉ cần cho MC)</p>
+              <p><span className="text-[var(--text-2)]">Cột H:</span> correct — A/B/C/D hoặc ĐÚNG/SAI</p>
             </>)}
             {tab === 'csv' && (<>
               <p className="text-accent font-semibold mb-2">Cấu trúc file CSV:</p>
               <p>content,type,difficulty,A,B,C,D,correct</p>
-              <p className="text-text-muted mt-1">"Java là gì?",MULTIPLE_CHOICE,EASY,"OOP","Script","Asm","FP",A</p>
+              <p className="text-[var(--text-3)] mt-1">"Java là gì?",MULTIPLE_CHOICE,EASY,"OOP","Script","Asm","FP",A</p>
             </>)}
             {tab === 'json' && (<>
               <p className="text-accent font-semibold mb-2">Cấu trúc JSON:</p>
@@ -124,7 +124,7 @@ function ImportQuestionsModal({ courseId, onClose, onImported }) {
               className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
                 dragging ? 'border-accent bg-accent/5'
                 : file ? 'border-success/40 bg-success/5'
-                : 'border-surface-500 hover:border-accent/40'
+                : 'border-[var(--border-strong)] hover:border-accent/40'
               }`}>
               <input ref={fileRef} type="file"
                 accept={TABS.find(t => t.key === tab).accept}
@@ -133,8 +133,8 @@ function ImportQuestionsModal({ courseId, onClose, onImported }) {
               {file ? (
                 <div>
                   
-                  <p className="text-text-primary font-medium text-sm">{file.name}</p>
-                  <p className="text-text-muted text-xs mt-1">
+                  <p className="text-[var(--text-1)] font-medium text-sm">{file.name}</p>
+                  <p className="text-[var(--text-3)] text-xs mt-1">
                     {(file.size / 1024).toFixed(1)} KB ·
                     <button onClick={e => { e.stopPropagation(); setFile(null) }}
                       className="text-danger ml-2 hover:underline">Xóa</button>
@@ -142,11 +142,11 @@ function ImportQuestionsModal({ courseId, onClose, onImported }) {
                 </div>
               ) : (
                 <div>
-                  <svg className="w-8 h-8 mx-auto mb-3 text-text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-8 h-8 mx-auto mb-3 text-[var(--text-3)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
                   </svg>
-                  <p className="text-text-secondary text-sm">Kéo thả file vào đây hoặc click để chọn</p>
-                  <p className="text-text-muted text-xs mt-1">
+                  <p className="text-[var(--text-2)] text-sm">Kéo thả file vào đây hoặc click để chọn</p>
+                  <p className="text-[var(--text-3)] text-xs mt-1">
                     {tab === 'excel' ? '.xlsx' : '.csv'} · Tối đa 5MB
                   </p>
                 </div>
@@ -176,17 +176,17 @@ function ImportQuestionsModal({ courseId, onClose, onImported }) {
           {result && (
             <div className="space-y-4">
               <div className="grid grid-cols-3 gap-3">
-                <div className="bg-surface-700 border border-surface-600 rounded-xl p-4 text-center">
+                <div className="bg-[var(--bg-elevated)] border border-[var(--border-base)] rounded-xl p-4 text-center">
                   <div className="text-2xl font-bold font-mono">{result.totalRows}</div>
-                  <div className="text-xs text-text-muted mt-1">Tổng dòng</div>
+                  <div className="text-xs text-[var(--text-3)] mt-1">Tổng dòng</div>
                 </div>
                 <div className="bg-success/5 border border-success/25 rounded-xl p-4 text-center">
                   <div className="text-2xl font-bold font-mono text-success">{result.successCount}</div>
                   <div className="text-xs text-success/70 mt-1">Thành công</div>
                 </div>
-                <div className={`rounded-xl p-4 text-center border ${result.failCount > 0 ? 'bg-danger/5 border-danger/25' : 'bg-surface-700 border-surface-600'}`}>
-                  <div className={`text-2xl font-bold font-mono ${result.failCount > 0 ? 'text-danger' : 'text-text-muted'}`}>{result.failCount}</div>
-                  <div className="text-xs text-text-muted mt-1">Lỗi</div>
+                <div className={`rounded-xl p-4 text-center border ${result.failCount > 0 ? 'bg-danger/5 border-danger/25' : 'bg-[var(--bg-elevated)] border-[var(--border-base)]'}`}>
+                  <div className={`text-2xl font-bold font-mono ${result.failCount > 0 ? 'text-danger' : 'text-[var(--text-3)]'}`}>{result.failCount}</div>
+                  <div className="text-xs text-[var(--text-3)] mt-1">Lỗi</div>
                 </div>
               </div>
               {result.errors?.length > 0 && (
@@ -207,7 +207,7 @@ function ImportQuestionsModal({ courseId, onClose, onImported }) {
         </div>
 
         {/* Footer */}
-        <div className="flex gap-3 px-6 py-4 border-t border-surface-600 shrink-0">
+        <div className="flex gap-3 px-6 py-4 border-t border-[var(--border-base)] shrink-0">
           {!result ? (
             <>
               <button onClick={handleImport}
@@ -258,8 +258,8 @@ const DIFF_COLORS = { EASY: 'badge-green', MEDIUM: 'badge-amber', HARD: 'badge-r
 function Modal({ title, onClose, children, maxWidth = 'max-w-2xl' }) {
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className={`bg-surface-800 border border-surface-600 rounded-2xl w-full ${maxWidth} shadow-md max-h-[90vh] flex flex-col`}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-surface-600 shrink-0">
+      <div className={`bg-[var(--bg-surface)] border border-[var(--border-base)] rounded-2xl w-full ${maxWidth} shadow-md max-h-[90vh] flex flex-col`}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-base)] shrink-0">
           <h2 className="section-title">{title}</h2>
           <button onClick={onClose} className="btn-ghost p-1.5">{Icon.x}</button>
         </div>
@@ -272,12 +272,12 @@ function Modal({ title, onClose, children, maxWidth = 'max-w-2xl' }) {
 function AnswerRow({ answer, index, onChange, onRemove, canRemove }) {
   return (
     <div className={`flex items-center gap-3 p-3 rounded-lg border transition-all ${
-      answer.correct ? 'border-success/40 bg-success/5' : 'border-surface-600 bg-surface-700'
+      answer.correct ? 'border-success/40 bg-success/5' : 'border-[var(--border-base)] bg-[var(--bg-elevated)]'
     }`}>
       <button type="button"
         onClick={() => onChange(index, 'correct', !answer.correct)}
         className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
-          answer.correct ? 'bg-success border-success text-white' : 'border-surface-400 hover:border-success'
+          answer.correct ? 'bg-success border-success text-white' : 'border-[var(--border-strong)] hover:border-success'
         }`}>
         {answer.correct && <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>}
       </button>
@@ -286,7 +286,7 @@ function AnswerRow({ answer, index, onChange, onRemove, canRemove }) {
         value={answer.content}
         onChange={e => onChange(index, 'content', e.target.value)} />
       {canRemove && (
-        <button type="button" onClick={() => onRemove(index)} className="btn-ghost p-1 text-text-muted hover:text-danger shrink-0">
+        <button type="button" onClick={() => onRemove(index)} className="btn-ghost p-1 text-[var(--text-3)] hover:text-danger shrink-0">
           {Icon.x}
         </button>
       )}
@@ -380,7 +380,7 @@ function QuestionFormModal({ question, courses, onClose, onSaved }) {
           <div>
             <div className="flex items-center justify-between mb-3">
               <label className="label mb-0">Đáp án
-                <span className="text-text-muted font-normal ml-2 normal-case tracking-normal">
+                <span className="text-[var(--text-3)] font-normal ml-2 normal-case tracking-normal">
                   {form.type === 'MULTIPLE_CHOICE' ? '(click vòng tròn để chọn đáp án đúng)' : ''}
                 </span>
               </label>
@@ -402,7 +402,7 @@ function QuestionFormModal({ question, courses, onClose, onSaved }) {
           </div>
         )}
         {form.type === 'ESSAY' && (
-          <div className="px-4 py-3 rounded-lg bg-surface-700 border border-surface-600 text-text-muted text-sm">
+          <div className="px-4 py-3 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-base)] text-[var(--text-3)] text-sm">
             Câu tự luận — sinh viên sẽ nhập câu trả lời khi làm bài. Giáo viên chấm điểm thủ công.
           </div>
         )}
@@ -426,12 +426,12 @@ function PreviewModal({ question, onClose }) {
           <span className={DIFF_COLORS[question.difficulty]}>{DIFF_LABELS[question.difficulty]}</span>
           <span className="badge-neutral text-xs">{question.courseName}</span>
         </div>
-        <p className="text-text-primary leading-relaxed">{question.content}</p>
+        <p className="text-[var(--text-1)] leading-relaxed">{question.content}</p>
         {question.type !== 'ESSAY' && question.answers?.length > 0 && (
           <div className="space-y-2">
             {question.answers.map((a, i) => (
               <div key={a.id} className={`flex items-center gap-3 p-3 rounded-lg border ${
-                a.correct ? 'border-success/40 bg-success/5 text-success' : 'border-surface-600 bg-surface-700 text-text-secondary'
+                a.correct ? 'border-success/40 bg-success/5 text-success' : 'border-[var(--border-base)] bg-[var(--bg-elevated)] text-[var(--text-2)]'
               }`}>
                 <span className="text-xs font-mono font-bold w-5 shrink-0">{String.fromCharCode(65+i)}.</span>
                 <span className="text-sm flex-1">{a.content}</span>
@@ -441,11 +441,11 @@ function PreviewModal({ question, onClose }) {
           </div>
         )}
         {question.type === 'ESSAY' && (
-          <div className="p-4 rounded-lg bg-surface-700 border border-surface-600 text-text-muted text-sm italic">
+          <div className="p-4 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-base)] text-[var(--text-3)] text-sm italic">
             [Sinh viên nhập câu trả lời tại đây]
           </div>
         )}
-        <div className="pt-2 border-t border-surface-600 text-xs text-text-muted">
+        <div className="pt-2 border-t border-[var(--border-base)] text-xs text-[var(--text-3)]">
           Tạo bởi: {question.createdByName || '—'}
         </div>
       </div>
@@ -535,7 +535,7 @@ export default function QuestionsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-title">Ngân hàng câu hỏi</h1>
-          <p className="text-text-secondary text-sm mt-1">{totalElements || questions.length} câu hỏi</p>
+          <p className="text-[var(--text-2)] text-sm mt-1">{totalElements || questions.length} câu hỏi</p>
         </div>
         {isTeacherOrAdmin && (
           <div className="flex items-center gap-2">
@@ -579,7 +579,7 @@ export default function QuestionsPage() {
           <div className="flex-1 min-w-48">
             <label className="label text-xs">Tìm kiếm</label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">{Icon.search}</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-3)]">{Icon.search}</span>
               <input className="input-field pl-9" placeholder="Nội dung câu hỏi..."
                 value={keyword} onChange={e => setKeyword(e.target.value)} />
             </div>
@@ -590,12 +590,12 @@ export default function QuestionsPage() {
         </div>
 
         {questions.length > 0 && (
-          <div className="flex gap-3 flex-wrap pt-1 border-t border-surface-600">
-            <span className="text-xs text-text-muted">Phân bố:</span>
+          <div className="flex gap-3 flex-wrap pt-1 border-t border-[var(--border-base)]">
+            <span className="text-xs text-[var(--text-3)]">Phân bố:</span>
             {Object.entries(TYPE_LABELS).map(([k, v]) => counts[k] > 0 && (
               <span key={k} className={`text-xs px-2 py-0.5 rounded-full ${TYPE_COLORS[k]}`}>{v}: {counts[k]}</span>
             ))}
-            <span className="text-text-muted text-xs">|</span>
+            <span className="text-[var(--text-3)] text-xs">|</span>
             {Object.entries(DIFF_LABELS).map(([k, v]) => counts[k] > 0 && (
               <span key={k} className={`text-xs px-2 py-0.5 rounded-full ${DIFF_COLORS[k]}`}>{v}: {counts[k]}</span>
             ))}
@@ -611,7 +611,7 @@ export default function QuestionsPage() {
       ) : questions.length === 0 ? (
         <div className="card text-center py-16">
           
-          <p className="text-text-secondary">Chưa có câu hỏi nào. {isTeacherOrAdmin && 'Hãy tạo hoặc import câu hỏi!'}</p>
+          <p className="text-[var(--text-2)]">Chưa có câu hỏi nào. {isTeacherOrAdmin && 'Hãy tạo hoặc import câu hỏi!'}</p>
           {isTeacherOrAdmin && (
             <div className="flex gap-3 justify-center mt-4">
               <button onClick={() => setShowImport(true)} className="btn-secondary">{Icon.upload} Import file</button>
@@ -624,18 +624,18 @@ export default function QuestionsPage() {
           {questions.map((q, index) => (
             <div key={q.id} className="card hover:border-accent/20 transition-all">
               <div className="flex items-start gap-4">
-                <span className="text-text-muted text-sm font-mono shrink-0 mt-0.5 w-6">{index + 1}.</span>
+                <span className="text-[var(--text-3)] text-sm font-mono shrink-0 mt-0.5 w-6">{index + 1}.</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <span className={`text-xs ${TYPE_COLORS[q.type]}`}>{TYPE_LABELS[q.type]}</span>
                     <span className={`text-xs ${DIFF_COLORS[q.difficulty]}`}>{DIFF_LABELS[q.difficulty]}</span>
                   </div>
-                  <p className="text-text-primary text-sm leading-relaxed line-clamp-2">{q.content}</p>
+                  <p className="text-[var(--text-1)] text-sm leading-relaxed line-clamp-2">{q.content}</p>
                   {q.type !== 'ESSAY' && q.answers?.length > 0 && (
                     <div className="mt-2 flex gap-2 flex-wrap">
                       {q.answers.map((a, i) => (
                         <span key={a.id} className={`text-xs px-2 py-0.5 rounded border ${
-                          a.correct ? 'border-success/40 bg-success/10 text-success' : 'border-surface-600 text-text-muted'
+                          a.correct ? 'border-success/40 bg-success/10 text-success' : 'border-[var(--border-base)] text-[var(--text-3)]'
                         }`}>
                           {String.fromCharCode(65+i)}. {a.content.length > 20 ? a.content.slice(0,20)+'…' : a.content}
                         </span>
@@ -645,10 +645,10 @@ export default function QuestionsPage() {
                 </div>
                 {isTeacherOrAdmin && (
                   <div className="flex items-center gap-1 shrink-0">
-                    <button onClick={() => { setSelected(q); setModal('preview') }} className="btn-ghost p-1.5 text-text-muted hover:text-accent">{Icon.eye}</button>
-                    <button onClick={() => { setSelected(q); setModal('edit') }} className="btn-ghost p-1.5 text-text-muted hover:text-accent">{Icon.edit}</button>
+                    <button onClick={() => { setSelected(q); setModal('preview') }} className="btn-ghost p-1.5 text-[var(--text-3)] hover:text-accent">{Icon.eye}</button>
+                    <button onClick={() => { setSelected(q); setModal('edit') }} className="btn-ghost p-1.5 text-[var(--text-3)] hover:text-accent">{Icon.edit}</button>
                     <button onClick={() => handleDelete(q)} disabled={deleting === q.id}
-                      className="btn-ghost p-1.5 text-text-muted hover:text-danger hover:bg-danger/10">
+                      className="btn-ghost p-1.5 text-[var(--text-3)] hover:text-danger hover:bg-danger/10">
                       {deleting === q.id
                         ? <span className="w-4 h-4 border border-danger border-t-transparent rounded-full animate-spin block"/>
                         : Icon.trash}

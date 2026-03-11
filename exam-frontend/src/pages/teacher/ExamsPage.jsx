@@ -40,8 +40,8 @@ function StatusBadge({ status }) {
 function Modal({ title, onClose, children, wide }) {
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className={`bg-surface-800 border border-surface-600 rounded-xl w-full shadow-modal animate-slide-up flex flex-col max-h-[90vh] ${wide ? 'max-w-2xl' : 'max-w-lg'}`}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-surface-600 shrink-0">
+      <div className={`bg-[var(--bg-surface)] border border-[var(--border-base)] rounded-xl w-full shadow-modal animate-slide-up flex flex-col max-h-[90vh] ${wide ? 'max-w-2xl' : 'max-w-lg'}`}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-base)] shrink-0">
           <h2 className="section-title">{title}</h2>
           <button onClick={onClose} className="btn-ghost p-1.5">{Icon.x}</button>
         </div>
@@ -165,21 +165,21 @@ function ExamFormModal({ exam, courses, onClose, onSaved }) {
         <div className="flex flex-col gap-3 pt-1">
           <label className="flex items-center gap-3 cursor-pointer group">
             <div onClick={fb('shuffleQuestions')}
-              className={`w-9 h-5 rounded-full transition-colors relative ${form.shuffleQuestions ? 'bg-accent' : 'bg-surface-600'}`}>
+              className={`w-9 h-5 rounded-full transition-colors relative ${form.shuffleQuestions ? 'bg-accent' : 'bg-[var(--border-base)]'}`}>
               <div className={`w-3.5 h-3.5 bg-white rounded-full absolute top-0.5 transition-all ${form.shuffleQuestions ? 'left-4.5' : 'left-0.5'}`}/>
             </div>
-            <span className="text-sm text-text-secondary group-hover:text-text-primary transition-colors">Xáo trộn thứ tự câu hỏi</span>
+            <span className="text-sm text-[var(--text-2)] group-hover:text-[var(--text-1)] transition-colors">Xáo trộn thứ tự câu hỏi</span>
           </label>
           <label className="flex items-center gap-3 cursor-pointer group">
             <div onClick={fb('showResult')}
-              className={`w-9 h-5 rounded-full transition-colors relative ${form.showResult ? 'bg-accent' : 'bg-surface-600'}`}>
+              className={`w-9 h-5 rounded-full transition-colors relative ${form.showResult ? 'bg-accent' : 'bg-[var(--border-base)]'}`}>
               <div className={`w-3.5 h-3.5 bg-white rounded-full absolute top-0.5 transition-all ${form.showResult ? 'left-4.5' : 'left-0.5'}`}/>
             </div>
-            <span className="text-sm text-text-secondary group-hover:text-text-primary transition-colors">Hiển thị kết quả sau khi nộp</span>
+            <span className="text-sm text-[var(--text-2)] group-hover:text-[var(--text-1)] transition-colors">Hiển thị kết quả sau khi nộp</span>
           </label>
         </div>
 
-        <div className="flex gap-3 px-7 py-4 border-t border-surface-600">
+        <div className="flex gap-3 px-7 py-4 border-t border-[var(--border-base)]">
           <button type="submit" disabled={saving} className="btn-primary flex-1">
             {saving ? 'Đang lưu...' : exam ? 'Lưu thay đổi' : 'Tạo đề thi'}
           </button>
@@ -285,7 +285,7 @@ function AddQuestionsModal({ exam, onClose, onSaved }) {
         {/* Toolbar */}
         <div className="flex gap-3">
           <div className="relative flex-1">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">{Icon.search}</span>
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-3)]">{Icon.search}</span>
             <input className="input-field pl-9" placeholder="Tìm câu hỏi..." value={search}
               onChange={e => setSearch(e.target.value)} autoFocus />
           </div>
@@ -299,7 +299,7 @@ function AddQuestionsModal({ exam, onClose, onSaved }) {
 
         {/* Stats */}
         <div className="flex items-center justify-between text-sm">
-          <span className="text-text-muted">{filtered.length} câu hỏi</span>
+          <span className="text-[var(--text-3)]">{filtered.length} câu hỏi</span>
           <span className="text-accent font-medium">Đã chọn: {selected.size}</span>
         </div>
 
@@ -310,7 +310,7 @@ function AddQuestionsModal({ exam, onClose, onSaved }) {
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-8">
-            <p className="text-text-muted text-sm">
+            <p className="text-[var(--text-3)] text-sm">
               {questions.length === 0
                 ? 'Lớp này chưa có câu hỏi nào. Hãy thêm câu hỏi trong Ngân hàng đề.'
                 : 'Không tìm thấy câu hỏi phù hợp'}
@@ -324,17 +324,17 @@ function AddQuestionsModal({ exam, onClose, onSaved }) {
                 className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
                   selected.has(q.id)
                     ? 'border-accent bg-accent/8'
-                    : 'border-surface-600 bg-surface-700 hover:border-surface-500'
+                    : 'border-[var(--border-base)] bg-[var(--bg-elevated)] hover:border-[var(--border-strong)]'
                 }`}>
                 <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
-                  selected.has(q.id) ? 'bg-accent border-accent' : 'border-surface-400'
+                  selected.has(q.id) ? 'bg-accent border-accent' : 'border-[var(--border-strong)]'
                 }`}>
                   {selected.has(q.id) && <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-text-primary text-sm line-clamp-2">{i + 1}. {q.content}</p>
+                  <p className="text-[var(--text-1)] text-sm line-clamp-2">{i + 1}. {q.content}</p>
                   <div className="flex gap-2 mt-1.5">
-                    <span className="text-xs text-text-muted">{TYPE_META[q.type] || q.type}</span>
+                    <span className="text-xs text-[var(--text-3)]">{TYPE_META[q.type] || q.type}</span>
                     {q.difficulty && (
                       <span className={`text-xs ${DIFF_META[q.difficulty]?.cls || 'badge-neutral'}`}>
                         {DIFF_META[q.difficulty]?.label || q.difficulty}
@@ -347,7 +347,7 @@ function AddQuestionsModal({ exam, onClose, onSaved }) {
           </div>
         )}
 
-        <div className="flex gap-3 px-7 py-4 border-t border-surface-600">
+        <div className="flex gap-3 px-7 py-4 border-t border-[var(--border-base)]">
           <button onClick={handleSave} disabled={saving || selected.size === 0} className="btn-primary flex-1">
             {saving ? 'Đang lưu...' : `Lưu ${selected.size} câu hỏi`}
           </button>
@@ -365,19 +365,19 @@ function ExamCard({ exam, onEdit, onDelete, onPublish, onClose, onManageQuestion
   const isPublished = exam.status === 'PUBLISHED'
 
   return (
-    <div className="card flex flex-col gap-5 hover:border-surface-500 transition-all duration-200">
+    <div className="card flex flex-col gap-5 hover:border-[var(--border-strong)] transition-all duration-200">
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <StatusBadge status={exam.status} />
             {exam.courseName && (
-              <span className="text-xs text-text-muted truncate">· {exam.courseName}</span>
+              <span className="text-xs text-[var(--text-3)] truncate">· {exam.courseName}</span>
             )}
           </div>
-          <h3 className="font-display font-semibold text-text-primary truncate">{exam.title}</h3>
+          <h3 className="font-display font-semibold text-[var(--text-1)] truncate">{exam.title}</h3>
           {exam.description && (
-            <p className="text-text-muted text-xs mt-1 line-clamp-2">{exam.description}</p>
+            <p className="text-[var(--text-3)] text-xs mt-1 line-clamp-2">{exam.description}</p>
           )}
         </div>
         <div className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
@@ -389,23 +389,23 @@ function ExamCard({ exam, onEdit, onDelete, onPublish, onClose, onManageQuestion
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-2">
-        <div className="bg-surface-700 rounded-lg px-3 py-2 text-center">
-          <div className="text-text-primary font-semibold text-sm">{exam.duration ?? '—'}</div>
-          <div className="text-text-muted text-xs mt-0.5">phút</div>
+        <div className="bg-[var(--bg-elevated)] rounded-lg px-3 py-2 text-center">
+          <div className="text-[var(--text-1)] font-semibold text-sm">{exam.duration ?? '—'}</div>
+          <div className="text-[var(--text-3)] text-xs mt-0.5">phút</div>
         </div>
-        <div className="bg-surface-700 rounded-lg px-3 py-2 text-center">
-          <div className="text-text-primary font-semibold text-sm">{exam.questionCount ?? 0}</div>
-          <div className="text-text-muted text-xs mt-0.5">câu hỏi</div>
+        <div className="bg-[var(--bg-elevated)] rounded-lg px-3 py-2 text-center">
+          <div className="text-[var(--text-1)] font-semibold text-sm">{exam.questionCount ?? 0}</div>
+          <div className="text-[var(--text-3)] text-xs mt-0.5">câu hỏi</div>
         </div>
-        <div className="bg-surface-700 rounded-lg px-3 py-2 text-center">
-          <div className="text-text-primary font-semibold text-sm">{exam.maxAttempts ?? 1}</div>
-          <div className="text-text-muted text-xs mt-0.5">lần thi</div>
+        <div className="bg-[var(--bg-elevated)] rounded-lg px-3 py-2 text-center">
+          <div className="text-[var(--text-1)] font-semibold text-sm">{exam.maxAttempts ?? 1}</div>
+          <div className="text-[var(--text-3)] text-xs mt-0.5">lần thi</div>
         </div>
       </div>
 
       {/* Thời gian */}
       {(exam.startTime || exam.endTime) && (
-        <div className="flex items-center gap-1.5 text-xs text-text-muted">
+        <div className="flex items-center gap-1.5 text-xs text-[var(--text-3)]">
           {Icon.clock}
           <span>
             {exam.startTime ? new Date(exam.startTime).toLocaleString('vi-VN') : '—'}
@@ -416,7 +416,7 @@ function ExamCard({ exam, onEdit, onDelete, onPublish, onClose, onManageQuestion
       )}
 
       {/* Actions */}
-      <div className="flex gap-2 pt-3 border-t border-surface-600">
+      <div className="flex gap-2 pt-3 border-t border-[var(--border-base)]">
         {/* Quản lý câu hỏi */}
         <button onClick={() => onManageQuestions(exam)}
           className="btn-ghost flex-1 text-xs py-1.5 gap-1.5">
@@ -429,7 +429,7 @@ function ExamCard({ exam, onEdit, onDelete, onPublish, onClose, onManageQuestion
         {/* Close button — chỉ hiện khi PUBLISHED */}
         {isPublished && (
           <button onClick={() => onClose(exam)}
-            className="btn-ghost p-1.5 text-text-muted hover:text-yellow-400" title="Đóng đề thi">
+            className="btn-ghost p-1.5 text-[var(--text-3)] hover:text-yellow-400" title="Đóng đề thi">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/></svg>
           </button>
         )}
@@ -449,11 +449,11 @@ function ExamCard({ exam, onEdit, onDelete, onPublish, onClose, onManageQuestion
         )}
 
         <button onClick={() => onEdit(exam)}
-          className="btn-ghost px-2.5 py-1.5 text-text-secondary hover:text-accent">
+          className="btn-ghost px-2.5 py-1.5 text-[var(--text-2)] hover:text-accent">
           {Icon.edit}
         </button>
         <button onClick={() => onDelete(exam)}
-          className="btn-ghost px-2.5 py-1.5 text-text-secondary hover:text-danger hover:bg-danger/10">
+          className="btn-ghost px-2.5 py-1.5 text-[var(--text-2)] hover:text-danger hover:bg-danger/10">
           {Icon.trash}
         </button>
       </div>
@@ -566,7 +566,7 @@ export default function ExamsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="page-title">Đề thi</h1>
-          <p className="text-text-secondary text-sm mt-1">{exams.length} đề thi trong hệ thống</p>
+          <p className="text-[var(--text-2)] text-sm mt-1">{exams.length} đề thi trong hệ thống</p>
         </div>
         <button onClick={() => { setSelected(null); setModal('create') }} className="btn-primary">
           {Icon.plus} Tạo đề thi
@@ -589,11 +589,11 @@ export default function ExamsPage() {
         {[
           { label: 'Tổng đề thi', value: stats.total, color: 'text-accent' },
           { label: 'Đã xuất bản', value: stats.published, color: 'text-success' },
-          { label: 'Đang soạn', value: stats.draft, color: 'text-text-muted' },
+          { label: 'Đang soạn', value: stats.draft, color: 'text-[var(--text-3)]' },
         ].map(s => (
           <div key={s.label} className="card-bare py-5 px-4 text-center">
             <div className={`text-2xl font-display font-bold ${s.color}`}>{s.value}</div>
-            <div className="text-text-muted text-xs mt-1">{s.label}</div>
+            <div className="text-[var(--text-3)] text-xs mt-1">{s.label}</div>
           </div>
         ))}
       </div>
@@ -601,7 +601,7 @@ export default function ExamsPage() {
       {/* Toolbar */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 min-w-48">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted">{Icon.search}</span>
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-3)]">{Icon.search}</span>
           <input className="input-field pl-9" placeholder="Tìm đề thi..." value={search}
             onChange={e => setSearch(e.target.value)} />
         </div>
@@ -631,7 +631,7 @@ export default function ExamsPage() {
       ) : filtered.length === 0 ? (
         <div className="card text-center py-16">
           
-          <p className="text-text-secondary">
+          <p className="text-[var(--text-2)]">
             {exams.length === 0 ? 'Chưa có đề thi nào. Hãy tạo đề thi đầu tiên!' : 'Không tìm thấy đề thi phù hợp'}
           </p>
           {exams.length === 0 && (

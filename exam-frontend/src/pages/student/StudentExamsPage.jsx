@@ -32,32 +32,32 @@ function ResultHistoryModal({ exam, onClose }) {
 
   if (detail) return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-surface-800 border border-surface-600 rounded-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-modal">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-surface-700">
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-base)] rounded-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-modal">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-subtle)]">
           <div>
-            <h3 className="font-semibold text-text-primary">Chi tiết bài làm</h3>
-            <p className="text-xs text-text-muted">{exam.title}</p>
+            <h3 className="font-semibold text-[var(--text-1)]">Chi tiết bài làm</h3>
+            <p className="text-xs text-[var(--text-3)]">{exam.title}</p>
           </div>
-          <button onClick={() => setDetail(null)} className="btn-ghost p-2 text-text-muted">{Icon.x}</button>
+          <button onClick={() => setDetail(null)} className="btn-ghost p-2 text-[var(--text-3)]">{Icon.x}</button>
         </div>
         <div className="overflow-y-auto flex-1 p-6 space-y-4">
           {/* Score summary */}
-          <div className="bg-surface-700 rounded-xl p-4 flex items-center justify-between">
+          <div className="bg-[var(--bg-elevated)] rounded-xl p-4 flex items-center justify-between">
             <div>
-              <p className="text-xs text-text-muted mb-1">Điểm số</p>
+              <p className="text-xs text-[var(--text-3)] mb-1">Điểm số</p>
               <p className={`text-2xl font-bold ${detail.passed ? 'text-success' : 'text-danger'}`}>
                 {detail.score != null ? `${detail.score}/${detail.totalScore}` : 'Chờ chấm'}
               </p>
             </div>
             <div className="text-right">
-              <p className="text-xs text-text-muted mb-1">Kết quả</p>
+              <p className="text-xs text-[var(--text-3)] mb-1">Kết quả</p>
               <p className={`text-sm font-semibold ${detail.passed ? 'text-success' : detail.passed === false ? 'text-danger' : 'text-warning'}`}>
                 {detail.passed == null ? '—' : detail.passed ? 'Đạt' : 'Chưa đạt'}
               </p>
             </div>
             <div className="text-right">
-              <p className="text-xs text-text-muted mb-1">Đúng/Tổng</p>
-              <p className="text-sm font-semibold text-text-primary">{detail.correctCount ?? '?'}/{detail.totalQuestions ?? '?'}</p>
+              <p className="text-xs text-[var(--text-3)] mb-1">Đúng/Tổng</p>
+              <p className="text-sm font-semibold text-[var(--text-1)]">{detail.correctCount ?? '?'}/{detail.totalQuestions ?? '?'}</p>
             </div>
           </div>
 
@@ -66,11 +66,11 @@ function ResultHistoryModal({ exam, onClose }) {
             <div key={a.id} className={`border rounded-xl p-4 ${
               a.isCorrect === true  ? 'border-success/30 bg-success/5'
               : a.isCorrect === false ? 'border-danger/30 bg-danger/5'
-              : 'border-surface-600 bg-surface-700/30'
+              : 'border-[var(--border-base)] bg-[var(--bg-elevated)]/30'
             }`}>
               <div className="flex items-center gap-2 mb-2">
-                <span className="w-6 h-6 rounded-lg bg-surface-600 flex items-center justify-center text-xs font-mono font-bold text-text-muted">{i+1}</span>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-surface-600 text-text-muted">{
+                <span className="w-6 h-6 rounded-lg bg-[var(--border-base)] flex items-center justify-center text-xs font-mono font-bold text-[var(--text-3)]">{i+1}</span>
+                <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--border-base)] text-[var(--text-3)]">{
                   a.questionType === 'MULTIPLE_CHOICE' ? 'Trắc nghiệm'
                   : a.questionType === 'TRUE_FALSE' ? 'Đúng/Sai' : 'Tự luận'
                 }</span>
@@ -79,12 +79,12 @@ function ResultHistoryModal({ exam, onClose }) {
                   {a.score != null ? ` · ${a.score}đ` : ''}
                 </span>
               </div>
-              <p className="text-text-primary text-sm mb-2">{a.questionContent}</p>
+              <p className="text-[var(--text-1)] text-sm mb-2">{a.questionContent}</p>
               {a.selectedAnswerContent && (
-                <p className="text-xs text-text-muted">Bạn chọn: <span className="text-text-secondary">{a.selectedAnswerContent}</span></p>
+                <p className="text-xs text-[var(--text-3)]">Bạn chọn: <span className="text-[var(--text-2)]">{a.selectedAnswerContent}</span></p>
               )}
               {a.textAnswer && (
-                <p className="text-xs text-text-muted">Câu trả lời: <span className="text-text-secondary">{a.textAnswer}</span></p>
+                <p className="text-xs text-[var(--text-3)]">Câu trả lời: <span className="text-[var(--text-2)]">{a.textAnswer}</span></p>
               )}
               {a.correctAnswerContent && a.isCorrect === false && (
                 <p className="text-xs text-success mt-1">Đáp án đúng: {a.correctAnswerContent}</p>
@@ -101,13 +101,13 @@ function ResultHistoryModal({ exam, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-surface-800 border border-surface-600 rounded-xl w-full max-w-lg shadow-modal">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-surface-700">
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-base)] rounded-xl w-full max-w-lg shadow-modal">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-subtle)]">
           <div>
-            <h3 className="font-semibold text-text-primary">Lịch sử bài làm</h3>
-            <p className="text-xs text-text-muted">{exam.title}</p>
+            <h3 className="font-semibold text-[var(--text-1)]">Lịch sử bài làm</h3>
+            <p className="text-xs text-[var(--text-3)]">{exam.title}</p>
           </div>
-          <button onClick={onClose} className="btn-ghost p-2 text-text-muted">{Icon.x}</button>
+          <button onClick={onClose} className="btn-ghost p-2 text-[var(--text-3)]">{Icon.x}</button>
         </div>
         <div className="p-6">
           {loading ? (
@@ -115,20 +115,20 @@ function ResultHistoryModal({ exam, onClose }) {
               <div className="w-6 h-6 rounded-full border-2 border-accent border-t-transparent animate-spin"/>
             </div>
           ) : attempts.length === 0 ? (
-            <p className="text-center text-text-muted py-8">Chưa có bài làm nào</p>
+            <p className="text-center text-[var(--text-3)] py-8">Chưa có bài làm nào</p>
           ) : (
             <div className="space-y-3">
               {attempts.map((a, i) => (
-                <div key={a.id} className="bg-surface-700 rounded-xl p-4 flex items-center gap-4">
-                  <div className="w-8 h-8 rounded-lg bg-surface-600 flex items-center justify-center text-sm font-bold text-text-muted font-mono">
+                <div key={a.id} className="bg-[var(--bg-elevated)] rounded-xl p-4 flex items-center gap-4">
+                  <div className="w-8 h-8 rounded-lg bg-[var(--border-base)] flex items-center justify-center text-sm font-bold text-[var(--text-3)] font-mono">
                     {i + 1}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
                       <span className={`text-xs font-medium ${statusColor(a.status)}`}>{statusLabel(a.status)}</span>
-                      <span className="text-xs text-text-muted">{a.submittedAt ? new Date(a.submittedAt).toLocaleString('vi-VN') : ''}</span>
+                      <span className="text-xs text-[var(--text-3)]">{a.submittedAt ? new Date(a.submittedAt).toLocaleString('vi-VN') : ''}</span>
                     </div>
-                    <p className="text-text-primary font-semibold text-sm">
+                    <p className="text-[var(--text-1)] font-semibold text-sm">
                       {a.score != null ? `${a.score}/${a.totalScore} điểm` : 'Chờ chấm tự luận'}
                       {a.passed != null && <span className={`ml-2 text-xs ${a.passed ? 'text-success' : 'text-danger'}`}>{a.passed ? 'Đạt' : 'Chưa đạt'}</span>}
                     </p>
@@ -240,11 +240,11 @@ function TakeExamModal({ exam, onClose, onSubmitted }) {
   // Màn hình kết quả
   if (submitted && result) return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-surface-800 border border-surface-600 rounded-xl w-full max-w-md p-8 text-center shadow-xl">
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-base)] rounded-xl w-full max-w-md p-8 text-center shadow-xl">
         <div className="w-16 h-16 rounded-full bg-success/15 border border-success/30 flex items-center justify-center mx-auto mb-4">
           <span className="text-success">{Icon.check}</span>
         </div>
-        <h2 className="text-xl font-bold text-text-primary mb-2">Nộp bài thành công!</h2>
+        <h2 className="text-xl font-bold text-[var(--text-1)] mb-2">Nộp bài thành công!</h2>
         {result.score != null ? (
           <div className="mb-4">
             <p className={`text-4xl font-bold mb-1 ${result.passed ? 'text-success' : 'text-danger'}`}>
@@ -255,25 +255,25 @@ function TakeExamModal({ exam, onClose, onSubmitted }) {
             </p>
           </div>
         ) : (
-          <p className="text-text-secondary text-sm mb-4">
+          <p className="text-[var(--text-2)] text-sm mb-4">
             Bài có câu tự luận — giáo viên sẽ chấm điểm sau
           </p>
         )}
-        <div className="bg-surface-700 rounded-xl p-4 mb-6 text-left space-y-2">
+        <div className="bg-[var(--bg-elevated)] rounded-xl p-4 mb-6 text-left space-y-2">
           <div className="flex justify-between text-sm">
-            <span className="text-text-muted">Đề thi</span>
-            <span className="text-text-primary font-medium">{exam.title}</span>
+            <span className="text-[var(--text-3)]">Đề thi</span>
+            <span className="text-[var(--text-1)] font-medium">{exam.title}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-text-muted">Lớp</span>
-            <span className="text-text-primary">{exam.courseName}</span>
+            <span className="text-[var(--text-3)]">Lớp</span>
+            <span className="text-[var(--text-1)]">{exam.courseName}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-text-muted">Đã trả lời</span>
-            <span className="text-text-primary">{result.answered}/{result.totalQuestions} câu</span>
+            <span className="text-[var(--text-3)]">Đã trả lời</span>
+            <span className="text-[var(--text-1)]">{result.answered}/{result.totalQuestions} câu</span>
           </div>
         </div>
-        <p className="text-xs text-text-muted mb-4">Giáo viên sẽ chấm điểm và công bố kết quả sau</p>
+        <p className="text-xs text-[var(--text-3)] mb-4">Giáo viên sẽ chấm điểm và công bố kết quả sau</p>
         <button onClick={() => { onSubmitted(); onClose() }} className="btn-primary w-full">
           Đóng
         </button>
@@ -282,27 +282,27 @@ function TakeExamModal({ exam, onClose, onSubmitted }) {
   )
 
   return (
-    <div className="fixed inset-0 z-50 bg-surface-900 flex flex-col">
+    <div className="fixed inset-0 z-50 bg-[var(--bg-page)] flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-surface-700 bg-surface-800 shrink-0">
+      <div className="flex items-center justify-between px-6 py-3 border-b border-[var(--border-subtle)] bg-[var(--bg-surface)] shrink-0">
         <div>
-          <h2 className="font-semibold text-text-primary">{exam.title}</h2>
-          <p className="text-xs text-text-muted">{exam.courseName} · {questions.length} câu hỏi</p>
+          <h2 className="font-semibold text-[var(--text-1)]">{exam.title}</h2>
+          <p className="text-xs text-[var(--text-3)]">{exam.courseName} · {questions.length} câu hỏi</p>
         </div>
         <div className="flex items-center gap-4">
           {/* Timer */}
           <div className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono font-bold text-lg border ${
             urgent ? 'bg-danger/10 border-danger/30 text-danger animate-pulse'
-                   : 'bg-surface-700 border-surface-600 text-text-primary'
+                   : 'bg-[var(--bg-elevated)] border-[var(--border-base)] text-[var(--text-1)]'
           }`}>
             {Icon.clock} {fmt(timeLeft)}
           </div>
           {/* Progress */}
-          <div className="text-sm text-text-muted">
+          <div className="text-sm text-[var(--text-3)]">
             <span className="text-accent font-semibold">{answered}</span>/{questions.length} đã trả lời
           </div>
           <button onClick={() => confirm('Thoát? Bài làm sẽ không được lưu.') && onClose()}
-            className="btn-ghost p-2 text-text-muted hover:text-danger">
+            className="btn-ghost p-2 text-[var(--text-3)] hover:text-danger">
             {Icon.x}
           </button>
         </div>
@@ -310,8 +310,8 @@ function TakeExamModal({ exam, onClose, onSubmitted }) {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Question list sidebar */}
-        <div className="w-56 border-r border-surface-700 bg-surface-800 p-3 overflow-y-auto shrink-0">
-          <p className="text-xs text-text-muted mb-2 font-medium uppercase tracking-wider">Câu hỏi</p>
+        <div className="w-56 border-r border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3 overflow-y-auto shrink-0">
+          <p className="text-xs text-[var(--text-3)] mb-2 font-medium uppercase tracking-wider">Câu hỏi</p>
           <div className="grid grid-cols-5 gap-1.5">
             {questions.map((q, i) => (
               <button key={q.questionId} onClick={() => setCurrent(i)}
@@ -320,7 +320,7 @@ function TakeExamModal({ exam, onClose, onSubmitted }) {
                     ? 'bg-accent text-white'
                     : answers[q.questionId] !== undefined
                     ? 'bg-success/20 border border-success/40 text-success'
-                    : 'bg-surface-700 border border-surface-600 text-text-muted hover:border-accent/50'
+                    : 'bg-[var(--bg-elevated)] border border-[var(--border-base)] text-[var(--text-3)] hover:border-accent/50'
                 }`}>
                 {i + 1}
               </button>
@@ -358,7 +358,7 @@ function TakeExamModal({ exam, onClose, onSubmitted }) {
               </div>
 
               {/* Question content */}
-              <p className="text-text-primary text-base leading-relaxed mb-6">{q.content}</p>
+              <p className="text-[var(--text-1)] text-base leading-relaxed mb-6">{q.content}</p>
 
               {/* Answers */}
               {(q.type === 'MULTIPLE_CHOICE') && (
@@ -369,11 +369,11 @@ function TakeExamModal({ exam, onClose, onSubmitted }) {
                       <button key={a.id} onClick={() => handleAnswer(q.questionId, a.id)}
                         className={`w-full flex items-center gap-4 p-4 rounded-xl border text-left transition-all ${
                           isSelected
-                            ? 'border-accent bg-accent/10 text-text-primary'
-                            : 'border-surface-600 bg-surface-700/50 hover:border-surface-500 text-text-secondary'
+                            ? 'border-accent bg-accent/10 text-[var(--text-1)]'
+                            : 'border-[var(--border-base)] bg-[var(--bg-elevated)]/50 hover:border-[var(--border-strong)] text-[var(--text-2)]'
                         }`}>
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 ${
-                          isSelected ? 'bg-accent text-white' : 'bg-surface-600 text-text-muted'
+                          isSelected ? 'bg-accent text-white' : 'bg-[var(--border-base)] text-[var(--text-3)]'
                         }`}>
                           {String.fromCharCode(65 + ai)}
                         </div>
@@ -391,7 +391,7 @@ function TakeExamModal({ exam, onClose, onSubmitted }) {
                       className={`flex-1 py-4 rounded-xl border text-sm font-medium transition-all ${
                         answers[q.questionId] === opt.id
                           ? 'border-accent bg-accent/10 text-accent'
-                          : 'border-surface-600 bg-surface-700/50 hover:border-surface-500 text-text-secondary'
+                          : 'border-[var(--border-base)] bg-[var(--bg-elevated)]/50 hover:border-[var(--border-strong)] text-[var(--text-2)]'
                       }`}>
                       {opt.label}
                     </button>
@@ -428,14 +428,14 @@ function TakeExamModal({ exam, onClose, onSubmitted }) {
               </div>
             </div>
           ) : (
-            <div className="text-center py-20 text-text-muted">Không có câu hỏi</div>
+            <div className="text-center py-20 text-[var(--text-3)]">Không có câu hỏi</div>
           )}
         </div>
       </div>
 
       {/* Footer submit bar */}
-      <div className="border-t border-surface-700 bg-surface-800 px-6 py-3 flex items-center justify-between shrink-0">
-        <p className="text-sm text-text-muted">
+      <div className="border-t border-[var(--border-subtle)] bg-[var(--bg-surface)] px-6 py-3 flex items-center justify-between shrink-0">
+        <p className="text-sm text-[var(--text-3)]">
           {urgent && <span className="text-danger font-medium mr-2">Sắp hết giờ!</span>}
           Đã trả lời <span className="text-accent font-semibold">{answered}/{questions.length}</span> câu
         </p>
@@ -469,25 +469,25 @@ function StudentExamCard({ exam, onTake, onViewResult }) {
 
   return (
     <div className={`card p-0 overflow-hidden border transition-all ${
-      isOpen ? 'border-accent/30 hover:border-accent/60' : 'border-surface-600'
+      isOpen ? 'border-accent/30 hover:border-accent/60' : 'border-[var(--border-base)]'
     }`}>
       {/* Status bar */}
       <div className={`h-1 w-full ${
-        isEnded ? 'bg-surface-600' : isOpen ? 'bg-accent' : 'bg-yellow-400'
+        isEnded ? 'bg-[var(--border-base)]' : isOpen ? 'bg-accent' : 'bg-yellow-400'
       }`}/>
 
       <div className="p-5">
         {/* Header */}
         <div className="flex items-start justify-between gap-3 mb-3">
           <div className="flex-1 min-w-0">
-            <span className="text-xs text-text-muted font-medium">{exam.courseName}</span>
-            <h3 className="text-text-primary font-semibold mt-0.5 truncate">{exam.title}</h3>
+            <span className="text-xs text-[var(--text-3)] font-medium">{exam.courseName}</span>
+            <h3 className="text-[var(--text-1)] font-semibold mt-0.5 truncate">{exam.title}</h3>
             {exam.description && (
-              <p className="text-text-muted text-xs mt-0.5 line-clamp-2">{exam.description}</p>
+              <p className="text-[var(--text-3)] text-xs mt-0.5 line-clamp-2">{exam.description}</p>
             )}
           </div>
           <span className={`shrink-0 text-xs px-2.5 py-1 rounded-full font-medium border ${
-            isEnded  ? 'bg-surface-700 border-surface-500 text-text-muted'
+            isEnded  ? 'bg-[var(--bg-elevated)] border-[var(--border-strong)] text-[var(--text-3)]'
             : isOpen ? 'bg-accent/15 border-accent/30 text-accent'
             : 'bg-yellow-400/15 border-yellow-400/30 text-warning'
           }`}>
@@ -496,24 +496,24 @@ function StudentExamCard({ exam, onTake, onViewResult }) {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-3 py-3 border-y border-surface-700 mb-3">
+        <div className="grid grid-cols-3 gap-3 py-3 border-y border-[var(--border-subtle)] mb-3">
           <div className="text-center">
-            <p className="text-text-primary font-semibold text-sm">{exam.durationMinutes ?? exam.duration ?? '?'}</p>
-            <p className="text-text-muted text-xs">phút</p>
+            <p className="text-[var(--text-1)] font-semibold text-sm">{exam.durationMinutes ?? exam.duration ?? '?'}</p>
+            <p className="text-[var(--text-3)] text-xs">phút</p>
           </div>
           <div className="text-center">
-            <p className="text-text-primary font-semibold text-sm">{exam.questionCount ?? 0}</p>
-            <p className="text-text-muted text-xs">câu hỏi</p>
+            <p className="text-[var(--text-1)] font-semibold text-sm">{exam.questionCount ?? 0}</p>
+            <p className="text-[var(--text-3)] text-xs">câu hỏi</p>
           </div>
           <div className="text-center">
-            <p className="text-text-primary font-semibold text-sm">{exam.maxAttempts ?? 1}</p>
-            <p className="text-text-muted text-xs">lần thi</p>
+            <p className="text-[var(--text-1)] font-semibold text-sm">{exam.maxAttempts ?? 1}</p>
+            <p className="text-[var(--text-3)] text-xs">lần thi</p>
           </div>
         </div>
 
         {/* Time info */}
         {(start || end) && (
-          <div className="text-xs text-text-muted mb-3 space-y-1">
+          <div className="text-xs text-[var(--text-3)] mb-3 space-y-1">
             {start && <p>🕐 Mở: {fmtTime(start)}</p>}
             {end   && <p>🕐 Đóng: {fmtTime(end)}</p>}
           </div>
@@ -523,7 +523,7 @@ function StudentExamCard({ exam, onTake, onViewResult }) {
         {/* Attempt count badge */}
         {maxCount > 0 && (
           <div className="flex items-center justify-between text-xs mb-3">
-            <span className="text-text-muted">Lần thi: <span className={`font-semibold ${limitHit ? 'text-danger' : 'text-accent'}`}>{myCount}/{maxCount}</span></span>
+            <span className="text-[var(--text-3)]">Lần thi: <span className={`font-semibold ${limitHit ? 'text-danger' : 'text-accent'}`}>{myCount}/{maxCount}</span></span>
             {myCount > 0 && (
               <button onClick={() => onViewResult(exam)} className="text-accent hover:underline text-xs">Xem kết quả →</button>
             )}
@@ -537,7 +537,7 @@ function StudentExamCard({ exam, onTake, onViewResult }) {
               ? 'bg-accent text-white hover:bg-accent/90 cursor-pointer'
               : limitHit
               ? 'bg-danger/10 text-danger cursor-not-allowed border border-danger/30'
-              : 'bg-surface-700 text-text-muted cursor-not-allowed border border-surface-600'
+              : 'bg-[var(--bg-elevated)] text-[var(--text-3)] cursor-not-allowed border border-[var(--border-base)]'
           }`}>
           {Icon.play}
           {limitHit ? `Đã hết lượt thi (${myCount}/${maxCount})` : isEnded ? 'Đã kết thúc' : isOpen ? 'Vào làm bài' : 'Chưa đến giờ thi'}
@@ -586,7 +586,7 @@ export default function StudentExamsPage() {
     <div className="max-w-5xl mx-auto space-y-6">
       <div>
         <h1 className="page-title">Đề thi</h1>
-        <p className="text-text-secondary text-sm mt-1">Danh sách đề thi dành cho bạn</p>
+        <p className="text-[var(--text-2)] text-sm mt-1">Danh sách đề thi dành cho bạn</p>
       </div>
 
       {/* Stats */}
@@ -594,11 +594,11 @@ export default function StudentExamsPage() {
         {[
           { label: 'Tổng đề thi', value: exams.length, color: 'text-accent' },
           { label: 'Đang mở',     value: openCount,    color: 'text-success' },
-          { label: 'Đã kết thúc', value: exams.length - openCount, color: 'text-text-muted' },
+          { label: 'Đã kết thúc', value: exams.length - openCount, color: 'text-[var(--text-3)]' },
         ].map(s => (
           <div key={s.label} className="card text-center py-4">
             <p className={`text-2xl font-bold ${s.color}`}>{s.value}</p>
-            <p className="text-text-muted text-xs mt-1">{s.label}</p>
+            <p className="text-[var(--text-3)] text-xs mt-1">{s.label}</p>
           </div>
         ))}
       </div>
@@ -614,7 +614,7 @@ export default function StudentExamsPage() {
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               filter === f.key
                 ? 'bg-accent text-white'
-                : 'bg-surface-700 text-text-muted hover:text-text-primary border border-surface-600'
+                : 'bg-[var(--bg-elevated)] text-[var(--text-3)] hover:text-[var(--text-1)] border border-[var(--border-base)]'
             }`}>
             {f.label}
           </button>
@@ -629,10 +629,10 @@ export default function StudentExamsPage() {
       ) : filtered.length === 0 ? (
         <div className="card text-center py-16">
           
-          <p className="text-text-secondary font-medium">
+          <p className="text-[var(--text-2)] font-medium">
             {exams.length === 0 ? 'Chưa có đề thi nào được giao' : 'Không có đề thi nào trong mục này'}
           </p>
-          <p className="text-text-muted text-sm mt-1">
+          <p className="text-[var(--text-3)] text-sm mt-1">
             {exams.length === 0 ? 'Giáo viên sẽ giao đề thi khi có bài kiểm tra' : ''}
           </p>
         </div>

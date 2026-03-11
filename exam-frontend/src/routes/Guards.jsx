@@ -6,10 +6,10 @@ export function ProtectedRoute({ children, roles }) {
   const location = useLocation()
 
   if (loading) return (
-    <div className="min-h-screen bg-surface-950 flex items-center justify-center">
+    <div className="min-h-screen bg-[var(--bg-page)] flex items-center justify-center">
       <div className="flex flex-col items-center gap-4">
         <div className="w-10 h-10 rounded-full border-2 border-accent border-t-transparent animate-spin" />
-        <p className="text-text-secondary text-sm font-body">Đang tải...</p>
+        <p className="text-[var(--text-2)] text-sm font-body">Đang tải...</p>
       </div>
     </div>
   )

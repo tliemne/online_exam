@@ -2,8 +2,23 @@ package com.example.online_exam.attempt.repository;
 
 import com.example.online_exam.attempt.entity.AttemptAnswer;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
 import java.util.List;
 
 public interface AttemptAnswerRepository extends JpaRepository<AttemptAnswer, Long> {
+
     List<AttemptAnswer> findByAttemptId(Long attemptId);
+
+    // Xóa tất cả answers của các attempt thuộc student này
+    @Modifying
+    @Query("DELETE FROM AttemptAnswer aa WHERE aa.attempt.student.id = :studentId")
+    void deleteByAttemptStudentId(@Param("studentId") Long studentId);
+
+    // Xóa tất cả answers của các attempt thuộc exam do user này tạo
+    @Modifying
+    @Query("DELETE FROM AttemptAnswer aa WHERE aa.attempt.exam.createdBy.id = :userId")
+    void deleteByAttemptExamCreatedById(@Param("userId") Long userId);
 }
