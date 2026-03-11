@@ -192,16 +192,14 @@ public class AttemptServiceImpl implements AttemptService {
     }
 
     // ── Grade (tự luận) ───────────────────────────────────
-    // Tách làm 2 phase:
-    //   gradeAndSave()  → @Transactional (commit ngay, giải phóng DB connection)
-    //   grade()         → gọi gradeAndSave rồi gửi email NGOÀI transaction
+    // grade() là @Transactional bình thường.
+    // Email được gửi @Async nên không block transaction.
     @Override
-    @org.springframework.transaction.annotation.Transactional(propagation =
-            org.springframework.transaction.annotation.Propagation.NEVER)
+    @org.springframework.transaction.annotation.Transactional
     public AttemptResponse grade(Long attemptId, GradeRequest req) {
         AttemptResponse response = gradeAndSave(attemptId, req);
 
-        // Email gửi SAU khi transaction đã commit → không block DB connection
+        // Email @Async — gửi trong cùng transaction nhưng không block vì async
         if (response.getStudentEmail() != null) {
             emailService.sendGradeResult(
                     response.getStudentEmail(),
@@ -256,6 +254,22 @@ public class AttemptServiceImpl implements AttemptService {
         return toResponse(attemptRepo.save(attempt), true);
     }
 
+    // ── Reset attempt ────────────────────────────────────────
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public void resetAttempt(Long attemptId) {
+        Attempt attempt = attemptRepo.findById(attemptId)
+                .orElseThrow(() -> new AppException(ErrorCode.ATTEMPT_NOT_FOUND));
+
+        User caller = currentUserService.requireCurrentUser();
+        if (isTeacher(caller)) {
+            checkExamOwnership(attempt.getExam(), caller);
+        }
+
+        // ON DELETE CASCADE sẽ tự xóa attempt_answers
+        attemptRepo.delete(attempt);
+    }
+
     // ── Helpers ───────────────────────────────────────────
 
     /**
@@ -273,8 +287,14 @@ public class AttemptServiceImpl implements AttemptService {
     }
 
     private Attempt findAttempt(Long id) {
-        return attemptRepo.findById(id)
+        // Fetch exam+examQuestions trước
+        Attempt attempt = attemptRepo.findByIdWithExam(id)
                 .orElseThrow(() -> new AppException(ErrorCode.ATTEMPT_NOT_FOUND));
+        // Fetch answers riêng (Hibernate không cho fetch 2 collection cùng 1 query)
+        attemptRepo.findByIdWithAnswers(id).ifPresent(a -> {
+            attempt.setAnswers(a.getAnswers());
+        });
+        return attempt;
     }
 
     private AttemptResponse toResponse(Attempt a, boolean includeAnswers) {

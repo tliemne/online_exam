@@ -43,3 +43,6 @@ jwt:
 app:
   mail:
     from-name: ExamPortal
+gemini:
+  api:
+    key: AIzaSyB197CnfomyIpWlNOnlgm83RBMfGi7GhAw

@@ -1,9 +1,14 @@
 package com.example.online_exam.attempt.controller;
 
 import com.example.online_exam.attempt.dto.*;
+import com.example.online_exam.attempt.service.AiGradingService;
+import com.example.online_exam.attempt.service.ExportService;
 import com.example.online_exam.attempt.service.AttemptService;
 import com.example.online_exam.common.dto.BaseResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,7 +20,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AttemptController {
 
-    private final AttemptService attemptService;
+    private final AttemptService  attemptService;
+    private final ExportService    exportService;
+    private final AiGradingService aiGradingService;
 
     // POST /attempts/exams/{examId}/submit
     @PostMapping("/exams/{examId}/submit")
@@ -61,6 +68,36 @@ public class AttemptController {
             @PathVariable Long id,
             @RequestBody GradeRequest req) {
         return ok(attemptService.grade(id, req));
+    }
+
+    // DELETE /attempts/{id}/reset  — teacher/admin reset bài thi của student
+    @DeleteMapping("/{id}/reset")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    public BaseResponse<Void> resetAttempt(@PathVariable Long id) {
+        attemptService.resetAttempt(id);
+        return BaseResponse.<Void>builder()
+                .status(200).message("Đã reset bài thi thành công")
+                .timestamp(java.time.LocalDateTime.now()).build();
+    }
+
+    // GET /attempts/exams/{examId}/export  — teacher xuất Excel
+    @GetMapping("/exams/{examId}/export")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    public ResponseEntity<byte[]> exportExamResults(@PathVariable Long examId) {
+        byte[] data = exportService.exportExamResults(examId);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+        headers.setContentDispositionFormData("attachment",
+                "ket-qua-thi-" + examId + ".xlsx");
+        return ResponseEntity.ok().headers(headers).body(data);
+    }
+
+    // GET /attempts/{id}/ai-suggest  — AI gợi ý chấm tự luận
+    @GetMapping("/{id}/ai-suggest")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    public BaseResponse<List<AiSuggestionResponse>> aiSuggest(@PathVariable Long id) {
+        return ok(aiGradingService.suggestGrades(id));
     }
 
     private <T> BaseResponse<T> ok(T data) {

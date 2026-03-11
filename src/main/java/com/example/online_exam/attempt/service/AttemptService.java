@@ -22,4 +22,7 @@ public interface AttemptService {
 
     // Teacher chấm điểm (tự luận)
     AttemptResponse grade(Long attemptId, GradeRequest req);
+
+    // Teacher/Admin reset bài thi của student (xóa attempt → student làm lại)
+    void resetAttempt(Long attemptId);
 }

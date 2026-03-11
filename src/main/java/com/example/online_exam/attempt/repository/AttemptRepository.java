@@ -35,6 +35,21 @@ public interface AttemptRepository extends JpaRepository<Attempt, Long> {
     """)
     List<Attempt> findSubmittedByStudent(@Param("studentId") Long studentId);
 
+    // Query 1: fetch exam + examQuestions (không fetch answers cùng lúc — Hibernate không cho)
+    @Query("SELECT a FROM Attempt a " +
+            "LEFT JOIN FETCH a.exam e " +
+            "LEFT JOIN FETCH e.examQuestions eq " +
+            "LEFT JOIN FETCH eq.question " +
+            "WHERE a.id = :id")
+    Optional<Attempt> findByIdWithExam(@Param("id") Long id);
+
+    // Query 2: fetch answers (riêng biệt)
+    @Query("SELECT a FROM Attempt a " +
+            "LEFT JOIN FETCH a.answers aa " +
+            "LEFT JOIN FETCH aa.question " +
+            "WHERE a.id = :id")
+    Optional<Attempt> findByIdWithAnswers(@Param("id") Long id);
+
     // Xóa toàn bộ bài thi của 1 student (dùng khi xóa tài khoản)
     @Modifying
     @Query("DELETE FROM Attempt a WHERE a.student.id = :studentId")

@@ -25,7 +25,11 @@ public class AttemptAnswer {
 
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "selected_answer_id")
+    @JoinColumn(name = "selected_answer_id",
+            foreignKey = @ForeignKey(
+                    name = "fk_attempt_answer_selected",
+                    foreignKeyDefinition = "FOREIGN KEY (selected_answer_id) REFERENCES answers(id) ON DELETE SET NULL"
+            ))
     private Answer selectedAnswer;
 
 

@@ -45,6 +45,24 @@ export const questionApi = {
   create: (data) => api.post('/questions', data),
   update: (id, data) => api.put(`/questions/${id}`, data),
   delete: (id) => api.delete(`/questions/${id}`),
+
+  // Import
+  importExcel: (file, courseId) => {
+    const form = new FormData()
+    form.append('file', file)
+    return api.post(`/questions/import/excel?courseId=${courseId}`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+  },
+  importCsv: (file, courseId) => {
+    const form = new FormData()
+    form.append('file', file)
+    return api.post(`/questions/import/csv?courseId=${courseId}`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+  },
+  importJson: (data, courseId) =>
+    api.post(`/questions/import/json?courseId=${courseId}`, data),
 }
 
 // ── EXAMS ────────────────────────────────────────────────

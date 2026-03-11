@@ -12,6 +12,8 @@ import com.example.online_exam.question.entity.Answer;
 import com.example.online_exam.question.entity.Question;
 import com.example.online_exam.question.enums.Difficulty;
 import com.example.online_exam.question.enums.QuestionType;
+import com.example.online_exam.attempt.repository.AttemptAnswerRepository;
+import com.example.online_exam.attempt.repository.AttemptRepository;
 import com.example.online_exam.question.repository.QuestionRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -29,6 +31,8 @@ import java.util.List;
 public class QuestionServiceImpl implements QuestionService {
 
     private final QuestionRepository questionRepository;
+    private final AttemptAnswerRepository attemptAnswerRepo;
+    private final AttemptRepository attemptRepo;
     private final CourseRepository courseRepository;
     private final CurrentUserService currentUserService;
 
@@ -66,6 +70,10 @@ public class QuestionServiceImpl implements QuestionService {
         question.setType(request.getType());
         if (request.getDifficulty() != null) question.setDifficulty(request.getDifficulty());
 
+        // Nullify selected_answer trong attempt_answers trước khi xóa answers cũ
+        // (ON DELETE SET NULL trong DB sẽ xử lý, nhưng nullify thủ công để chắc chắn)
+        attemptAnswerRepo.nullifySelectedAnswerByQuestionId(id);
+
         question.getAnswers().clear();
         setAnswers(question, request);
 
@@ -76,6 +84,12 @@ public class QuestionServiceImpl implements QuestionService {
     public void delete(Long id) {
         if (!questionRepository.existsById(id))
             throw new AppException(ErrorCode.QUESTION_NOT_FOUND);
+
+        // 1. Nullify selected_answer trong attempt_answers để tránh FK constraint
+        //    (giữ lại attempt_answer record, chỉ bỏ reference đến answer)
+        attemptAnswerRepo.nullifySelectedAnswerByQuestionId(id);
+
+        // 2. Xóa câu hỏi (cascade xóa answers, exam_questions)
         questionRepository.deleteById(id);
     }
 

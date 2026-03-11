@@ -12,6 +12,16 @@ public interface AttemptAnswerRepository extends JpaRepository<AttemptAnswer, Lo
 
     List<AttemptAnswer> findByAttemptId(Long attemptId);
 
+    // Xóa attempt_answers có selected_answer thuộc question này (trước khi xóa câu hỏi)
+    @Modifying
+    @Query("DELETE FROM AttemptAnswer aa WHERE aa.selectedAnswer.question.id = :questionId")
+    void deleteByQuestionId(@Param("questionId") Long questionId);
+
+    // Nullify selected_answer nếu không muốn xóa cả attempt_answer
+    @Modifying
+    @Query("UPDATE AttemptAnswer aa SET aa.selectedAnswer = null WHERE aa.selectedAnswer.question.id = :questionId")
+    void nullifySelectedAnswerByQuestionId(@Param("questionId") Long questionId);
+
     // Xóa tất cả answers của các attempt thuộc student này
     @Modifying
     @Query("DELETE FROM AttemptAnswer aa WHERE aa.attempt.student.id = :studentId")
