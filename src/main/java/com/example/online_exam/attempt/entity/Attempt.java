@@ -42,6 +42,8 @@ public class Attempt {
     @CreationTimestamp
     private LocalDateTime startedAt;
     private LocalDateTime submittedAt;
+    private Integer timeRemainingSeconds; // Thời gian còn lại (giây) — lưu khi thoát
+    private Integer tabViolationCount = 0; // Số lần chuyển tab vi phạm
 
     // Câu trả lời
     @OneToMany(mappedBy = "attempt", cascade = CascadeType.ALL, orphanRemoval = true)

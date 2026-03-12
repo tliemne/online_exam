@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { examApi } from '../../api/services'
 import api from '../../api/client'
@@ -152,25 +152,59 @@ function ResultHistoryModal({ exam, onClose }) {
 
 // ── Exam Taking Modal ─────────────────────────────────────
 function TakeExamModal({ exam, onClose, onSubmitted }) {
+  const navigate = useNavigate()
   const [questions, setQuestions]   = useState([])
-  const [answers, setAnswers]       = useState({})  // questionId → answerId hoặc text
+  const [answers, setAnswers]       = useState({})
   const [loading, setLoading]       = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [timeLeft, setTimeLeft]     = useState(exam.durationMinutes * 60)
   const [submitted, setSubmitted]   = useState(false)
   const [result, setResult]         = useState(null)
   const [current, setCurrent]       = useState(0)
+  const [tabWarning, setTabWarning] = useState(0)
+  const [showTabAlert, setShowTabAlert] = useState(false)
+  const [attemptId, setAttemptId]   = useState(null)  // lưu attemptId để heartbeat
 
-  // Load câu hỏi của đề (ẩn đáp án đúng)
+  // Load câu hỏi + start/resume attempt
   useEffect(() => {
-    api.get(`/exams/${exam.id}`, { params: { includeQuestions: true, hideCorrect: true } })
-      .then(r => {
-        const data = r.data.data
-        const qs = data.questions || []
-        setQuestions(qs)
-      })
-      .catch(() => setQuestions([]))
-      .finally(() => setLoading(false))
+    const load = async () => {
+      try {
+        // 1. Gọi /start → backend trả về attempt IN_PROGRESS (tạo mới hoặc resume)
+        const [examRes, startRes] = await Promise.all([
+          api.get(`/exams/${exam.id}`, { params: { includeQuestions: true, hideCorrect: true } }),
+          api.post(`/attempts/exams/${exam.id}/start`)
+        ])
+        setQuestions(examRes.data.data?.questions || [])
+
+        const attempt = startRes.data.data
+        setAttemptId(attempt.id)
+        setTabWarning(attempt.tabViolationCount || 0)
+
+        // Resume timer: nếu allowResume=true thì dùng timeRemainingSeconds từ server
+        if (attempt.allowResume !== false && attempt.timeRemainingSeconds != null) {
+          setTimeLeft(attempt.timeRemainingSeconds)
+        }
+        // Restore câu trả lời đã làm (nếu có)
+        if (attempt.answers?.length) {
+          const restored = {}
+          attempt.answers.forEach(a => {
+            if (a.selectedAnswerId) restored[a.questionId] = a.selectedAnswerId
+            else if (a.textAnswer)  restored[a.questionId] = a.textAnswer
+          })
+          setAnswers(restored)
+        }
+      } catch (err) {
+        const msg = err?.response?.data?.message || ''
+        if (msg.includes('lần thi') || err?.response?.status === 400) {
+          alert('Bạn đã hết số lần thi cho phép!')
+          onClose()
+        }
+        setQuestions([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
   }, [exam.id])
 
   // Đếm ngược thời gian
@@ -185,24 +219,121 @@ function TakeExamModal({ exam, onClose, onSubmitted }) {
     return () => clearInterval(t)
   }, [submitted, loading])
 
+  // Dùng ref để heartbeat luôn đọc được giá trị mới nhất (tránh stale closure)
+  const timeLeftRef  = useRef(timeLeft)
+  const tabWarningRef = useRef(tabWarning)
+  const attemptIdRef  = useRef(attemptId)
+  useEffect(() => { timeLeftRef.current  = timeLeft   }, [timeLeft])
+  useEffect(() => { tabWarningRef.current = tabWarning }, [tabWarning])
+  useEffect(() => { attemptIdRef.current  = attemptId  }, [attemptId])
+
+  // Ref lưu answers mới nhất để heartbeat gửi lên
+  const answersRef = useRef(answers)
+  useEffect(() => { answersRef.current = answers }, [answers])
+  const submittingRef = useRef(false) // flag ngăn heartbeat chạy khi đang submit
+
+  // Hàm lưu tiến trình — chỉ lưu timer + violations, KHÔNG lưu answers (tránh DB conflict)
+  const saveProgress = useCallback((tabCount) => {
+    if (!attemptIdRef.current) return
+    const payload = {
+      timeRemainingSeconds: timeLeftRef.current,
+      tabViolationCount:    tabCount ?? tabWarningRef.current,
+    }
+    api.patch(`/attempts/${attemptIdRef.current}/heartbeat`, payload)
+      .catch(e => console.error('[heartbeat] ERROR', e?.response?.status))
+  }, [])
+
+  // Heartbeat định kỳ mỗi 10 giây
+  useEffect(() => {
+    if (submitted || loading) return
+    const hb = setInterval(() => { if (!submittingRef.current) saveProgress() }, 10000)
+    return () => clearInterval(hb)
+  }, [submitted, loading, saveProgress])
+
+  // Anti-cheat: cảnh báo khi chuyển tab / minimize
+  useEffect(() => {
+    if (submitted || loading) return
+
+    const handleVisibility = () => {
+      if (document.visibilityState === 'hidden') {
+        setTabWarning(n => {
+          const next = n + 1
+          setShowTabAlert(true)
+          // Lưu ngay khi thoát tab — dùng tabCount mới nhất
+          saveProgress(next)
+          return next
+        })
+      }
+    }
+
+    const handleBeforeUnload = (e) => {
+      // Lưu ngay khi đóng tab/trình duyệt bằng sendBeacon (sync)
+      if (attemptIdRef.current) {
+        const answerList = Object.entries(answersRef.current).map(([qId, val]) => ({
+          questionId: Number(qId),
+          answerId:   typeof val === 'number' ? val : null,
+          textAnswer: typeof val === 'string'  ? val : null,
+        }))
+        const payload = JSON.stringify({
+          timeRemainingSeconds: timeLeftRef.current,
+          tabViolationCount:    tabWarningRef.current,
+          answers:              answerList
+        })
+        // sendBeacon đảm bảo gửi được dù tab đang đóng
+        navigator.sendBeacon(
+          `/api/attempts/${attemptIdRef.current}/heartbeat`,
+          new Blob([payload], { type: 'application/json' })
+        )
+      }
+      e.preventDefault()
+      e.returnValue = 'Bạn đang trong bài thi! Thoát sẽ mất bài làm.'
+      return e.returnValue
+    }
+
+    document.addEventListener('visibilitychange', handleVisibility)
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility)
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [submitted, loading, saveProgress])
+
   const fmt = (s) => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`
   const urgent = timeLeft < 300 // < 5 phút
+  const MAX_WARNINGS = 3
 
   const handleAnswer = (questionId, value) => {
     setAnswers(p => ({ ...p, [questionId]: value }))
   }
 
   const handleSubmit = async (auto = false) => {
-    if (!auto && !confirm('Nộp bài thi?')) return
+    if (!auto) {
+      const totalQ = questions.length
+      const answeredCount = Object.keys(answersRef.current).length
+      const unanswered = totalQ - answeredCount
+
+      if (unanswered > 0) {
+        const ok = confirm(
+          `⚠️ Bạn còn ${unanswered}/${totalQ} câu chưa trả lời!\n\nBấm OK để nộp bài, Hủy để quay lại tiếp tục làm.`
+        )
+        if (!ok) return
+      } else {
+        if (!confirm('Bạn đã trả lời tất cả câu hỏi. Xác nhận nộp bài?')) return
+      }
+    }
+    submittingRef.current = true  // ngăn heartbeat chạy song song
     setSubmitting(true)
     try {
-      const answerList = Object.entries(answers).map(([qId, val]) => ({
+      const answerList = Object.entries(answersRef.current).map(([qId, val]) => ({
         questionId: Number(qId),
         answerId:   typeof val === 'number' ? val : null,
         textAnswer: typeof val === 'string'  ? val : null,
       }))
 
-      const res = await api.post(`/attempts/exams/${exam.id}/submit`, answerList)
+      // Đợi 500ms để heartbeat đang chạy kịp hoàn thành trước khi submit
+      await new Promise(r => setTimeout(r, 500))
+
+      const res = await api.post(`/attempts/${attemptIdRef.current}/submit`, answerList)
       const data = res.data.data
 
       setResult({
@@ -218,12 +349,16 @@ function TakeExamModal({ exam, onClose, onSubmitted }) {
       setSubmitted(true)
     } catch (err) {
       const msg = err?.response?.data?.message || err.message
-      if (msg?.includes('lần thi') || err?.response?.status === 400) {
+      if (msg?.includes('đã được nộp') || msg?.includes('already')) {
+        // Bài đã nộp thành công trước đó (double submit) — coi như OK
+        setSubmitted(true)
+      } else if (msg?.includes('lần thi') || err?.response?.status === 400) {
         alert('Bạn đã hết số lần thi cho phép!')
       } else {
         alert('Có lỗi khi nộp bài: ' + msg)
       }
     } finally {
+      submittingRef.current = false
       setSubmitting(false)
     }
   }
@@ -274,9 +409,15 @@ function TakeExamModal({ exam, onClose, onSubmitted }) {
           </div>
         </div>
         <p className="text-xs text-[var(--text-3)] mb-4">Giáo viên sẽ chấm điểm và công bố kết quả sau</p>
-        <button onClick={() => { onSubmitted(); onClose() }} className="btn-primary w-full">
-          Đóng
-        </button>
+        <div className="flex gap-3">
+          <button onClick={() => { onSubmitted(); onClose() }} className="btn-secondary flex-1">
+            Đóng
+          </button>
+          <button onClick={() => { onSubmitted(); onClose(); navigate(`/student/exams/${exam.id}/leaderboard`) }}
+            className="btn-primary flex-1">
+            🏆 Xem leaderboard
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -301,7 +442,7 @@ function TakeExamModal({ exam, onClose, onSubmitted }) {
           <div className="text-sm text-[var(--text-3)]">
             <span className="text-accent font-semibold">{answered}</span>/{questions.length} đã trả lời
           </div>
-          <button onClick={() => confirm('Thoát? Bài làm sẽ không được lưu.') && onClose()}
+          <button onClick={() => { if (confirm('Thoát? Bài làm sẽ không được lưu.')) { saveProgress(); onClose() } }}
             className="btn-ghost p-2 text-[var(--text-3)] hover:text-danger">
             {Icon.x}
           </button>
@@ -433,6 +574,58 @@ function TakeExamModal({ exam, onClose, onSubmitted }) {
         </div>
       </div>
 
+      {/* Tab switch warning modal */}
+      {showTabAlert && (
+        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="rounded-2xl p-6 w-full max-w-sm shadow-2xl text-center"
+            style={{ background: 'var(--bg-surface)', border: '2px solid #f59e0b' }}>
+            <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4"
+              style={{ background: 'rgba(245,158,11,0.15)' }}>
+              <svg className="w-7 h-7" fill="none" stroke="#f59e0b" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+              </svg>
+            </div>
+            <h3 className="font-bold text-lg mb-2" style={{ color: '#f59e0b' }}>
+              ⚠️ Cảnh báo gian lận!
+            </h3>
+            <p className="text-sm mb-2" style={{ color: 'var(--text-1)' }}>
+              Bạn đã rời khỏi trang thi.
+            </p>
+            <p className="text-sm mb-4" style={{ color: 'var(--text-2)' }}>
+              Lần vi phạm: <b style={{ color: tabWarning >= MAX_WARNINGS ? '#dc2626' : '#f59e0b' }}>
+                {tabWarning} / {MAX_WARNINGS}
+              </b>
+            </p>
+            {tabWarning >= MAX_WARNINGS ? (
+              <div>
+                <p className="text-sm mb-4 font-medium" style={{ color: '#dc2626' }}>
+                  Bạn đã vi phạm quá số lần cho phép. Bài thi sẽ được nộp ngay!
+                </p>
+                <button
+                  onClick={() => { setShowTabAlert(false); handleSubmit(true) }}
+                  className="w-full py-2 rounded-xl text-sm font-medium text-white"
+                  style={{ background: '#dc2626' }}>
+                  Nộp bài ngay
+                </button>
+              </div>
+            ) : (
+              <div>
+                <p className="text-sm mb-4" style={{ color: 'var(--text-3)' }}>
+                  Vi phạm thêm {MAX_WARNINGS - tabWarning} lần nữa sẽ bị nộp bài tự động.
+                </p>
+                <button
+                  onClick={() => setShowTabAlert(false)}
+                  className="w-full py-2 rounded-xl text-sm font-medium text-white"
+                  style={{ background: 'var(--accent)' }}>
+                  Tiếp tục làm bài
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Footer submit bar */}
       <div className="border-t border-[var(--border-subtle)] bg-[var(--bg-surface)] px-6 py-3 flex items-center justify-between shrink-0">
         <p className="text-sm text-[var(--text-3)]">
@@ -449,7 +642,7 @@ function TakeExamModal({ exam, onClose, onSubmitted }) {
 }
 
 // ── Exam Card ─────────────────────────────────────────────
-function StudentExamCard({ exam, onTake, onViewResult }) {
+function StudentExamCard({ exam, onTake, onViewResult, onLeaderboard }) {
   const now = new Date()
   const start = exam.startTime ? new Date(exam.startTime) : null
   const end   = exam.endTime   ? new Date(exam.endTime)   : null
@@ -542,6 +735,13 @@ function StudentExamCard({ exam, onTake, onViewResult }) {
           {Icon.play}
           {limitHit ? `Đã hết lượt thi (${myCount}/${maxCount})` : isEnded ? 'Đã kết thúc' : isOpen ? 'Vào làm bài' : 'Chưa đến giờ thi'}
         </button>
+        <button
+          onClick={() => onLeaderboard(exam)}
+          className="w-full mt-2 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-medium
+            bg-[var(--bg-elevated)] text-[var(--text-2)] hover:text-accent hover:border-accent/40
+            border border-[var(--border-base)] transition-all">
+          🏆 Bảng xếp hạng
+        </button>
       </div>
     </div>
   )
@@ -549,6 +749,7 @@ function StudentExamCard({ exam, onTake, onViewResult }) {
 
 // ── Main Page ─────────────────────────────────────────────
 export default function StudentExamsPage() {
+  const navigate = useNavigate()
   const [exams, setExams]     = useState([])
   const [loading, setLoading] = useState(true)
   const [taking, setTaking]   = useState(null)
@@ -639,7 +840,8 @@ export default function StudentExamsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filtered.map(e => (
-            <StudentExamCard key={e.id} exam={e} onTake={setTaking} onViewResult={(ex) => { setViewingResult(ex); }} />
+            <StudentExamCard key={e.id} exam={e} onTake={setTaking} onViewResult={(ex) => { setViewingResult(ex); }}
+              onLeaderboard={(ex) => navigate(`/student/exams/${ex.id}/leaderboard`)} />
           ))}
         </div>
       )}

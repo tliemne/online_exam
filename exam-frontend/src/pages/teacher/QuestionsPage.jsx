@@ -517,6 +517,9 @@ export default function QuestionsPage() {
     try {
       await questionApi.delete(q.id)
       loadQuestions()
+    } catch (err) {
+      const msg = err?.response?.data?.message || 'Có lỗi xảy ra khi xóa câu hỏi'
+      alert(msg)
     } finally { setDeleting(null) }
   }
 

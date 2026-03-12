@@ -13,10 +13,8 @@ export function AuthProvider({ children }) {
     try {
       const res = await userApi.me()
       const userData = res.data.data
-      console.log('🔍 /users/me response:', JSON.stringify(userData))
       setUser(userData)
     } catch (err) {
-      console.error('❌ /users/me failed:', err.response?.status, err.response?.data)
       // Chỉ clear token khi 401, không clear khi lỗi server 500
       if (err.response?.status === 401) {
         localStorage.clear()
@@ -35,7 +33,6 @@ export function AuthProvider({ children }) {
     localStorage.setItem('refreshToken', refreshToken)
     const me = await userApi.me()
     const userData = me.data.data
-    console.log('✅ Login success, user:', JSON.stringify(userData))
     setUser(userData)
     return userData
   }

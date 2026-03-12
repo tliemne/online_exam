@@ -11,6 +11,7 @@ import java.util.List;
 public interface ExamQuestionRepository extends JpaRepository<ExamQuestion, Long> {
     List<ExamQuestion> findByExamIdOrderByOrderIndex(Long examId);
     boolean existsByExamIdAndQuestionId(Long examId, Long questionId);
+    long countByQuestionId(Long questionId);
     int countByExamId(Long examId);
 
     @Modifying

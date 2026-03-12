@@ -18,6 +18,7 @@ public class ExamResponse {
     private Double passScore;
     private Boolean randomizeQuestions;
     private Integer maxAttempts;
+    private Boolean allowResume;
     private ExamStatus status;
 
     // Course info

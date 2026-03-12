@@ -23,6 +23,8 @@ import ExamsPage from './pages/teacher/ExamsPage'
 import StudentExamsPage from './pages/student/StudentExamsPage'
 import StudentResultsPage from './pages/student/StudentResultsPage'
 import TeacherGradingPage from './pages/teacher/TeacherGradingPage'
+import ExamStatsPage from './pages/teacher/ExamStatsPage'
+import ExamLeaderboardPage from './pages/student/ExamLeaderboardPage'
 
 import {
   UnauthorizedPage,
@@ -59,11 +61,14 @@ export default function App() {
           <Route path="/teacher/questions" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><QuestionsPage /></WithLayout></ProtectedRoute>} />
           <Route path="/teacher/grading" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><TeacherGradingPage /></WithLayout></ProtectedRoute>} />
           <Route path="/teacher/exams" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><ExamsPage /></WithLayout></ProtectedRoute>} />
+          <Route path="/teacher/exams/:examId/stats" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><ExamStatsPage /></WithLayout></ProtectedRoute>} />
+          <Route path="/admin/exams/:examId/stats" element={<ProtectedRoute roles={['ADMIN']}><WithLayout><ExamStatsPage /></WithLayout></ProtectedRoute>} />
 
           {/* Student */}
           <Route path="/student" element={<ProtectedRoute roles={['STUDENT']}><WithLayout><StudentDashboard /></WithLayout></ProtectedRoute>} />
           <Route path="/student/exams" element={<ProtectedRoute roles={['STUDENT']}><WithLayout><StudentExamsPage /></WithLayout></ProtectedRoute>} />
           <Route path="/student/results" element={<ProtectedRoute roles={['STUDENT']}><WithLayout><StudentResultsPage /></WithLayout></ProtectedRoute>} />
+          <Route path="/student/exams/:examId/leaderboard" element={<ProtectedRoute roles={['STUDENT','TEACHER','ADMIN']}><WithLayout><ExamLeaderboardPage /></WithLayout></ProtectedRoute>} />
           <Route path="/student/courses/:id" element={<ProtectedRoute roles={['STUDENT']}><WithLayout><CourseDetailPage /></WithLayout></ProtectedRoute>} />
 
           {/* profile */}  

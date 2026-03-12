@@ -2,6 +2,7 @@ package com.example.online_exam.question.service;
 
 import com.example.online_exam.course.entity.Course;
 import com.example.online_exam.course.repository.CourseRepository;
+import com.example.online_exam.exam.repository.ExamQuestionRepository;
 import com.example.online_exam.exception.AppException;
 import com.example.online_exam.exception.ErrorCode;
 import com.example.online_exam.question.dto.AnswerRequest;
@@ -35,6 +36,7 @@ public class QuestionServiceImpl implements QuestionService {
     private final AttemptRepository attemptRepo;
     private final CourseRepository courseRepository;
     private final CurrentUserService currentUserService;
+    private final ExamQuestionRepository examQuestionRepo;
 
     @Override
     public QuestionResponse create(QuestionRequest request) {
@@ -85,11 +87,16 @@ public class QuestionServiceImpl implements QuestionService {
         if (!questionRepository.existsById(id))
             throw new AppException(ErrorCode.QUESTION_NOT_FOUND);
 
-        // 1. Nullify selected_answer trong attempt_answers để tránh FK constraint
-        //    (giữ lại attempt_answer record, chỉ bỏ reference đến answer)
+        // Kiểm tra câu hỏi có đang được dùng trong đề thi nào không
+        long examCount = examQuestionRepo.countByQuestionId(id);
+        if (examCount > 0) {
+            throw new AppException(ErrorCode.QUESTION_IN_USE);
+        }
+
+        // Nullify selected_answer trong attempt_answers để tránh FK constraint
         attemptAnswerRepo.nullifySelectedAnswerByQuestionId(id);
 
-        // 2. Xóa câu hỏi (cascade xóa answers, exam_questions)
+        // Xóa câu hỏi
         questionRepository.deleteById(id);
     }
 

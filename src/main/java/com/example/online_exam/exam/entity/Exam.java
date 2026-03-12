@@ -31,8 +31,9 @@ public class Exam extends BaseEntity {
     private Double totalScore = 10.0;  // Tổng điểm tối đa
     private Double passScore  = 5.0;   // Điểm đạt
 
-    private Boolean randomizeQuestions = false; // Có random thứ tự câu không
-    private Integer maxAttempts = 1;            // Số lần làm tối đa
+    private Boolean randomizeQuestions = false;
+    private Integer maxAttempts = 1;
+    private Boolean allowResume = false; // Lưu tiến trình khi thoát (false = reset khi vào lại)
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

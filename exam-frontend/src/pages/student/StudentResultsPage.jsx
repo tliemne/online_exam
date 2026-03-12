@@ -46,8 +46,8 @@ function QTypeLabel({ type }) {
 
 // ── Detail Page (replaces modal) ──────────────────────────
 function AttemptDetailPage({ attempt, onBack }) {
-  const [detail, setDetail]   = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [detail, setDetail]       = useState(null)
+  const [loading, setLoading]     = useState(true)
   const [filter, setFilter]   = useState('all') // all | correct | wrong | pending
 
   useEffect(() => {

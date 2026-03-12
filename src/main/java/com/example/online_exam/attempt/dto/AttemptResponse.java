@@ -24,6 +24,9 @@ public class AttemptResponse {
 
     private LocalDateTime startedAt;
     private LocalDateTime submittedAt;
+    private Integer timeRemainingSeconds;
+    private Integer tabViolationCount;
+    private Boolean allowResume;
 
     // Số câu đúng / tổng
     private Integer correctCount;

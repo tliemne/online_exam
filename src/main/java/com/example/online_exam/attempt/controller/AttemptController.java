@@ -24,8 +24,23 @@ public class AttemptController {
     private final ExportService    exportService;
     private final AiGradingService aiGradingService;
 
+    // POST /attempts/exams/{examId}/start — tạo attempt IN_PROGRESS (hoặc trả lại nếu đã có)
+    @PostMapping("/exams/{examId}/start")
+    @PreAuthorize("hasRole('STUDENT')")
+    public BaseResponse<AttemptResponse> startExam(@PathVariable Long examId) {
+        return ok(attemptService.startExam(examId));
+    }
+
+    // POST /attempts/{attemptId}/submit — nộp bài từ attemptId
+    @PostMapping("/{attemptId}/submit")
+    @PreAuthorize("hasRole('STUDENT')")
+    public BaseResponse<AttemptResponse> submitAttempt(
+            @PathVariable Long attemptId,
+            @RequestBody List<SubmitAnswerItem> items) {
+        return ok(attemptService.submitAttempt(attemptId, items));
+    }
+
     // POST /attempts/exams/{examId}/submit
-    @PostMapping("/exams/{examId}/submit")
     @PreAuthorize("hasRole('STUDENT')")
     public BaseResponse<AttemptResponse> submit(
             @PathVariable Long examId,
@@ -70,6 +85,26 @@ public class AttemptController {
         return ok(attemptService.grade(id, req));
     }
 
+    // GET /attempts/my/exam/{examId}/inprogress — lấy attempt đang dở để resume
+    @GetMapping("/my/exam/{examId}/inprogress")
+    @PreAuthorize("hasRole('STUDENT')")
+    public BaseResponse<AttemptResponse> getMyInProgress(@PathVariable Long examId) {
+        return BaseResponse.<AttemptResponse>builder()
+                .status(200).message("OK").data(attemptService.getMyInProgress(examId))
+                .timestamp(java.time.LocalDateTime.now()).build();
+    }
+
+    // PATCH + POST /attempts/{id}/heartbeat — PATCH từ JS fetch, POST từ sendBeacon
+    @PatchMapping("/{id}/heartbeat")
+    @PostMapping("/{id}/heartbeat")
+    @PreAuthorize("hasRole('STUDENT')")
+    public BaseResponse<Void> heartbeat(
+            @PathVariable Long id,
+            @RequestBody HeartbeatRequest req) {
+        attemptService.heartbeat(id, req.getTimeRemainingSeconds(), req.getTabViolationCount(), req.getAnswers());
+        return ok(null);
+    }
+
     // DELETE /attempts/{id}/reset  — teacher/admin reset bài thi của student
     @DeleteMapping("/{id}/reset")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
@@ -81,6 +116,13 @@ public class AttemptController {
     }
 
     // GET /attempts/exams/{examId}/export  — teacher xuất Excel
+    // GET /attempts/grading/pending/{examId} — số bài chờ chấm (tránh static resource conflict)
+    @GetMapping("/grading/pending/{examId}")
+    @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
+    public BaseResponse<Long> getPendingCount(@PathVariable Long examId) {
+        return ok(attemptService.countPendingByExam(examId));
+    }
+
     @GetMapping("/exams/{examId}/export")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
     public ResponseEntity<byte[]> exportExamResults(@PathVariable Long examId) {

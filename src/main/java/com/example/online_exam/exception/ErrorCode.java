@@ -27,6 +27,8 @@ public enum ErrorCode {
 
     // ===== QUESTION =====
     QUESTION_NOT_FOUND(HttpStatus.NOT_FOUND, "Question not found"),
+    ALREADY_SUBMITTED(HttpStatus.BAD_REQUEST, "Bài thi đã được nộp trước đó"),
+    QUESTION_IN_USE(HttpStatus.BAD_REQUEST, "Câu hỏi đang được dùng trong đề thi, không thể xóa. Hãy gỡ khỏi đề thi trước!"),
 
     // ===== MODULES =====
     EXAM_NOT_FOUND(HttpStatus.NOT_FOUND, "Exam not found"),

@@ -27,6 +27,7 @@ public class ExamRequest {
     private Double passScore    = 5.0;
     private Boolean randomizeQuestions = false;
     private Integer maxAttempts = 1;
+    private Boolean allowResume = false;
 
     @NotNull
     private Long courseId;

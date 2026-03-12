@@ -310,6 +310,7 @@ public class ExamServiceImpl implements ExamService {
         exam.setPassScore(req.getPassScore() != null ? req.getPassScore() : 5.0);
         exam.setRandomizeQuestions(req.getRandomizeQuestions() != null && req.getRandomizeQuestions());
         exam.setMaxAttempts(req.getMaxAttempts() != null ? req.getMaxAttempts() : 1);
+        exam.setAllowResume(req.getAllowResume() != null ? req.getAllowResume() : false);
     }
 
     private void addQuestionsToExam(Exam exam, List<ExamQuestionItem> items) {
@@ -346,6 +347,7 @@ public class ExamServiceImpl implements ExamService {
         r.setPassScore(exam.getPassScore());
         r.setRandomizeQuestions(exam.getRandomizeQuestions());
         r.setMaxAttempts(exam.getMaxAttempts());
+        r.setAllowResume(exam.getAllowResume() != null ? exam.getAllowResume() : false);
         r.setStatus(exam.getStatus());
         r.setCreatedAt(exam.getCreatedAt());
 

@@ -20,7 +20,11 @@ public class AttemptAnswer {
     private Attempt attempt;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "question_id", nullable = false)
+    @JoinColumn(name = "question_id",
+            foreignKey = @ForeignKey(
+                    name = "fk_attempt_answer_question",
+                    foreignKeyDefinition = "FOREIGN KEY (question_id) REFERENCES questions(id) ON DELETE SET NULL"
+            ))
     private Question question;
 
 
