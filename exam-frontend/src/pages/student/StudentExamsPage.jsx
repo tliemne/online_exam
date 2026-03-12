@@ -232,12 +232,18 @@ function TakeExamModal({ exam, onClose, onSubmitted }) {
   useEffect(() => { answersRef.current = answers }, [answers])
   const submittingRef = useRef(false) // flag ngăn heartbeat chạy khi đang submit
 
-  // Hàm lưu tiến trình — chỉ lưu timer + violations, KHÔNG lưu answers (tránh DB conflict)
+  // Hàm lưu tiến trình — lưu timer + violations + answers tạm
   const saveProgress = useCallback((tabCount) => {
     if (!attemptIdRef.current) return
+    const answerList = Object.entries(answersRef.current).map(([qId, val]) => ({
+      questionId: Number(qId),
+      answerId:   typeof val === 'number' ? val : null,
+      textAnswer: typeof val === 'string'  ? val : null,
+    }))
     const payload = {
       timeRemainingSeconds: timeLeftRef.current,
       tabViolationCount:    tabCount ?? tabWarningRef.current,
+      answers: answerList,
     }
     api.patch(`/attempts/${attemptIdRef.current}/heartbeat`, payload)
       .catch(e => console.error('[heartbeat] ERROR', e?.response?.status))

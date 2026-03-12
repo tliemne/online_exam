@@ -2,6 +2,7 @@ package com.example.online_exam.question.dto;
 
 import com.example.online_exam.question.enums.Difficulty;
 import com.example.online_exam.question.enums.QuestionType;
+import com.example.online_exam.tag.dto.TagResponse;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -18,4 +19,5 @@ public class QuestionResponse {
     private String createdByName;
     private List<AnswerResponse> answers;
     private LocalDateTime createdAt;
+    private List<TagResponse> tags;
 }

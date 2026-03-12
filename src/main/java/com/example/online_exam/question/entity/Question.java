@@ -1,6 +1,7 @@
 package com.example.online_exam.question.entity;
 
 import com.example.online_exam.common.entity.BaseEntity;
+import com.example.online_exam.tag.entity.Tag;
 import com.example.online_exam.course.entity.Course;
 import com.example.online_exam.question.enums.Difficulty;
 import com.example.online_exam.question.enums.QuestionType;
@@ -38,4 +39,12 @@ public class Question extends BaseEntity {
 
     @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Answer> answers = new ArrayList<>();
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "question_tags",
+            joinColumns = @JoinColumn(name = "question_id"),
+            inverseJoinColumns = @JoinColumn(name = "tag_id")
+    )
+    private java.util.Set<Tag> tags = new java.util.HashSet<>();
 }

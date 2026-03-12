@@ -16,6 +16,9 @@ import com.example.online_exam.question.enums.QuestionType;
 import com.example.online_exam.attempt.repository.AttemptAnswerRepository;
 import com.example.online_exam.attempt.repository.AttemptRepository;
 import com.example.online_exam.question.repository.QuestionRepository;
+import com.example.online_exam.tag.dto.TagResponse;
+import com.example.online_exam.tag.entity.Tag;
+import com.example.online_exam.tag.repository.TagRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import com.example.online_exam.secutity.service.CurrentUserService;
@@ -37,6 +40,7 @@ public class QuestionServiceImpl implements QuestionService {
     private final CourseRepository courseRepository;
     private final CurrentUserService currentUserService;
     private final ExamQuestionRepository examQuestionRepo;
+    private final TagRepository tagRepository;
 
     @Override
     public QuestionResponse create(QuestionRequest request) {
@@ -53,6 +57,7 @@ public class QuestionServiceImpl implements QuestionService {
         question.setCreatedBy(currentUser);
 
         setAnswers(question, request);
+        setTags(question, request);
 
         return toResponse(questionRepository.save(question));
     }
@@ -78,8 +83,16 @@ public class QuestionServiceImpl implements QuestionService {
 
         question.getAnswers().clear();
         setAnswers(question, request);
+        setTags(question, request);
 
         return toResponse(questionRepository.save(question));
+    }
+
+    @Override
+    public Page<QuestionResponse> searchPagedWithTag(Long courseId, QuestionType type, Difficulty difficulty,
+                                                     String keyword, Long tagId, Pageable pageable) {
+        return questionRepository.searchPagedWithTag(courseId, type, difficulty, keyword, tagId, pageable)
+                .map(this::toResponse);
     }
 
     @Override
@@ -154,6 +167,21 @@ public class QuestionServiceImpl implements QuestionService {
             ar.setCorrect(a.isCorrect());
             return ar;
         }).toList());
+        r.setTags(q.getTags().stream().map(t -> {
+            TagResponse tr = new TagResponse();
+            tr.setId(t.getId());
+            tr.setName(t.getName());
+            tr.setColor(t.getColor());
+            return tr;
+        }).toList());
         return r;
+    }
+
+    private void setTags(Question question, QuestionRequest request) {
+        if (request.getTagIds() != null) {
+            java.util.List<Tag> tags = tagRepository.findAllById(request.getTagIds());
+            question.getTags().clear();
+            question.getTags().addAll(new java.util.HashSet<>(tags));
+        }
     }
 }

@@ -10,11 +10,14 @@ import com.example.online_exam.question.dto.QuestionImportResult;
 import com.example.online_exam.question.dto.QuestionRequest;
 import com.example.online_exam.question.enums.Difficulty;
 import com.example.online_exam.question.enums.QuestionType;
+import com.example.online_exam.tag.entity.Tag;
+import com.example.online_exam.tag.repository.TagRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
+import jakarta.transaction.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.BufferedReader;
@@ -25,10 +28,12 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional
 public class QuestionImportService {
 
     private final QuestionService questionService;
     private final CourseRepository courseRepository;
+    private final TagRepository tagRepository;
 
     // ── Excel Import ─────────────────────────────────────
     public QuestionImportResult importFromExcel(MultipartFile file, Long courseId) {
@@ -56,6 +61,7 @@ public class QuestionImportService {
                 }
             }
         } catch (Exception e) {
+            log.error("Import error: {}", e.getMessage(), e);
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
 
@@ -93,6 +99,7 @@ public class QuestionImportService {
                 }
             }
         } catch (Exception e) {
+            log.error("Import error: {}", e.getMessage(), e);
             throw new AppException(ErrorCode.INVALID_REQUEST);
         }
 
@@ -123,6 +130,7 @@ public class QuestionImportService {
                 req.setDifficulty(r.getDifficulty() != null ? r.getDifficulty() : Difficulty.MEDIUM);
                 req.setCourseId(courseId);
                 req.setAnswers(r.getAnswers());
+                req.setTagIds(resolveTagIds(r.getTagNames()));
                 imported.add(questionService.create(req));
             } catch (Exception e) {
                 errors.add("Câu " + (i + 1) + ": " + e.getMessage());
@@ -148,6 +156,7 @@ public class QuestionImportService {
      * Col 5: answer C
      * Col 6: answer D
      * Col 7: correct answer (A / B / C / D  hoặc  ĐÚNG/SAI  hoặc  bỏ trống nếu ESSAY)
+     * Col 8: tags (tuỳ chọn, cách nhau bằng dấu phẩy, vd: "Java,OOP")
      */
     private QuestionRequest parseExcelRow(Row row, Long courseId, int rowIdx) {
         String content = getCellString(row, 0);
@@ -157,20 +166,25 @@ public class QuestionImportService {
         QuestionType type = parseType(getCellString(row, 1), rowIdx);
         Difficulty diff   = parseDifficulty(getCellString(row, 2));
 
+        // Tags (col 8, tuỳ chọn)
+        String tagRaw = getCellString(row, 8);
+        List<Long> tagIds = resolveTagIds(parseTagNames(tagRaw));
+
         QuestionRequest req = new QuestionRequest();
         req.setContent(content.trim());
         req.setType(type);
         req.setDifficulty(diff);
         req.setCourseId(courseId);
         req.setAnswers(buildAnswers(type, row));
+        req.setTagIds(tagIds);
         return req;
     }
 
     /**
-     * Format CSV: content,type,difficulty,A,B,C,D,correct
+     * Format CSV: content,type,difficulty,A,B,C,D,correct,tags
+     * tags: tuỳ chọn, cách nhau bằng dấu | (vd: Java|OOP) để tránh nhầm dấu phẩy CSV
      */
     private QuestionRequest parseCsvLine(String line, Long courseId, int rowNum) {
-        // Handle quoted fields with commas inside
         List<String> cols = splitCsv(line);
         if (cols.size() < 3)
             throw new IllegalArgumentException("Thiếu cột (cần ít nhất: content, type, difficulty)");
@@ -180,6 +194,13 @@ public class QuestionImportService {
 
         QuestionType type = parseType(cols.get(1).trim(), rowNum);
         Difficulty diff   = parseDifficulty(cols.size() > 2 ? cols.get(2).trim() : "MEDIUM");
+
+        // Tags từ col 8 (dùng | làm separator trong CSV để tránh conflict)
+        List<Long> tagIds = new ArrayList<>();
+        if (cols.size() > 8) {
+            String tagRaw = cols.get(8).trim().replaceAll("^\"|\"$", "").replace("|", ",");
+            tagIds = resolveTagIds(parseTagNames(tagRaw));
+        }
 
         List<AnswerRequest> answers = new ArrayList<>();
         if (type == QuestionType.MULTIPLE_CHOICE && cols.size() >= 8) {
@@ -206,6 +227,7 @@ public class QuestionImportService {
         req.setDifficulty(diff);
         req.setCourseId(courseId);
         req.setAnswers(answers);
+        req.setTagIds(tagIds);
         return req;
     }
 
@@ -291,6 +313,39 @@ public class QuestionImportService {
             else { sb.append(c); }
         }
         result.add(sb.toString());
+        return result;
+    }
+
+    /**
+     * Resolve tag names → tag IDs (tạo tag mới nếu chưa tồn tại)
+     * Input: "Java,OOP,Backend" hoặc List<String>
+     */
+    private List<Long> resolveTagIds(List<String> tagNames) {
+        if (tagNames == null || tagNames.isEmpty()) return new ArrayList<>();
+        List<Long> ids = new ArrayList<>();
+        for (String rawName : tagNames) {
+            String name = rawName.trim();
+            if (name.isBlank()) continue;
+            Tag tag = tagRepository.findByName(name)
+                    .orElseGet(() -> {
+                        Tag t = new Tag();
+                        t.setName(name);
+                        t.setColor("#6b7280");
+                        return tagRepository.save(t);
+                    });
+            ids.add(tag.getId());
+        }
+        return ids;
+    }
+
+    /** Parse chuỗi "Java,OOP" thành List<String> */
+    private List<String> parseTagNames(String raw) {
+        if (raw == null || raw.isBlank()) return new ArrayList<>();
+        List<String> result = new ArrayList<>();
+        for (String s : raw.split(",")) {
+            String trimmed = s.trim().replaceAll("^\"|\"$", "");
+            if (!trimmed.isBlank()) result.add(trimmed);
+        }
         return result;
     }
 }

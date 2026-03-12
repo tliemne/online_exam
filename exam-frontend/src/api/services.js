@@ -45,8 +45,6 @@ export const questionApi = {
   create: (data) => api.post('/questions', data),
   update: (id, data) => api.put(`/questions/${id}`, data),
   delete: (id) => api.delete(`/questions/${id}`),
-
-  // Import
   importExcel: (file, courseId) => {
     const form = new FormData()
     form.append('file', file)
@@ -61,8 +59,7 @@ export const questionApi = {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
   },
-  importJson: (data, courseId) =>
-    api.post(`/questions/import/json?courseId=${courseId}`, data),
+  importJson: (data, courseId) => api.post(`/questions/import/json?courseId=${courseId}`, data),
 }
 
 // ── EXAMS ────────────────────────────────────────────────
@@ -94,4 +91,12 @@ export const lectureApi = {
   create:      (courseId, data)       => api.post(`/courses/${courseId}/lectures`, data),
   update:      (courseId, id, data)   => api.put(`/courses/${courseId}/lectures/${id}`, data),
   delete:      (courseId, id)         => api.delete(`/courses/${courseId}/lectures/${id}`),
+}
+// ── TAGS ──────────────────────────────────────────────────
+export const tagApi = {
+  getAll:            ()                    => api.get('/tags'),
+  create:            (data)                => api.post('/tags', data),
+  update:            (id, data)            => api.put(`/tags/${id}`, data),
+  delete:            (id)                  => api.delete(`/tags/${id}`),
+  setOnQuestion:     (questionId, tagIds)  => api.put(`/tags/questions/${questionId}`, tagIds),
 }

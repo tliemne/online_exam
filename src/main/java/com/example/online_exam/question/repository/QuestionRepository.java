@@ -51,6 +51,24 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
 
     long countByCourseId(Long courseId);
 
+    // Lọc theo tag
+    @Query("""
+        SELECT DISTINCT q FROM Question q LEFT JOIN q.tags t
+        WHERE (:courseId IS NULL OR q.course.id = :courseId)
+          AND (:type IS NULL OR q.type = :type)
+          AND (:difficulty IS NULL OR q.difficulty = :difficulty)
+          AND (:keyword IS NULL OR LOWER(q.content) LIKE LOWER(CONCAT('%', :keyword, '%')))
+          AND (:tagId IS NULL OR t.id = :tagId)
+    """)
+    Page<Question> searchPagedWithTag(
+            @Param("courseId")   Long courseId,
+            @Param("type")       QuestionType type,
+            @Param("difficulty") Difficulty difficulty,
+            @Param("keyword")    String keyword,
+            @Param("tagId")      Long tagId,
+            Pageable pageable
+    );
+
     // Xóa toàn bộ câu hỏi do 1 teacher tạo (dùng khi xóa tài khoản teacher)
     @Modifying
     @Query("DELETE FROM Question q WHERE q.createdBy.id = :userId")

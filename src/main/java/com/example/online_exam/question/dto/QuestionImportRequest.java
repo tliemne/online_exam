@@ -15,24 +15,6 @@ public class QuestionImportRequest {
     private QuestionType type;
     private Difficulty difficulty;
     private List<AnswerRequest> answers;
+    /** Tên các tag, cách nhau bằng dấu phẩy (trong file) hoặc là List (trong JSON) */
+    private List<String> tagNames;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import DateTimePicker from '../../components/common/DateTimePicker'
 import { useState, useEffect, useCallback } from 'react'
-import { examApi, courseApi, questionApi } from '../../api/services'
+import { examApi, courseApi, questionApi, tagApi } from '../../api/services'
 import { useAuth } from '../../context/AuthContext'
 
 // ── Icons ─────────────────────────────────────────────────
@@ -214,7 +214,13 @@ function AddQuestionsModal({ exam, onClose, onSaved }) {
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('ALL')
   const [filterType, setFilterType] = useState('ALL')
+  const [filterTag, setFilterTag] = useState('ALL')
+  const [tags, setTags] = useState([])
   const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    tagApi.getAll().then(r => setTags(r.data.data || [])).catch(() => {})
+  }, [])
 
   useEffect(() => {
     if (!exam.courseId) {
@@ -252,7 +258,8 @@ function AddQuestionsModal({ exam, onClose, onSaved }) {
     const matchSearch = q.content?.toLowerCase().includes(search.toLowerCase())
     const matchFilter = filter === 'ALL' || q.difficulty === filter
     const matchType   = filterType === 'ALL' || q.type === filterType
-    return matchSearch && matchFilter && matchType
+    const matchTag    = filterTag === 'ALL' || (q.tags || []).some(t => String(t.id) === filterTag)
+    return matchSearch && matchFilter && matchType && matchTag
   })
 
   const handleSave = async () => {
@@ -301,8 +308,8 @@ function AddQuestionsModal({ exam, onClose, onSaved }) {
     <Modal title="Chọn câu hỏi cho đề thi" onClose={onClose} wide>
       <div className="p-7 space-y-5">
         {/* Toolbar */}
-        <div className="flex gap-3">
-          <div className="relative flex-1">
+        <div className="flex gap-3 flex-wrap">
+          <div className="relative flex-1 min-w-48">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-3)]">{Icon.search}</span>
             <input className="input-field pl-9" placeholder="Tìm câu hỏi..." value={search}
               onChange={e => setSearch(e.target.value)} autoFocus />
@@ -318,6 +325,12 @@ function AddQuestionsModal({ exam, onClose, onSaved }) {
             <option value="EASY">Dễ</option>
             <option value="MEDIUM">Trung bình</option>
             <option value="HARD">Khó</option>
+          </select>
+          <select className="input-field w-36" value={filterTag} onChange={e => setFilterTag(e.target.value)}>
+            <option value="ALL">Tất cả tag</option>
+            {tags.map(t => (
+              <option key={t.id} value={String(t.id)}>{t.name}</option>
+            ))}
           </select>
         </div>
 
@@ -357,13 +370,19 @@ function AddQuestionsModal({ exam, onClose, onSaved }) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[var(--text-1)] text-sm line-clamp-2">{i + 1}. {q.content}</p>
-                  <div className="flex gap-2 mt-1.5">
+                  <div className="flex flex-wrap gap-2 mt-1.5 items-center">
                     <span className="text-xs text-[var(--text-3)]">{TYPE_META[q.type] || q.type}</span>
                     {q.difficulty && (
                       <span className={`text-xs ${DIFF_META[q.difficulty]?.cls || 'badge-neutral'}`}>
                         {DIFF_META[q.difficulty]?.label || q.difficulty}
                       </span>
                     )}
+                    {(q.tags || []).map(t => (
+                      <span key={t.id} className="text-xs px-1.5 py-0.5 rounded-full font-medium"
+                        style={{ backgroundColor: (t.color || '#6b7280') + '22', color: t.color || '#6b7280' }}>
+                        {t.name}
+                      </span>
+                    ))}
                   </div>
                 </div>
               </div>

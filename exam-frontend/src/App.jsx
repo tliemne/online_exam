@@ -28,6 +28,7 @@ import ExamLeaderboardPage from './pages/student/ExamLeaderboardPage'
 import StudentSchedulePage from './pages/student/StudentSchedulePage'
 import StudentRankingsPage from './pages/student/StudentRankingsPage'
 import TeacherStatsPage from './pages/teacher/TeacherStatsPage'
+import TagsPage from './pages/teacher/TagsPage'
 
 import {
   UnauthorizedPage,
@@ -62,6 +63,8 @@ export default function App() {
           <Route path="/teacher/courses" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><CoursesPage /></WithLayout></ProtectedRoute>} />
           <Route path="/teacher/courses/:id" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><CourseDetailPage /></WithLayout></ProtectedRoute>} />
           <Route path="/teacher/questions" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><QuestionsPage /></WithLayout></ProtectedRoute>} />
+          <Route path="/teacher/tags" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><TagsPage /></WithLayout></ProtectedRoute>} />
+          <Route path="/admin/tags" element={<ProtectedRoute roles={['ADMIN']}><WithLayout><TagsPage /></WithLayout></ProtectedRoute>} />
           <Route path="/teacher/grading" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><TeacherGradingPage /></WithLayout></ProtectedRoute>} />
           <Route path="/teacher/exams" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><ExamsPage /></WithLayout></ProtectedRoute>} />
           <Route path="/teacher/exams/:examId/stats" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><ExamStatsPage /></WithLayout></ProtectedRoute>} />

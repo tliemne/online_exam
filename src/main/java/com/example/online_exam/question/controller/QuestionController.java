@@ -71,6 +71,7 @@ public class QuestionController {
             @RequestParam(required = false) QuestionType type,
             @RequestParam(required = false) Difficulty difficulty,
             @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long tagId,
             @RequestParam(defaultValue = "false") boolean paged,
             @RequestParam(defaultValue = "0")  int page,
             @RequestParam(defaultValue = "20") int size) {
@@ -78,7 +79,9 @@ public class QuestionController {
         if (paged) {
             // Phân trang — dùng cho QuestionsPage
             PageRequest pageable = PageRequest.of(page, size, Sort.by("id").descending());
-            Page<QuestionResponse> result = questionService.searchPaged(courseId, type, difficulty, keyword, pageable);
+            Page<QuestionResponse> result = tagId != null
+                    ? questionService.searchPagedWithTag(courseId, type, difficulty, keyword, tagId, pageable)
+                    : questionService.searchPaged(courseId, type, difficulty, keyword, pageable);
             return BaseResponse.<Page<QuestionResponse>>builder()
                     .status(200).message("success").data(result).timestamp(LocalDateTime.now()).build();
         } else {

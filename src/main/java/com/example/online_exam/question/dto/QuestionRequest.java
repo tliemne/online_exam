@@ -22,4 +22,5 @@ public class QuestionRequest {
     private Long courseId;
 
     private List<AnswerRequest> answers;
+    private List<Long> tagIds;
 }

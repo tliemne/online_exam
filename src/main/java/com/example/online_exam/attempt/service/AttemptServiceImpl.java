@@ -317,9 +317,39 @@ public class AttemptServiceImpl implements AttemptService {
 
         attempt.setTimeRemainingSeconds(timeRemainingSeconds);
         attempt.setTabViolationCount(tabViolationCount);
-        // Heartbeat chỉ lưu timer + violations, KHÔNG lưu answers
-        // (answers chỉ được lưu khi submit thật — tránh optimistic lock conflict)
         attemptRepo.save(attempt);
+
+        // Lưu answers tạm — upsert từng câu đã trả lời
+        if (items != null && !items.isEmpty()) {
+            List<AttemptAnswer> existing = answerRepo.findByAttemptId(attemptId);
+            Map<Long, AttemptAnswer> existingMap = new java.util.HashMap<>();
+            existing.forEach(aa -> {
+                if (aa.getQuestion() != null)
+                    existingMap.put(aa.getQuestion().getId(), aa);
+            });
+
+            List<AttemptAnswer> toSave = new ArrayList<>();
+            for (SubmitAnswerItem item : items) {
+                Question q = questionRepo.findById(item.getQuestionId()).orElse(null);
+                if (q == null) continue;
+
+                AttemptAnswer aa = existingMap.getOrDefault(q.getId(), new AttemptAnswer());
+                aa.setAttempt(attempt);
+                aa.setQuestion(q);
+
+                if (item.getAnswerId() != null) {
+                    q.getAnswers().stream()
+                            .filter(a -> a.getId().equals(item.getAnswerId()))
+                            .findFirst().ifPresent(aa::setSelectedAnswer);
+                    aa.setTextAnswer(null);
+                } else {
+                    aa.setSelectedAnswer(null);
+                    aa.setTextAnswer(item.getTextAnswer());
+                }
+                toSave.add(aa);
+            }
+            answerRepo.saveAll(toSave);
+        }
     }
 
     // ── Reset attempt ──────────────────────────────────────────────────────
