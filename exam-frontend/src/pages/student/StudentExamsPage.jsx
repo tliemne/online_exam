@@ -314,7 +314,7 @@ function TakeExamModal({ exam, onClose, onSubmitted }) {
 
       if (unanswered > 0) {
         const ok = confirm(
-          `⚠️ Bạn còn ${unanswered}/${totalQ} câu chưa trả lời!\n\nBấm OK để nộp bài, Hủy để quay lại tiếp tục làm.`
+          `Bạn còn ${unanswered}/${totalQ} câu chưa trả lời!\n\nBấm OK để nộp bài, Hủy để quay lại tiếp tục làm.`
         )
         if (!ok) return
       } else {
@@ -415,7 +415,7 @@ function TakeExamModal({ exam, onClose, onSubmitted }) {
           </button>
           <button onClick={() => { onSubmitted(); onClose(); navigate(`/student/exams/${exam.id}/leaderboard`) }}
             className="btn-primary flex-1">
-            🏆 Xem leaderboard
+            Xem leaderboard
           </button>
         </div>
       </div>
@@ -587,7 +587,7 @@ function TakeExamModal({ exam, onClose, onSubmitted }) {
               </svg>
             </div>
             <h3 className="font-bold text-lg mb-2" style={{ color: '#f59e0b' }}>
-              ⚠️ Cảnh báo gian lận!
+              Cảnh báo gian lận!
             </h3>
             <p className="text-sm mb-2" style={{ color: 'var(--text-1)' }}>
               Bạn đã rời khỏi trang thi.
@@ -707,8 +707,8 @@ function StudentExamCard({ exam, onTake, onViewResult, onLeaderboard }) {
         {/* Time info */}
         {(start || end) && (
           <div className="text-xs text-[var(--text-3)] mb-3 space-y-1">
-            {start && <p>🕐 Mở: {fmtTime(start)}</p>}
-            {end   && <p>🕐 Đóng: {fmtTime(end)}</p>}
+            {start && <p>Mở: {fmtTime(start)}</p>}
+            {end   && <p>Đóng: {fmtTime(end)}</p>}
           </div>
         )}
 
@@ -740,7 +740,7 @@ function StudentExamCard({ exam, onTake, onViewResult, onLeaderboard }) {
           className="w-full mt-2 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-medium
             bg-[var(--bg-elevated)] text-[var(--text-2)] hover:text-accent hover:border-accent/40
             border border-[var(--border-base)] transition-all">
-          🏆 Bảng xếp hạng
+          Bảng xếp hạng
         </button>
       </div>
     </div>

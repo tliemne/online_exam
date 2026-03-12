@@ -25,6 +25,9 @@ import StudentResultsPage from './pages/student/StudentResultsPage'
 import TeacherGradingPage from './pages/teacher/TeacherGradingPage'
 import ExamStatsPage from './pages/teacher/ExamStatsPage'
 import ExamLeaderboardPage from './pages/student/ExamLeaderboardPage'
+import StudentSchedulePage from './pages/student/StudentSchedulePage'
+import StudentRankingsPage from './pages/student/StudentRankingsPage'
+import TeacherStatsPage from './pages/teacher/TeacherStatsPage'
 
 import {
   UnauthorizedPage,
@@ -65,9 +68,13 @@ export default function App() {
           <Route path="/admin/exams/:examId/stats" element={<ProtectedRoute roles={['ADMIN']}><WithLayout><ExamStatsPage /></WithLayout></ProtectedRoute>} />
 
           {/* Student */}
+          <Route path="/teacher/stats" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><TeacherStatsPage /></WithLayout></ProtectedRoute>} />
+          <Route path="/admin/stats" element={<ProtectedRoute roles={['ADMIN']}><WithLayout><TeacherStatsPage /></WithLayout></ProtectedRoute>} />
           <Route path="/student" element={<ProtectedRoute roles={['STUDENT']}><WithLayout><StudentDashboard /></WithLayout></ProtectedRoute>} />
           <Route path="/student/exams" element={<ProtectedRoute roles={['STUDENT']}><WithLayout><StudentExamsPage /></WithLayout></ProtectedRoute>} />
           <Route path="/student/results" element={<ProtectedRoute roles={['STUDENT']}><WithLayout><StudentResultsPage /></WithLayout></ProtectedRoute>} />
+          <Route path="/student/schedule" element={<ProtectedRoute roles={['STUDENT']}><WithLayout><StudentSchedulePage /></WithLayout></ProtectedRoute>} />
+          <Route path="/student/rankings" element={<ProtectedRoute roles={['STUDENT']}><WithLayout><StudentRankingsPage /></WithLayout></ProtectedRoute>} />
           <Route path="/student/exams/:examId/leaderboard" element={<ProtectedRoute roles={['STUDENT','TEACHER','ADMIN']}><WithLayout><ExamLeaderboardPage /></WithLayout></ProtectedRoute>} />
           <Route path="/student/courses/:id" element={<ProtectedRoute roles={['STUDENT']}><WithLayout><CourseDetailPage /></WithLayout></ProtectedRoute>} />
 

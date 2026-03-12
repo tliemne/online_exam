@@ -131,9 +131,9 @@ export default function ExamStatsPage() {
   if (!stats) return <div className="p-8 text-center text-[var(--text-3)]">Không tải được dữ liệu</div>
 
   const tabs = [
-    { id: 'overview',    label: '📊 Tổng quan' },
-    { id: 'leaderboard', label: '🏆 Leaderboard' },
-    { id: 'questions',   label: '📝 Theo câu hỏi' },
+    { id: 'overview',    label: 'Tổng quan' },
+    { id: 'leaderboard', label: 'Leaderboard' },
+    { id: 'questions',   label: 'Theo câu hỏi' },
   ]
 
   return (
@@ -201,7 +201,7 @@ export default function ExamStatsPage() {
       {tab === 'leaderboard' && (
         <div className="card rounded-xl overflow-hidden">
           <div className="p-4 border-b border-[var(--border)]">
-            <h3 className="font-semibold text-[var(--text-1)]">🏆 Top {stats.leaderboard?.length} sinh viên điểm cao nhất</h3>
+            <h3 className="font-semibold text-[var(--text-1)]">Top {stats.leaderboard?.length} sinh viên điểm cao nhất</h3>
           </div>
           {stats.leaderboard?.length === 0
             ? <div className="p-8 text-center text-[var(--text-3)]">Chưa có dữ liệu</div>

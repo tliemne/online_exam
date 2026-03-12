@@ -58,7 +58,7 @@ export default function ExamLeaderboardPage() {
         <button onClick={() => navigate(-1)} className="text-sm text-[var(--text-3)] hover:text-[var(--text-1)] mb-1 flex items-center gap-1">
           ← Quay lại
         </button>
-        <h1 className="text-2xl font-bold text-[var(--text-1)]">🏆 Bảng xếp hạng</h1>
+        <h1 className="text-2xl font-bold text-[var(--text-1)]">Bảng xếp hạng</h1>
         <p className="text-[var(--text-3)]">{stats.examTitle}</p>
       </div>
 

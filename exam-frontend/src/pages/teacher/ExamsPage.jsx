@@ -472,16 +472,28 @@ function ExamCard({ exam, onEdit, onDelete, onPublish, onClose, onManageQuestion
           </span>
         )}
 
-        <button onClick={() => onStats(exam)}
-          className="btn-ghost px-2.5 py-1.5 text-[var(--text-2)] hover:text-purple-400" title="Thống kê">
-          📊
+        <button
+              onClick={() => onStats(exam)}
+              className="btn-ghost px-2.5 py-1.5 text-[var(--text-2)] hover:text-purple-400"
+              title="Thống kê"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+                  d="M6 20V10m6 10V4m6 16v-6"/>
+              </svg>
         </button>
         <button onClick={() => onEdit(exam)}
-          className="btn-ghost px-2.5 py-1.5 text-[var(--text-2)] hover:text-accent">
+          className="btn-ghost px-2.5 py-1.5 text-[var(--text-2)] hover:text-accent"
+          title="Chỉnh sửa đề thi">
           {Icon.edit}
         </button>
         <button onClick={() => onDelete(exam)}
-          className="btn-ghost px-2.5 py-1.5 text-[var(--text-2)] hover:text-danger hover:bg-danger/10">
+          className="btn-ghost px-2.5 py-1.5 text-[var(--text-2)] hover:text-danger hover:bg-danger/10" title="Xóa đề thi">
           {Icon.trash}
         </button>
       </div>

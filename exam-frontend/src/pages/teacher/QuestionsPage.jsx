@@ -9,7 +9,7 @@ import { useAuth } from '../../context/AuthContext'
 
 const TABS = [
   { key: 'excel', label: 'Excel', accept: '.xlsx' },
-  { key: 'csv',   label: '📄 CSV',   accept: '.csv'  },
+  { key: 'csv',   label: 'CSV',   accept: '.csv'  },
   { key: 'json',  label: 'JSON',  accept: '.json' },
 ]
 
