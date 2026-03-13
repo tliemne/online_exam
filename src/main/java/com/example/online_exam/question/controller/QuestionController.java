@@ -86,7 +86,9 @@ public class QuestionController {
                     .status(200).message("success").data(result).timestamp(LocalDateTime.now()).build();
         } else {
             // Lấy toàn bộ — dùng cho AddQuestionsModal trong Exam
-            List<QuestionResponse> result = questionService.search(courseId, type, difficulty, keyword);
+            List<QuestionResponse> result = tagId != null
+                    ? questionService.searchWithTag(courseId, type, difficulty, keyword, tagId)
+                    : questionService.search(courseId, type, difficulty, keyword);
             return BaseResponse.<List<QuestionResponse>>builder()
                     .status(200).message("success").data(result).timestamp(LocalDateTime.now()).build();
         }

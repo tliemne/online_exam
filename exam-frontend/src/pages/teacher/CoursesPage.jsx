@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { courseApi, userApi } from '../../api/services'
 import { useAuth } from '../../context/AuthContext'
+import { useConfirm } from '../../components/common/ConfirmDialog'
+import { useToast } from '../../context/ToastContext'
 
 // ── Icons ────────────────────────────────────────────────
 const Icon = {
@@ -202,7 +204,7 @@ function StudentsModal({ course, onClose, onUpdated, allUsers }) {
   useEffect(() => { load() }, [load])
 
   const handleRemove = async (studentId) => {
-    if (!confirm('Xóa sinh viên khỏi lớp?')) return
+    if (!(await confirmDialog({ title: 'Xóa sinh viên khỏi lớp?', danger: true, confirmLabel: 'Xóa' }))) return
     setRemoving(studentId)
     try {
       await courseApi.removeStudent(course.id, studentId)
@@ -329,6 +331,8 @@ function CourseCard({ course, onEdit, onDelete, onDetail, isOwner }) {
 export default function CoursesPage() {
   const { user, hasRole } = useAuth()
   const navigate = useNavigate()
+  const toast = useToast()
+  const [confirmDialog, ConfirmDialogUI] = useConfirm()
   const isAdmin = hasRole('ADMIN')
   const basePath = isAdmin ? '/admin' : '/teacher'
   const [courses, setCourses] = useState([])
@@ -362,7 +366,7 @@ export default function CoursesPage() {
   }, [isAdmin])
 
   const handleDelete = async (course) => {
-    if (!confirm(`Xóa lớp "${course.name}"?`)) return
+    if (!(await confirmDialog({ title: `Xóa lớp "${course.name}"?`, message: 'Tất cả dữ liệu liên quan sẽ bị xóa.', danger: true, confirmLabel: 'Xóa lớp' }))) return
     setDeleting(course.id)
     try {
       await courseApi.delete(course.id)
@@ -381,6 +385,8 @@ export default function CoursesPage() {
   const myCourses = filtered.filter(c => c.teacherName && user?.fullName && c.teacherName === user.fullName)
 
   return (
+    <>
+    {ConfirmDialogUI}
     <div className="max-w-6xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -496,5 +502,6 @@ export default function CoursesPage() {
         />
       )}
     </div>
+    </>
   )
 }

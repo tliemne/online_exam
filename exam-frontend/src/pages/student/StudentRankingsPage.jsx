@@ -125,26 +125,10 @@ export default function StudentRankingsPage() {
                       {/* BXH button */}
                    <button
                         onClick={() => navigate(`/student/exams/${a.examId}/leaderboard`)}
-                        className="
-                        shrink-0 inline-flex items-center justify-center
-                        w-9 h-9 rounded-md
-                        border border-slate-200 bg-white text-slate-600
-                        hover:bg-slate-100 hover:text-slate-800
-                        dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300
-                        dark:hover:bg-slate-700 dark:hover:text-white
-                        transition
-                        "
-                        title="Xếp hạng"
-                        >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="w-4 h-4"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                        >
-                            <path d="M8 21V9m4 12V3m4 18v-6" />
+                        className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-md transition btn-ghost"
+                        title="Bảng xếp hạng">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                          <path d="M8 21V9m4 12V3m4 18v-6"/>
                         </svg>
                     </button>
                     </div>

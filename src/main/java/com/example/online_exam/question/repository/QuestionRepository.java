@@ -9,8 +9,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -35,8 +33,9 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     );
 
     // List version — dùng cho AddQuestionsModal (không cần phân trang)
+    // LEFT JOIN FETCH tags để tránh LazyInit khi toResponse() đọc q.getTags()
     @Query("""
-        SELECT q FROM Question q
+        SELECT DISTINCT q FROM Question q LEFT JOIN FETCH q.tags
         WHERE q.course.id = :courseId
           AND (:type IS NULL OR q.type = :type)
           AND (:difficulty IS NULL OR q.difficulty = :difficulty)
@@ -47,6 +46,26 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
             @Param("type")       QuestionType type,
             @Param("difficulty") Difficulty difficulty,
             @Param("keyword")    String keyword
+    );
+
+    // List version có filter tag — dùng cho AddQuestionsModal khi chọn tag
+    @Query("""
+        SELECT DISTINCT q FROM Question q LEFT JOIN FETCH q.tags t2
+        WHERE q.course.id = :courseId
+          AND (:type IS NULL OR q.type = :type)
+          AND (:difficulty IS NULL OR q.difficulty = :difficulty)
+          AND (:keyword IS NULL OR LOWER(q.content) LIKE LOWER(CONCAT('%', :keyword, '%')))
+          AND (:tagId IS NULL OR EXISTS (
+              SELECT 1 FROM Question q2 JOIN q2.tags t3
+              WHERE q2.id = q.id AND t3.id = :tagId
+          ))
+    """)
+    List<Question> searchWithTag(
+            @Param("courseId")   Long courseId,
+            @Param("type")       QuestionType type,
+            @Param("difficulty") Difficulty difficulty,
+            @Param("keyword")    String keyword,
+            @Param("tagId")      Long tagId
     );
 
     long countByCourseId(Long courseId);

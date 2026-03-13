@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
+import { ToastProvider } from './context/ToastContext'
+import AdminActivityLogPage from './pages/admin/AdminActivityLogPage'
 import { ProtectedRoute, GuestRoute } from './routes/Guards'
 import AppLayout from './components/layout/AppLayout'
 
@@ -41,6 +43,7 @@ function WithLayout({ children }) {
 export default function App() {
   return (
     <BrowserRouter>
+      <ToastProvider>
       <AuthProvider>
         <Routes>
           {/* Public */}
@@ -73,6 +76,10 @@ export default function App() {
           {/* Student */}
           <Route path="/teacher/stats" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><TeacherStatsPage /></WithLayout></ProtectedRoute>} />
           <Route path="/admin/stats" element={<ProtectedRoute roles={['ADMIN']}><WithLayout><TeacherStatsPage /></WithLayout></ProtectedRoute>} />
+          <Route path="/admin/logs" element={<ProtectedRoute roles={['ADMIN']}><WithLayout><AdminActivityLogPage /></WithLayout></ProtectedRoute>} />
+          <Route path="/admin/questions" element={<ProtectedRoute roles={['ADMIN']}><WithLayout><QuestionsPage /></WithLayout></ProtectedRoute>} />
+          <Route path="/admin/exams" element={<ProtectedRoute roles={['ADMIN']}><WithLayout><ExamsPage /></WithLayout></ProtectedRoute>} />
+          <Route path="/admin/grading" element={<ProtectedRoute roles={['ADMIN']}><WithLayout><TeacherGradingPage /></WithLayout></ProtectedRoute>} />
           <Route path="/student" element={<ProtectedRoute roles={['STUDENT']}><WithLayout><StudentDashboard /></WithLayout></ProtectedRoute>} />
           <Route path="/student/exams" element={<ProtectedRoute roles={['STUDENT']}><WithLayout><StudentExamsPage /></WithLayout></ProtectedRoute>} />
           <Route path="/student/results" element={<ProtectedRoute roles={['STUDENT']}><WithLayout><StudentResultsPage /></WithLayout></ProtectedRoute>} />
@@ -89,6 +96,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </AuthProvider>
+      </ToastProvider>
     </BrowserRouter>
   )
 }

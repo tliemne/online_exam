@@ -104,9 +104,7 @@ export default function StudentSchedulePage() {
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-12 text-[var(--text-3)]">
-          <p className="text-[var(--text-3)] text-sm">Không có đề thi nào phù hợp</p>
-          <p className="hidden">x</p>
-          <p>Không có đề thi nào</p>
+          <p className="text-sm">Không có đề thi nào phù hợp</p>
         </div>
       ) : (
         <div className="space-y-3">

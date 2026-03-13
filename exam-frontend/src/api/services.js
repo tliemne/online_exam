@@ -100,3 +100,7 @@ export const tagApi = {
   delete:            (id)                  => api.delete(`/tags/${id}`),
   setOnQuestion:     (questionId, tagIds)  => api.put(`/tags/questions/${questionId}`, tagIds),
 }
+// ── ADMIN LOGS ────────────────────────────────────────────
+export const adminApi = {
+  getLogs: (params) => api.get('/admin/logs', { params }),
+}

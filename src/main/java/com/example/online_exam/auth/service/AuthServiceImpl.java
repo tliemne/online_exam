@@ -1,5 +1,7 @@
 package com.example.online_exam.auth.service;
 
+import com.example.online_exam.activitylog.entity.ActivityLogAction;
+import com.example.online_exam.activitylog.service.ActivityLogService;
 import com.example.online_exam.auth.dto.AuthResponse;
 import com.example.online_exam.auth.dto.LoginRequest;
 import com.example.online_exam.auth.dto.LoginResponse;
@@ -10,7 +12,6 @@ import com.example.online_exam.exception.ErrorCode;
 import com.example.online_exam.secutity.service.JwtService;
 import com.example.online_exam.user.entity.User;
 import com.example.online_exam.user.repository.UserRepository;
-import lombok.Builder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -19,16 +20,16 @@ import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
-
 public class AuthServiceImpl implements AuthService {
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final RefreshTokenRepository refreshTokenRepository;
+    private final ActivityLogService activityLogService;
 
     @Override
     public AuthResponse login(LoginRequest request) {
-
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
@@ -36,7 +37,7 @@ public class AuthServiceImpl implements AuthService {
             throw new AppException(ErrorCode.INVALID_PASSWORD);
         }
 
-        String accessToken = jwtService.generateAccessToken(user);
+        String accessToken  = jwtService.generateAccessToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
 
         refreshTokenRepository.save(
@@ -47,19 +48,27 @@ public class AuthServiceImpl implements AuthService {
                         .build()
         );
 
+        activityLogService.logUser(user, ActivityLogAction.LOGIN,
+                "USER", user.getId(), "Đăng nhập hệ thống");
+
         return AuthResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .build();
     }
+
     @Override
     public void logout(String refreshToken) {
         refreshTokenRepository.findByToken(refreshToken)
-                .ifPresent(refreshTokenRepository::delete);
+                .ifPresent(t -> {
+                    activityLogService.logUser(t.getUser(), ActivityLogAction.LOGOUT,
+                            "USER", t.getUser().getId(), "Đăng xuất hệ thống");
+                    refreshTokenRepository.delete(t);
+                });
     }
+
     @Override
     public AuthResponse refresh(String refreshToken) {
-
         RefreshToken token = refreshTokenRepository.findByToken(refreshToken)
                 .orElseThrow(() -> new AppException(ErrorCode.TOKEN_INVALID));
 
@@ -69,7 +78,6 @@ public class AuthServiceImpl implements AuthService {
         }
 
         User user = token.getUser();
-
         String newAccess = jwtService.generateAccessToken(user);
 
         return AuthResponse.builder()
@@ -78,4 +86,3 @@ public class AuthServiceImpl implements AuthService {
                 .build();
     }
 }
-

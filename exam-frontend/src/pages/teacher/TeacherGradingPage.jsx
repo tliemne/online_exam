@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { examApi } from '../../api/services'
 import api from '../../api/client'
+import { useToast } from '../../context/ToastContext'
 
 const Icon = {
   x:      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>,
@@ -75,7 +76,7 @@ function GradeModal({ attempt, onClose, onGraded }) {
       suggestions.forEach(s => { map[s.attemptAnswerId] = s })
       setAiSugg(map)
     } catch {
-      alert('Không thể kết nối AI. Vui lòng thử lại.')
+      toast.error('Không thể kết nối AI. Vui lòng thử lại.')
     } finally {
       setAiLoading(false)
     }
@@ -94,7 +95,7 @@ function GradeModal({ attempt, onClose, onGraded }) {
       onGraded()
       onClose()
     } catch (err) {
-      alert(err?.response?.data?.message || 'Lỗi khi lưu điểm')
+      toast.error(err?.response?.data?.message || 'Lỗi khi lưu điểm')
     } finally {
       setSaving(false)
     }
@@ -312,6 +313,7 @@ function GradeModal({ attempt, onClose, onGraded }) {
 
 // ── Main Page ─────────────────────────────────────────────
 export default function TeacherGradingPage() {
+  const toast = useToast()
   const navigate = useNavigate()
   const [exams,         setExams]       = useState([])
   const [pendingCounts, setPendingCounts] = useState({}) // examId → count
@@ -371,8 +373,9 @@ export default function TeacherGradingPage() {
       link.download = `ket-qua-${selectedExam.title.replace(/\s+/g, '-')}.xlsx`
       link.click()
       URL.revokeObjectURL(url)
+      toast.success('Xuất Excel thành công')
     } catch {
-      alert('Xuất Excel thất bại. Vui lòng thử lại.')
+      toast.error('Xuất Excel thất bại. Vui lòng thử lại.')
     } finally {
       setExporting(false)
     }
@@ -387,7 +390,7 @@ export default function TeacherGradingPage() {
       await api.delete(`/attempts/${id}/reset`)
       loadAttempts(selectedExam)
     } catch {
-      alert('Reset thất bại. Vui lòng thử lại.')
+      toast.error('Reset thất bại. Vui lòng thử lại.')
     } finally {
       setResetting(null)
     }

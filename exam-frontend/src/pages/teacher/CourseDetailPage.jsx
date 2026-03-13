@@ -4,6 +4,8 @@ import ResetPasswordModal from '../../components/common/ResetPasswordModal'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { courseApi, userApi, lectureApi } from '../../api/services'
 import { useAuth } from '../../context/AuthContext'
+import { useToast } from '../../context/ToastContext'
+import { useConfirm } from '../../components/common/ConfirmDialog'
 
 // ── Icons ─────────────────────────────────────────────────
 const Icon = {
@@ -22,6 +24,7 @@ const Icon = {
 
 // ── Add Student Modal ──────────────────────────────────────
 function AddStudentModal({ courseId, currentStudents, onClose, onAdded }) {
+  const toast = useToast()
   const [allStudents, setAllStudents] = useState([])
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState([])
@@ -54,7 +57,7 @@ function AddStudentModal({ courseId, currentStudents, onClose, onAdded }) {
       onAdded()
       onClose()
     } catch (e) {
-      alert(e.response?.data?.message || 'Có lỗi xảy ra')
+      toast.error(e.response?.data?.message || 'Có lỗi xảy ra')
     } finally { setSaving(false) }
   }
 
@@ -148,6 +151,7 @@ function AddStudentModal({ courseId, currentStudents, onClose, onAdded }) {
 
 // ── Add Lecture Modal ─────────────────────────────────────
 function AddLectureModal({ onClose, onSaved, lecture }) {
+  const toast = useToast()
   const [form, setForm] = useState({
     title: lecture?.title || '',
     description: lecture?.description || '',
@@ -182,7 +186,7 @@ function AddLectureModal({ onClose, onSaved, lecture }) {
       await onSaved(form)
       onClose()
     } catch (err) {
-      alert(err.response?.data?.message || 'Có lỗi xảy ra')
+      toast.error(err.response?.data?.message || 'Có lỗi xảy ra')
     } finally { setSaving(false) }
   }
 
@@ -249,6 +253,8 @@ function AddLectureModal({ onClose, onSaved, lecture }) {
 
 // ── Tab: Students ─────────────────────────────────────────
 function TabStudents({ course, isTeacher, onRefresh }) {
+  const toast = useToast()
+  const [confirmDialog, ConfirmDialogUI] = useConfirm()
   const [students, setStudents] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
@@ -267,7 +273,7 @@ function TabStudents({ course, isTeacher, onRefresh }) {
   useEffect(() => { load() }, [load])
 
   const handleRemove = async (studentId) => {
-    if (!confirm('Xóa sinh viên khỏi lớp này?')) return
+    if (!(await confirmDialog({ title: 'Xóa sinh viên khỏi lớp?', danger: true, confirmLabel: 'Xóa' }))) return
     setRemoving(studentId)
     try {
       await courseApi.removeStudent(course.id, studentId)
@@ -282,6 +288,8 @@ function TabStudents({ course, isTeacher, onRefresh }) {
   )
 
   return (
+    <>
+    {ConfirmDialogUI}
     <div className="space-y-4">
       {showCreateStudent && (
         <CreateStudentModal
@@ -399,13 +407,16 @@ function TabStudents({ course, isTeacher, onRefresh }) {
       )}
       {resetTarget && (
         <ResetPasswordModal user={resetTarget} onClose={() => setResetTarget(null)} />
-      )}
-    </div>
+      )}    </div>
+
+    </>
   )
 }
 
 // ── Tab: Lectures ─────────────────────────────────────────
 function TabLectures({ course, isTeacher }) {
+  const toast = useToast()
+  const [confirmDialog, ConfirmDialogUI] = useConfirm()
   const [lectures, setLectures] = useState([])
   const [showAdd, setShowAdd] = useState(false)
   const [editing, setEditing] = useState(null)
@@ -434,7 +445,7 @@ function TabLectures({ course, isTeacher }) {
   }
 
   const handleDelete = async (id) => {
-    if (!confirm('Xóa bài giảng này?')) return
+    if (!(await confirmDialog({ title: 'Xóa bài giảng này?', danger: true, confirmLabel: 'Xóa' }))) return
     await lectureApi.delete(course.id, id)
     loadLectures()
   }
@@ -451,6 +462,8 @@ function TabLectures({ course, isTeacher }) {
   const sorted = [...lectures].sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0))
 
   return (
+    <>
+    {ConfirmDialogUI}
     <div className="space-y-4">
       {(showAdd || editing) && (
         <AddLectureModal
@@ -538,8 +551,9 @@ function TabLectures({ course, isTeacher }) {
         <p className="text-xs text-[var(--text-3)] text-center">
           💡 Click "Xem" để xem bài giảng ngay tại đây
         </p>
-      )}
-    </div>
+      )}    </div>
+
+    </>
   )
 }
 
@@ -578,6 +592,8 @@ export default function CourseDetailPage() {
   const { id: courseId } = useParams ? useParams() : {}
   const { id } = useParams()
   const navigate = useNavigate()
+  const toast = useToast()
+  const [confirmDialog, ConfirmDialogUI] = useConfirm()
   const { hasRole } = useAuth()
   const isTeacher = hasRole('TEACHER') || hasRole('ADMIN')
 
@@ -609,6 +625,8 @@ export default function CourseDetailPage() {
   const backPath = isTeacher ? '/teacher/courses' : '/student'
 
   return (
+    <>
+    {ConfirmDialogUI}
     <div className="max-w-6xl mx-auto space-y-6">
 
       {/* Breadcrumb + Header */}
@@ -661,5 +679,6 @@ export default function CourseDetailPage() {
         {tab === 'exams'    && <TabExams    course={course} isTeacher={isTeacher} />}
       </div>
     </div>
+    </>
   )
 }

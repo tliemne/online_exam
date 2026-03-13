@@ -3,7 +3,6 @@ package com.example.online_exam.tag.controller;
 import com.example.online_exam.common.dto.BaseResponse;
 import com.example.online_exam.tag.dto.TagRequest;
 import com.example.online_exam.tag.dto.TagResponse;
-import com.example.online_exam.tag.repository.TagRepository;
 import com.example.online_exam.tag.service.TagService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -18,7 +17,6 @@ import java.util.List;
 public class TagController {
 
     private final TagService tagService;
-    private final TagRepository tagRepo;
 
     // GET /tags — all roles (student cũng có thể xem tag)
     @GetMapping

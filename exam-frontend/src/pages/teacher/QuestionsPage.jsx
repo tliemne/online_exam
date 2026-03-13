@@ -5,6 +5,8 @@ import { useAuth } from '../../context/AuthContext'
 import ImportQuestionsModal from '../../components/teacher/questions/ImportQuestionsModal'
 import QuestionFormModal from '../../components/teacher/questions/QuestionFormModal'
 import QuestionPreviewModal from '../../components/teacher/questions/QuestionPreviewModal'
+import { useToast } from '../../context/ToastContext'
+import { useConfirm } from '../../components/common/ConfirmDialog'
 
 const TYPE_LABELS = { MULTIPLE_CHOICE: 'Trắc nghiệm', TRUE_FALSE: 'Đúng / Sai', ESSAY: 'Tự luận' }
 const TYPE_COLORS = { MULTIPLE_CHOICE: 'badge-blue', TRUE_FALSE: 'badge-cyan', ESSAY: 'badge-neutral' }
@@ -74,6 +76,8 @@ function QuestionCard({ question, globalIndex, isTeacherOrAdmin, onPreview, onEd
 }
 
 export default function QuestionsPage() {
+  const toast = useToast()
+  const [confirmDialog, ConfirmDialogUI] = useConfirm()
   const { hasRole } = useAuth()
   const isTeacherOrAdmin = hasRole('TEACHER') || hasRole('ADMIN')
 
@@ -132,13 +136,13 @@ export default function QuestionsPage() {
   useEffect(() => { loadQuestions() }, [loadQuestions])
 
   const handleDelete = async (q) => {
-    if (!confirm('Xóa câu hỏi này?')) return
+    if (!(await confirmDialog({ title: 'Xóa câu hỏi này?', message: 'Câu hỏi sẽ bị xóa khỏi tất cả đề thi.', danger: true, confirmLabel: 'Xóa' }))) return
     setDeleting(q.id)
     try {
       await questionApi.delete(q.id)
       loadQuestions()
     } catch (err) {
-      alert(err?.response?.data?.message || 'Có lỗi xảy ra khi xóa câu hỏi')
+      toast.error(err?.response?.data?.message || 'Có lỗi xảy ra khi xóa câu hỏi')
     } finally { setDeleting(null) }
   }
 
@@ -155,6 +159,8 @@ export default function QuestionsPage() {
   }
 
   return (
+    <>
+    {ConfirmDialogUI}
     <div className="max-w-6xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -305,5 +311,6 @@ export default function QuestionsPage() {
         <ImportQuestionsModal courseId={selectedCourse} onClose={() => setShowImport(false)} onImported={loadQuestions} />
       )}
     </div>
+    </>
   )
 }

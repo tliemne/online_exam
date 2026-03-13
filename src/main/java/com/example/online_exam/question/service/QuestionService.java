@@ -16,6 +16,7 @@ public interface QuestionService {
     QuestionResponse getById(Long id);
     List<QuestionResponse> getByCourse(Long courseId);
     List<QuestionResponse> search(Long courseId, QuestionType type, Difficulty difficulty, String keyword);
+    List<QuestionResponse> searchWithTag(Long courseId, QuestionType type, Difficulty difficulty, String keyword, Long tagId);
     Page<QuestionResponse> searchPaged(Long courseId, QuestionType type, Difficulty difficulty, String keyword, Pageable pageable);
     Page<QuestionResponse> searchPagedWithTag(Long courseId, QuestionType type, Difficulty difficulty, String keyword, Long tagId, Pageable pageable);
 }

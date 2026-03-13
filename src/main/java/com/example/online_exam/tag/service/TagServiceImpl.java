@@ -1,13 +1,17 @@
 package com.example.online_exam.tag.service;
 
+import com.example.online_exam.activitylog.entity.ActivityLogAction;
+import com.example.online_exam.activitylog.service.ActivityLogService;
 import com.example.online_exam.exception.AppException;
 import com.example.online_exam.exception.ErrorCode;
 import com.example.online_exam.question.entity.Question;
 import com.example.online_exam.question.repository.QuestionRepository;
+import com.example.online_exam.secutity.service.CurrentUserService;
 import com.example.online_exam.tag.dto.TagRequest;
 import com.example.online_exam.tag.dto.TagResponse;
 import com.example.online_exam.tag.entity.Tag;
 import com.example.online_exam.tag.repository.TagRepository;
+import com.example.online_exam.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,11 +27,12 @@ public class TagServiceImpl implements TagService {
 
     private final TagRepository tagRepo;
     private final QuestionRepository questionRepo;
+    private final CurrentUserService currentUserService;
+    private final ActivityLogService activityLogService;
 
     @Override
     @Transactional(readOnly = true)
     public List<TagResponse> getAll() {
-        // Dùng query thống kê để trả về count luôn
         List<Object[]> rows = tagRepo.countQuestionsByTag();
         return rows.stream().map(r -> {
             TagResponse res = new TagResponse();
@@ -43,11 +48,17 @@ public class TagServiceImpl implements TagService {
     public TagResponse create(TagRequest req) {
         if (tagRepo.existsByName(req.getName().trim()))
             throw new AppException(ErrorCode.TAG_ALREADY_EXISTS);
+
         Tag tag = new Tag();
         tag.setName(req.getName().trim());
         tag.setDescription(req.getDescription());
         tag.setColor(req.getColor() != null ? req.getColor() : "#6b7280");
         tag = tagRepo.save(tag);
+
+        User caller = currentUserService.requireCurrentUser();
+        activityLogService.logUser(caller, ActivityLogAction.CREATE_TAG,
+                "TAG", tag.getId(), "Tạo tag: " + tag.getName());
+
         return toResponse(tag, 0);
     }
 
@@ -57,11 +68,16 @@ public class TagServiceImpl implements TagService {
                 .orElseThrow(() -> new AppException(ErrorCode.INVALID_REQUEST));
         if (!tag.getName().equals(req.getName().trim()) && tagRepo.existsByName(req.getName().trim()))
             throw new AppException(ErrorCode.TAG_ALREADY_EXISTS);
+
         tag.setName(req.getName().trim());
         tag.setDescription(req.getDescription());
         if (req.getColor() != null) tag.setColor(req.getColor());
         tagRepo.save(tag);
-        // Dùng query để lấy count thay vì lazy load questions
+
+        User caller = currentUserService.requireCurrentUser();
+        activityLogService.logUser(caller, ActivityLogAction.UPDATE_TAG,
+                "TAG", id, "Cập nhật tag: " + tag.getName());
+
         List<Object[]> rows = tagRepo.countQuestionsByTag();
         long count = rows.stream()
                 .filter(r -> r[0].equals(tag.getId()))
@@ -74,9 +90,14 @@ public class TagServiceImpl implements TagService {
     public void delete(Long id) {
         Tag tag = tagRepo.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.INVALID_REQUEST));
-        // Gỡ tag khỏi tất cả câu hỏi trước
+
+        String tagName = tag.getName();
         tag.getQuestions().forEach(q -> q.getTags().remove(tag));
         tagRepo.delete(tag);
+
+        User caller = currentUserService.requireCurrentUser();
+        activityLogService.logUser(caller, ActivityLogAction.DELETE_TAG,
+                "TAG", id, "Xóa tag: " + tagName);
     }
 
     @Override

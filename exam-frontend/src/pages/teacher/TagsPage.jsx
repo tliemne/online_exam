@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { tagApi } from '../../api/services'
 import { useAuth } from '../../context/AuthContext'
+import { useToast } from '../../context/ToastContext'
+import { useConfirm } from '../../components/common/ConfirmDialog'
 
 // ── Preset colors ─────────────────────────────────────────
 const PRESET_COLORS = [
@@ -154,6 +156,8 @@ function TagCard({ tag, onEdit, onDelete, deleting }) {
 
 // ── Main Page ─────────────────────────────────────────────
 export default function TagsPage() {
+  const toast = useToast()
+  const [confirmDialog, ConfirmDialogUI] = useConfirm()
   const { hasRole } = useAuth()
   const isTeacherOrAdmin = hasRole('TEACHER') || hasRole('ADMIN')
 
@@ -175,13 +179,13 @@ export default function TagsPage() {
   useEffect(() => { loadTags() }, [])
 
   const handleDelete = async (tag) => {
-    if (!confirm(`Xóa tag "${tag.name}"? Tag sẽ bị gỡ khỏi tất cả câu hỏi.`)) return
+    if (!(await confirmDialog({ title: `Xóa tag "${tag.name}"?`, message: "Tag sẽ bị gỡ khỏi tất cả câu hỏi liên quan.", danger: true, confirmLabel: "Xóa" }))) return
     setDeleting(tag.id)
     try {
       await tagApi.delete(tag.id)
       loadTags()
     } catch (err) {
-      alert(err?.response?.data?.message || 'Có lỗi xảy ra khi xóa tag')
+      toast.error(err?.response?.data?.message || 'Có lỗi xảy ra khi xóa tag')
     } finally { setDeleting(null) }
   }
 
@@ -192,6 +196,8 @@ export default function TagsPage() {
   const totalQuestions = tags.reduce((s, t) => s + (t.questionCount ?? 0), 0)
 
   return (
+    <>
+    {ConfirmDialogUI}
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -249,7 +255,6 @@ export default function TagsPage() {
             <p className="text-[var(--text-2)]">Không tìm thấy tag nào khớp với "{keyword}".</p>
           ) : (
             <>
-              <div className="text-4xl mb-3">🏷️</div>
               <p className="text-[var(--text-2)]">Chưa có tag nào.{isTeacherOrAdmin && ' Hãy tạo tag để phân loại câu hỏi!'}</p>
               {isTeacherOrAdmin && (
                 <button onClick={() => { setSelected(null); setModal('create') }} className="btn-primary mt-4">
@@ -282,5 +287,6 @@ export default function TagsPage() {
         />
       )}
     </div>
+    </>
   )
 }
