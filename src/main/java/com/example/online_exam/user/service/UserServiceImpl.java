@@ -7,7 +7,7 @@ import com.example.online_exam.common.service.EmailService;
 import com.example.online_exam.course.entity.Course;
 import com.example.online_exam.attempt.repository.AttemptAnswerRepository;
 import com.example.online_exam.attempt.repository.AttemptRepository;
-import com.example.online_exam.auth.repository.RefreshTokenRepository;
+import com.example.online_exam.auth.repository.RedisRefreshTokenRepository;
 import com.example.online_exam.course.repository.CourseRepository;
 import com.example.online_exam.exam.repository.ExamRepository;
 import com.example.online_exam.exam.repository.ExamQuestionRepository;
@@ -59,7 +59,7 @@ public class UserServiceImpl implements UserService {
     private final CourseRepository courseRepository;
     private final AttemptAnswerRepository attemptAnswerRepository;
     private final AttemptRepository attemptRepository;
-    private final RefreshTokenRepository refreshTokenRepository;
+    private final RedisRefreshTokenRepository refreshTokenRepository;
     private final ExamRepository examRepository;
     private final LectureRepository lectureRepository;
     private final QuestionRepository questionRepository;
@@ -262,7 +262,7 @@ public class UserServiceImpl implements UserService {
         if (!userRepository.existsById(id)) {
             throw new AppException(ErrorCode.USER_NOT_FOUND);
         }
-        // 1. Xóa refresh token (native SQL)
+        // 1. Xóa refresh token trong Redis
         refreshTokenRepository.deleteByUserId(id);
         // 2a. Null hóa teacher_id trong courses nếu user là teacher
         courseRepository.nullifyTeacher(id);
