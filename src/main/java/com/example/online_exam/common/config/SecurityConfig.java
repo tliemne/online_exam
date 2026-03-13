@@ -1,4 +1,4 @@
-package com.example.online_exam.config;
+package com.example.online_exam.common.config;
 
 import com.example.online_exam.secutity.filter.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;

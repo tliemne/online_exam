@@ -1,4 +1,4 @@
-package com.example.online_exam.config;
+package com.example.online_exam.common.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
