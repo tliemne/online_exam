@@ -110,19 +110,6 @@ export default function ProfilePage() {
   const acc      = profile?.account
   const userRole = acc?.roles?.[0]
   const rm       = ROLE_META[userRole] || { label: userRole, color: 'var(--accent)', bg: 'var(--bg-elevated)' }
-  const CameraIcon = (
-  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-      d="M3 7h3l2-2h8l2 2h3v13H3V7z"/>
-    <circle cx="12" cy="13" r="4" strokeWidth="2"/>
-  </svg>
-)
-const PaletteIcon = (
-  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-      d="M12 3a9 9 0 100 18c1.5 0 2-.5 2-1.5S13.5 18 15 18h1a5 5 0 000-10h-1a2 2 0 01-2-2c0-1-.5-2-1-3z"/>
-  </svg>
-) 
 
   return (
     <div className="max-w-2xl mx-auto space-y-5">
@@ -139,9 +126,7 @@ const PaletteIcon = (
             {/* Upload ảnh */}
             <label className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-[var(--bg-surface)] text-white text-[10px] flex items-center justify-center cursor-pointer"
               style={{ background: avatarColor }} title="Đổi ảnh đại diện">
-              {uploading ? (
-                    <span className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"/>
-                  ) : CameraIcon}
+              {uploading ? <span className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"/> : '📷'}
               <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploading}/>
             </label>
             {/* Đổi màu nền (chỉ hiện khi chưa có ảnh) */}
@@ -149,7 +134,7 @@ const PaletteIcon = (
               <>
                 <button onClick={() => setShowColorPicker(p => !p)}
                   className="absolute -top-1 -right-1 w-5 h-5 rounded-full border border-[var(--bg-surface)] text-white text-[9px] flex items-center justify-center"
-                  style={{ background: 'var(--bg-elevated)', color: 'var(--text-2)' }} title="Đổi màu">{PaletteIcon}</button>
+                  style={{ background: 'var(--bg-elevated)', color: 'var(--text-2)' }} title="Đổi màu">🎨</button>
                 {showColorPicker && (
                   <div className="absolute top-full left-0 mt-2 p-2 rounded-xl border shadow-lg z-10 grid grid-cols-5 gap-1.5"
                     style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-base)' }}>
@@ -185,6 +170,7 @@ const PaletteIcon = (
             <Field label="Họ và tên" value={acc?.fullName} />
             <Field label="Email"     value={acc?.email} />
             <Field label="Trạng thái" value={acc?.status === 'ACTIVE' ? '✓ Hoạt động' : '✗ Bị khóa'} />
+            {isAdmin && <Field label="Mã Admin" value={acc?.adminCode} mono />}
             {isStudent && <>
               <Field label="Mã sinh viên" value={profile?.studentProfile?.studentCode} mono />
               <Field label="Lớp"          value={profile?.studentProfile?.className} />

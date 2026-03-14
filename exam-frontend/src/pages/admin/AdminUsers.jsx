@@ -357,7 +357,7 @@ export default function AdminUsers() {
               </thead>
               <tbody className="divide-y divide-[var(--border-subtle)]">
                 {paginated.map((u, idx) => { const globalIdx = page * PAGE_SIZE + idx;
-                  const code = u.studentProfile?.studentCode || u.teacherProfile?.teacherCode
+                  const code = u.studentProfile?.studentCode || u.teacherProfile?.teacherCode || u.adminCode
                   return (
                     <tr key={u.id} className="hover:bg-[var(--bg-elevated)]/30 transition-colors">
                       <td className="py-3 pr-4 text-xs text-[var(--text-3)] font-mono">{globalIdx + 1}</td>

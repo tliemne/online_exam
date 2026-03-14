@@ -23,6 +23,14 @@ public interface UserMapper {
                 .map(role -> role.getName().name())
                 .collect(Collectors.toSet()));
 
+        // Auto-gen adminCode nếu là ADMIN
+        boolean isAdmin = user.getRoles().stream()
+                .anyMatch(r -> r.getName().name().equals("ADMIN"));
+        if (isAdmin && user.getId() != null) {
+            response.setAdminCode(String.format("AD%d%04d",
+                    java.time.Year.now().getValue(), user.getId()));
+        }
+
         if (includeSensitive) {
             response.setEmail(user.getEmail());
             response.setStatus(user.getStatus());
