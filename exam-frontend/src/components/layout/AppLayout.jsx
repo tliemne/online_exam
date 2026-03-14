@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useSettings } from '../../context/SettingsContext'
+import { notifApi } from '../../api/services'
 
 // ── SVG Icons ─────────────────────────────────────────────
 const Icon = {
@@ -23,6 +24,7 @@ const Icon = {
   profile:     <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-[18px] h-[18px] shrink-0"><path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z"/></svg>,
   logs:        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-[18px] h-[18px] shrink-0"><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z"/></svg>,
   tags:        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-[18px] h-[18px] shrink-0"><path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z"/><path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z"/></svg>,
+  bell:        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-[18px] h-[18px] shrink-0"><path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/></svg>,
 }
 
 // ── Nav structure with groups ─────────────────────────────
@@ -164,6 +166,147 @@ function SideBtn({ onClick, icon, label, collapsed, danger }) {
   )
 }
 
+// ── Notification Bell ─────────────────────────────────────
+function NotificationBell() {
+  const navigate = useNavigate()
+  const [open, setOpen]           = useState(false)
+  const [notifications, setNotifs] = useState([])
+  const [unread, setUnread]        = useState(0)
+  const [loading, setLoading]      = useState(false)
+  const ref = useRef(null)
+
+  // Poll unread count mỗi 30 giây
+  useEffect(() => {
+    const fetchUnread = () => notifApi.getUnread().then(r => setUnread(r.data.data || 0)).catch(() => {})
+    fetchUnread()
+    const t = setInterval(fetchUnread, 30000)
+    return () => clearInterval(t)
+  }, [])
+
+  // Load notifications khi mở dropdown
+  useEffect(() => {
+    if (!open) return
+    setLoading(true)
+    notifApi.getAll(0, 15)
+      .then(r => {
+        const page = r.data.data || {}
+        setNotifs(page.notifications || [])
+        setUnread(page.unreadCount || 0)
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [open])
+
+  // Close khi click ngoài
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  const handleMarkRead = async (notif) => {
+    if (!notif.isRead) {
+      await notifApi.markRead(notif.id).catch(() => {})
+      setNotifs(prev => prev.map(n => n.id === notif.id ? { ...n, isRead: true } : n))
+      setUnread(u => Math.max(0, u - 1))
+    }
+    if (notif.link) { navigate(notif.link); setOpen(false) }
+  }
+
+  const handleMarkAllRead = async () => {
+    await notifApi.markAllRead().catch(() => {})
+    setNotifs(prev => prev.map(n => ({ ...n, isRead: true })))
+    setUnread(0)
+  }
+
+  const TYPE_COLOR = {
+    EXAM_PUBLISHED: '#22c55e',
+    ATTEMPT_GRADED: '#3b82f6',
+    ESSAY_GRADED:   '#8b5cf6',
+    SYSTEM:         '#6b7280',
+  }
+
+  const timeAgo = (dt) => {
+    if (!dt) return ''
+    const diff = Date.now() - new Date(dt).getTime()
+    const m = Math.floor(diff / 60000)
+    if (m < 1)  return 'Vừa xong'
+    if (m < 60) return `${m} phút trước`
+    const h = Math.floor(m / 60)
+    if (h < 24) return `${h} giờ trước`
+    return `${Math.floor(h / 24)} ngày trước`
+  }
+
+  return (
+    <div ref={ref} className="relative">
+      {/* Bell button */}
+      <button onClick={() => setOpen(p => !p)}
+        className="relative p-2 rounded-lg transition-colors"
+        style={{ color: 'var(--text-3)' }}
+        onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text-1)' }}
+        onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'var(--text-3)' }}>
+        {Icon.bell}
+        {unread > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold text-white"
+            style={{ background: '#ef4444' }}>
+            {unread > 9 ? '9+' : unread}
+          </span>
+        )}
+      </button>
+
+      {/* Dropdown */}
+      {open && (
+        <div className="absolute right-0 top-full mt-2 w-80 rounded-xl shadow-lg border overflow-hidden z-50"
+          style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-base)' }}>
+
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'var(--border-base)' }}>
+            <span className="text-sm font-semibold" style={{ color: 'var(--text-1)' }}>
+              Thông báo {unread > 0 && <span className="ml-1 text-xs px-1.5 py-0.5 rounded-full text-white" style={{ background: '#ef4444' }}>{unread}</span>}
+            </span>
+            {unread > 0 && (
+              <button onClick={handleMarkAllRead} className="text-xs" style={{ color: 'var(--accent)' }}>
+                Đọc tất cả
+              </button>
+            )}
+          </div>
+
+          {/* List */}
+          <div className="max-h-80 overflow-y-auto">
+            {loading ? (
+              <div className="flex justify-center py-8">
+                <div className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: 'var(--accent)' }}/>
+              </div>
+            ) : notifications.length === 0 ? (
+              <p className="text-center py-8 text-sm" style={{ color: 'var(--text-3)' }}>Chưa có thông báo</p>
+            ) : (
+              notifications.map(n => (
+                <div key={n.id} onClick={() => handleMarkRead(n)}
+                  className="flex gap-3 px-4 py-3 cursor-pointer transition-colors border-b last:border-0"
+                  style={{
+                    borderColor: 'var(--border-base)',
+                    background: n.isRead ? 'transparent' : 'var(--accent-subtle)',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = n.isRead ? 'transparent' : 'var(--accent-subtle)' }}>
+                  {/* Dot */}
+                  <div className="w-2 h-2 rounded-full mt-1.5 shrink-0"
+                    style={{ background: n.isRead ? 'var(--border-base)' : (TYPE_COLOR[n.type] || '#6b7280') }}/>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium leading-tight" style={{ color: 'var(--text-1)' }}>{n.title}</p>
+                    <p className="text-xs mt-0.5 line-clamp-2" style={{ color: 'var(--text-3)' }}>{n.message}</p>
+                    <p className="text-[10px] mt-1" style={{ color: 'var(--text-3)' }}>{timeAgo(n.createdAt)}</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function AppLayout({ children }) {
   const { user, logout }          = useAuth()
   const { theme, toggleTheme }    = useSettings()
@@ -251,7 +394,11 @@ export default function AppLayout({ children }) {
 
       {/* ── Main ── */}
       <main className="flex-1 overflow-auto">
-        <div className="min-h-screen px-8 py-7 animate-fade-in">
+        {/* Top bar với notification bell */}
+        <div className="flex justify-end px-8 pt-5 pb-0">
+          <NotificationBell />
+        </div>
+        <div className="min-h-screen px-8 py-4 animate-fade-in">
           {children}
         </div>
       </main>

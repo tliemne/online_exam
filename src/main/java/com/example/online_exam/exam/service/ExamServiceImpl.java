@@ -15,9 +15,10 @@ import com.example.online_exam.exception.AppException;
 import com.example.online_exam.exception.ErrorCode;
 import com.example.online_exam.question.entity.Question;
 import com.example.online_exam.question.repository.QuestionRepository;
-import com.example.online_exam.tag.repository.TagRepository;
+import com.example.online_exam.notification.service.NotificationService;
 import com.example.online_exam.common.service.EmailService;
 import com.example.online_exam.secutity.service.CurrentUserService;
+import com.example.online_exam.tag.repository.TagRepository;
 import com.example.online_exam.user.entity.User;
 import com.example.online_exam.user.enums.RoleName;
 import com.example.online_exam.user.repository.UserRepository;
@@ -41,7 +42,8 @@ public class ExamServiceImpl implements ExamService {
     private final ExamQuestionRepository examQRepo;
     private final CourseRepository       courseRepo;
     private final QuestionRepository     questionRepo;
-    private final TagRepository          tagRepository;
+    private final TagRepository tagRepository;
+    private final NotificationService    notificationService;
     private final UserRepository         userRepo;
     private final CurrentUserService     currentUserService;
     private final AttemptRepository      attemptRepo;
@@ -237,6 +239,7 @@ public class ExamServiceImpl implements ExamService {
 
         if (exam.getCourse() != null && exam.getCourse().getStudents() != null) {
             String courseName = exam.getCourse().getName();
+            String examLink   = "/student/exams";
             exam.getCourse().getStudents().forEach(student -> {
                 if (student.getEmail() != null) {
                     emailService.sendExamPublished(
@@ -245,6 +248,7 @@ public class ExamServiceImpl implements ExamService {
                             exam.getStartTime(), exam.getEndTime(),
                             exam.getDurationMinutes());
                 }
+                notificationService.examPublished(student, exam.getTitle(), examLink);
             });
         }
         return response;

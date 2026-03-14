@@ -107,3 +107,10 @@ export const tagApi = {
 export const adminApi = {
   getLogs: (params) => api.get('/admin/logs', { params }),
 }
+// ── NOTIFICATIONS ─────────────────────────────────────────
+export const notifApi = {
+  getAll:       (page = 0, size = 20) => api.get('/notifications', { params: { page, size } }),
+  getUnread:    ()                    => api.get('/notifications/unread-count'),
+  markRead:     (id)                  => api.patch(`/notifications/${id}/read`),
+  markAllRead:  ()                    => api.patch('/notifications/read-all'),
+}

@@ -45,6 +45,7 @@ public interface AttemptRepository extends JpaRepository<Attempt, Long> {
             "LEFT JOIN FETCH a.exam e " +
             "LEFT JOIN FETCH e.examQuestions eq " +
             "LEFT JOIN FETCH eq.question " +
+            "LEFT JOIN FETCH a.student " +
             "WHERE a.id = :id")
     Optional<Attempt> findByIdWithExam(@Param("id") Long id);
 

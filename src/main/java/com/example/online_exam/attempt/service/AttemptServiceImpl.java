@@ -13,6 +13,7 @@ import com.example.online_exam.question.entity.Answer;
 import com.example.online_exam.question.entity.Question;
 import com.example.online_exam.question.repository.QuestionRepository;
 import com.example.online_exam.question.service.QuestionStatService;
+import com.example.online_exam.notification.service.NotificationService;
 import com.example.online_exam.common.service.EmailService;
 import com.example.online_exam.secutity.service.CurrentUserService;
 import com.example.online_exam.user.entity.User;
@@ -44,6 +45,7 @@ public class AttemptServiceImpl implements AttemptService {
     private final CurrentUserService      currentUserService;
     private final EmailService            emailService;
     private final QuestionStatService     questionStatService;
+    private final NotificationService     notificationService;
 
     // ── Start Exam → tạo attempt IN_PROGRESS (hoặc trả lại nếu đã có) ─────
     @Override
@@ -125,13 +127,15 @@ public class AttemptServiceImpl implements AttemptService {
         Long attemptId = attempt.getId();
 
         // Bước 1: Xóa answers cũ bằng native DELETE
-        // clearAutomatically=true trên @Modifying → Hibernate tự clear L1 cache
         answerRepo.deleteByAttemptId(attemptId);
 
-        // Bước 2: Load lại attempt FRESH từ DB (answers list lúc này rỗng)
-        // → orphanRemoval sẽ không thấy gì để xóa thêm → không còn conflict
+        // Bước 2: Load lại attempt FRESH từ DB
         attempt = attemptRepo.findByIdWithExam(attemptId)
                 .orElseThrow(() -> new AppException(ErrorCode.ATTEMPT_NOT_FOUND));
+
+        // Lấy student từ attempt mới — tránh dùng proxy cũ đã detached
+        student = attempt.getStudent();
+        final Long studentId = student.getId();
 
         Exam exam = attempt.getExam();
         Map<Long, ExamQuestion> examQMap = exam.getExamQuestions().stream()
@@ -210,6 +214,12 @@ public class AttemptServiceImpl implements AttemptService {
                     attempt.getScore(), attempt.getTotalScore(), attempt.getPassed());
         }
 
+        // Thông báo kết quả cho student
+        if (autoGraded) {
+            notificationService.attemptGraded(student, exam.getTitle(),
+                    attempt.getScore(), attempt.getTotalScore());
+        }
+
         // Cập nhật QuestionStat async — không block response
         questionStatService.updateStats(savedAnswers);
 
@@ -272,6 +282,10 @@ public class AttemptServiceImpl implements AttemptService {
                     response.getExamTitle(), response.getCourseName(),
                     response.getScore(), response.getTotalScore(), response.getPassed());
         }
+        // Thông báo cho student khi tự luận được chấm
+        findAttempt(attemptId).getStudent();
+        Attempt graded = findAttempt(attemptId);
+        notificationService.essayGraded(graded.getStudent(), response.getExamTitle());
         return response;
     }
 
