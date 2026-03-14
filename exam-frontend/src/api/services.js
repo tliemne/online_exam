@@ -12,6 +12,11 @@ export const userApi = {
   register: (data) => api.post('/users/register', data),
   me: () => api.get('/users/me'),
   myProfile: () => api.get('/users/me/profile'),
+  updateMe: (data) => api.put('/users/me', data),
+  uploadAvatar: (file) => {
+    const fd = new FormData(); fd.append('file', file)
+    return api.post('/users/me/avatar', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+  },
   getAll: () => api.get('/users'),
   createUser: (data) => api.post('/users', data),
   getById: (id) => api.get(`/users/${id}`),

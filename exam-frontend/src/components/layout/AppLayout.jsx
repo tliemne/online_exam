@@ -223,6 +223,7 @@ function NotificationBell() {
     EXAM_PUBLISHED: '#22c55e',
     ATTEMPT_GRADED: '#3b82f6',
     ESSAY_GRADED:   '#8b5cf6',
+    ESSAY_PENDING:  '#f59e0b',
     SYSTEM:         '#6b7280',
   }
 
@@ -366,9 +367,11 @@ export default function AppLayout({ children }) {
             style={{ color: 'var(--text-2)' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text-1)' }}
             onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'var(--text-2)' }}>
-            <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-semibold"
+            <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-semibold overflow-hidden"
               style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-base)', color: 'var(--text-1)' }}>
-              {(user?.fullName || user?.username || '?')[0].toUpperCase()}
+              {user?.avatarUrl
+                ? <img src={user.avatarUrl} alt="avatar" className="w-full h-full object-cover"/>
+                : (user?.fullName || user?.username || '?')[0].toUpperCase()}
             </div>
             {!collapsed && (
               <div className="flex-1 min-w-0">

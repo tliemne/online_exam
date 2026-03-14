@@ -220,6 +220,12 @@ public class AttemptServiceImpl implements AttemptService {
                     attempt.getScore(), attempt.getTotalScore());
         }
 
+        // Thông báo cho teacher khi có bài tự luận cần chấm
+        if (hasEssay && exam.getCreatedBy() != null) {
+            notificationService.essayPendingGrade(
+                    exam.getCreatedBy(), exam.getTitle(), student.getFullName());
+        }
+
         // Cập nhật QuestionStat async — không block response
         questionStatService.updateStats(savedAnswers);
 

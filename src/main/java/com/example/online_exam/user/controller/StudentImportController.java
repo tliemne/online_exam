@@ -17,9 +17,9 @@ public class StudentImportController {
 
     private final StudentImportService studentImportService;
 
-    // Teacher import student — gắn vào lớp ngay (courseId bắt buộc với teacher)
+    // Chỉ ADMIN import student
     @PostMapping("/students/import")
-    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public BaseResponse<StudentImportResult> importStudents(
             @RequestParam("file") MultipartFile file,
             @RequestParam(required = false) Long courseId) {

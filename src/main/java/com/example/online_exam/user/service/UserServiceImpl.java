@@ -64,6 +64,7 @@ public class UserServiceImpl implements UserService {
     private final LectureRepository lectureRepository;
     private final QuestionRepository questionRepository;
     private final ExamQuestionRepository examQuestionRepository;
+    private final com.example.online_exam.activitylog.repository.ActivityLogRepository activityLogRepository;
 
     // Optional — null nếu spring-boot-starter-mail chưa được cấu hình
     @org.springframework.beans.factory.annotation.Autowired(required = false)
@@ -78,14 +79,16 @@ public class UserServiceImpl implements UserService {
         }
 
 
-        if (request.getEmail() != null &&
+        if (request.getEmail() != null && !request.getEmail().isBlank() &&
                 userRepository.existsByEmail(request.getEmail())) {
             throw new AppException(ErrorCode.EMAIL_EXISTS);
         }
 
         User user = new User();
         user.setUsername(request.getUsername());
-        user.setEmail(request.getEmail());
+        // Chỉ set email nếu không blank
+        user.setEmail(request.getEmail() != null && !request.getEmail().isBlank()
+                ? request.getEmail() : null);
         user.setFullName(request.getFullName());
 
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
@@ -197,20 +200,34 @@ public class UserServiceImpl implements UserService {
             throw new AppException(ErrorCode.EMAIL_EXISTS);
         }
 
-        if (request.getEmail() != null) {
-            user.setEmail(request.getEmail());
-        }
-
-        if (request.getFullName() != null) {
-            user.setFullName(request.getFullName());
-        }
-
-        if (request.getStatus() != null) {
-            user.setStatus(request.getStatus());
-        }
+        if (request.getEmail() != null) user.setEmail(request.getEmail());
+        if (request.getFullName() != null) user.setFullName(request.getFullName());
+        if (request.getStatus() != null) user.setStatus(request.getStatus());
 
         userRepository.save(user);
         return mapByVisibility(user);
+    }
+
+    /** User tự cập nhật fullName + email của mình (không đổi được status) */
+    public UserResponse updateMe(UserUpdateRequest request) {
+        User user = currentUserService.requireCurrentUser();
+
+        if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())
+                && userRepository.existsByEmail(request.getEmail())) {
+            throw new AppException(ErrorCode.EMAIL_EXISTS);
+        }
+
+        if (request.getEmail()   != null) user.setEmail(request.getEmail());
+        if (request.getFullName() != null) user.setFullName(request.getFullName());
+
+        userRepository.save(user);
+        return mapByVisibility(user);
+    }
+
+    public void updateAvatar(String avatarUrl) {
+        User user = currentUserService.requireCurrentUser();
+        user.setAvatarUrl(avatarUrl);
+        userRepository.save(user);
     }
 
     @Override
@@ -219,6 +236,15 @@ public class UserServiceImpl implements UserService {
         if (!currentUserService.hasRole(currentUser, RoleName.STUDENT)) {
             throw new AppException(ErrorCode.FORBIDDEN);
         }
+
+        // Cập nhật email + fullName trên bảng users
+        if (request.getEmail() != null && !request.getEmail().equals(currentUser.getEmail())) {
+            if (userRepository.existsByEmail(request.getEmail()))
+                throw new AppException(ErrorCode.EMAIL_EXISTS);
+            currentUser.setEmail(request.getEmail());
+        }
+        if (request.getFullName() != null) currentUser.setFullName(request.getFullName());
+        userRepository.save(currentUser);
 
         StudentProfile profile = studentProfileRepository.findByUserId(currentUser.getId())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
@@ -242,6 +268,15 @@ public class UserServiceImpl implements UserService {
             throw new AppException(ErrorCode.FORBIDDEN);
         }
 
+        // Cập nhật email + fullName trên bảng users
+        if (request.getEmail() != null && !request.getEmail().equals(currentUser.getEmail())) {
+            if (userRepository.existsByEmail(request.getEmail()))
+                throw new AppException(ErrorCode.EMAIL_EXISTS);
+            currentUser.setEmail(request.getEmail());
+        }
+        if (request.getFullName() != null) currentUser.setFullName(request.getFullName());
+        userRepository.save(currentUser);
+
         TeacherProfile profile = teacherProfileRepository.findByUserId(currentUser.getId())
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
@@ -261,6 +296,11 @@ public class UserServiceImpl implements UserService {
     public void delete(Long id) {
         if (!userRepository.existsById(id)) {
             throw new AppException(ErrorCode.USER_NOT_FOUND);
+        }
+        // Không cho xóa chính mình
+        User caller = currentUserService.requireCurrentUser();
+        if (caller.getId().equals(id)) {
+            throw new AppException(ErrorCode.CANNOT_DELETE_SELF);
         }
         // 1. Xóa refresh token trong Redis
         refreshTokenRepository.deleteByUserId(id);
@@ -284,7 +324,9 @@ public class UserServiceImpl implements UserService {
         // 7. Xóa profile
         studentProfileRepository.deleteByUserId(id);
         teacherProfileRepository.deleteByUserId(id);
-        // 8. Xóa user
+        // 8. Xóa activity logs
+        activityLogRepository.deleteByUserId(id);
+        // 9. Xóa user
         userRepository.deleteById(id);
     }
     private UserResponse mapByVisibility(User targetUser) {

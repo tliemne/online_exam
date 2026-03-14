@@ -44,7 +44,10 @@ public enum ErrorCode {
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error"),
 
     // ===== RATE LIMIT =====
-    TOO_MANY_LOGIN_ATTEMPTS(HttpStatus.TOO_MANY_REQUESTS, "Quá nhiều lần đăng nhập sai. Vui lòng thử lại sau.");
+    TOO_MANY_LOGIN_ATTEMPTS(HttpStatus.TOO_MANY_REQUESTS, "Quá nhiều lần đăng nhập sai. Vui lòng thử lại sau."),
+
+    // ===== USER =====
+    CANNOT_DELETE_SELF(HttpStatus.BAD_REQUEST, "Không thể xóa tài khoản đang đăng nhập.");
 
     private final HttpStatus status;
     private final String message;

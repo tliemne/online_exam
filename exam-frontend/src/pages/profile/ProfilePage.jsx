@@ -3,209 +3,285 @@ import { userApi } from '../../api/services'
 import { useAuth } from '../../context/AuthContext'
 import ChangePasswordModal from '../../components/common/ChangePasswordModal'
 
-const ROLE_MAP   = { ADMIN: 'Quản trị viên', TEACHER: 'Giảng viên', STUDENT: 'Sinh viên' }
-const ROLE_BADGE = { ADMIN: 'badge-red',      TEACHER: 'badge-cyan',  STUDENT: 'badge-green' }
+const ROLE_META = {
+  ADMIN:   { label: 'Quản trị viên', color: '#dc2626', bg: 'rgba(220,38,38,0.1)'  },
+  TEACHER: { label: 'Giảng viên',    color: '#0891b2', bg: 'rgba(8,145,178,0.1)'  },
+  STUDENT: { label: 'Sinh viên',     color: '#16a34a', bg: 'rgba(22,163,74,0.1)'  },
+}
+
+const AVATAR_COLORS = [
+  '#6366f1','#8b5cf6','#ec4899','#f43f5e',
+  '#f97316','#eab308','#22c55e','#14b8a6','#3b82f6','#0891b2',
+]
+
+function Avatar({ name, color, avatarUrl, size = 'w-20 h-20 text-2xl' }) {
+  if (avatarUrl) return (
+    <div className={`${size} rounded-2xl overflow-hidden shrink-0 border-2`}
+      style={{ borderColor: color + '44' }}>
+      <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover"/>
+    </div>
+  )
+  return (
+    <div className={`${size} rounded-2xl flex items-center justify-center font-bold shrink-0`}
+      style={{ background: color + '22', border: `2px solid ${color}44`, color }}>
+      {(name || '?')[0].toUpperCase()}
+    </div>
+  )
+}
 
 function Field({ label, value, mono }) {
   return (
     <div>
       <p className="input-label">{label}</p>
-      <p className={`text-sm text-[var(--text-1)] ${mono ? 'font-mono' : ''}`}>{value || '—'}</p>
+      <p className={`text-sm text-[var(--text-1)] mt-0.5 ${mono ? 'font-mono' : ''}`}>{value || '—'}</p>
     </div>
   )
 }
 
 export default function ProfilePage() {
-  const { user, hasRole } = useAuth()
-  const [profile, setProfile]       = useState(null)
-  const [loading, setLoading]       = useState(true)
-  const [editing, setEditing]       = useState(false)
-  const [form, setForm]             = useState({})
-  const [saving, setSaving]         = useState(false)
-  const [success, setSuccess]       = useState(false)
-  const [error, setError]           = useState('')
-  const [showChangePwd, setShowChangePwd] = useState(false)
+  const { hasRole, refreshUser } = useAuth()
+  const isStudent = hasRole('STUDENT')
+  const isTeacher = hasRole('TEACHER')
+  const isAdmin   = hasRole('ADMIN')
+
+  const [profile, setProfile] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [editing, setEditing] = useState(false)
+  const [form, setForm]       = useState({})
+  const [saving, setSaving]   = useState(false)
+  const [success, setSuccess] = useState('')
+  const [error, setError]     = useState('')
+  const [showChangePwd, setShowChangePwd]     = useState(false)
+  const [showColorPicker, setShowColorPicker] = useState(false)
+  const [avatarColor, setAvatarColor] = useState(
+    () => localStorage.getItem('avatarColor') || AVATAR_COLORS[0]
+  )
+  const [uploading, setUploading] = useState(false)
+
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setUploading(true)
+    try {
+      await userApi.uploadAvatar(file)
+      await loadProfile()
+      await refreshUser()  // cập nhật avatar trong sidebar luôn
+      showMsg('Cập nhật ảnh đại diện thành công')
+    } catch (err) {
+      setError(err.response?.data?.message || 'Upload thất bại')
+    } finally { setUploading(false) }
+  }
 
   const loadProfile = () =>
     userApi.myProfile().then(r => {
       const p = r.data.data
       setProfile(p)
-      const base = { email: p.account?.email || '' }
-      setForm(p.studentProfile ? { ...base, ...p.studentProfile }
-            : p.teacherProfile ? { ...base, ...p.teacherProfile }
-            : base)
+      // Gộp account + profile vào 1 form
+      setForm({
+        fullName: p.account?.fullName || '',
+        email:    p.account?.email    || '',
+        ...(p.studentProfile || p.teacherProfile || {}),
+      })
     })
 
   useEffect(() => { loadProfile().finally(() => setLoading(false)) }, [])
 
-  const handleSave = async (e) => {
-    e.preventDefault()
-    setSaving(true); setError('')
+  const showMsg = (msg) => { setSuccess(msg); setError(''); setTimeout(() => setSuccess(''), 3000) }
+
+    const handleSave = async (e) => {
+    e.preventDefault(); setSaving(true); setError('')
     try {
-      if (hasRole('STUDENT'))      await userApi.updateStudentProfile(form)
-      else if (hasRole('TEACHER')) await userApi.updateTeacherProfile(form)
-      await loadProfile()
-      setSuccess(true); setEditing(false)
-      setTimeout(() => setSuccess(false), 3000)
-    } catch (err) {
-      setError(err.response?.data?.message || 'Có lỗi xảy ra')
-    } finally { setSaving(false) }
+      if (isStudent)      await userApi.updateStudentProfile(form)
+      else if (isTeacher) await userApi.updateTeacherProfile(form)
+      else                await userApi.updateMe({ fullName: form.fullName, email: form.email })
+      await loadProfile(); setEditing(false); showMsg('Cập nhật thành công')
+    } catch (err) { setError(err.response?.data?.message || 'Có lỗi xảy ra') }
+    finally { setSaving(false) }
   }
 
+  const pickColor = (c) => { setAvatarColor(c); localStorage.setItem('avatarColor', c); setShowColorPicker(false) }
+
   if (loading) return (
-    <div className="flex justify-center py-16">
+    <div className="flex justify-center py-20">
       <div className="w-6 h-6 rounded-full border-2 border-accent border-t-transparent animate-spin"/>
     </div>
   )
 
   const acc      = profile?.account
   const userRole = acc?.roles?.[0]
+  const rm       = ROLE_META[userRole] || { label: userRole, color: 'var(--accent)', bg: 'var(--bg-elevated)' }
+  const CameraIcon = (
+  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      d="M3 7h3l2-2h8l2 2h3v13H3V7z"/>
+    <circle cx="12" cy="13" r="4" strokeWidth="2"/>
+  </svg>
+)
+const PaletteIcon = (
+  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      d="M12 3a9 9 0 100 18c1.5 0 2-.5 2-1.5S13.5 18 15 18h1a5 5 0 000-10h-1a2 2 0 01-2-2c0-1-.5-2-1-3z"/>
+  </svg>
+) 
 
   return (
-    <div className="max-w-2xl mx-auto space-y-4">
+    <div className="max-w-2xl mx-auto space-y-5">
       <h1 className="page-title">Hồ sơ cá nhân</h1>
 
-      {success && (
-        <div className="px-4 py-3 rounded-md bg-success/10 border border-success/20 text-success text-sm">
-          Cập nhật thành công
-        </div>
-      )}
-      {error && (
-        <div className="px-4 py-3 rounded-md bg-danger/10 border border-danger/20 text-danger text-sm">
-          {error}
-        </div>
-      )}
+      {success && <div className="px-4 py-3 rounded-lg bg-success/10 border border-success/20 text-success text-sm">✓ {success}</div>}
+      {error   && <div className="px-4 py-3 rounded-lg bg-danger/10  border border-danger/20  text-danger  text-sm">{error}</div>}
 
-      {/* Account */}
-      <div className="card">
-        <div className="px-5 py-4 border-b border-[var(--border-subtle)]">
-          <h2 className="section-title">Tài khoản</h2>
-        </div>
-        <div className="px-5 py-4">
-          <div className="flex items-center gap-4 mb-5">
-            <div className="w-12 h-12 rounded-xl bg-[var(--border-base)] border border-[var(--border-strong)]
-              flex items-center justify-center text-lg font-semibold text-[var(--text-1)] shrink-0">
-              {acc?.fullName?.[0]?.toUpperCase() || acc?.username?.[0]?.toUpperCase()}
-            </div>
-            <div>
-              <p className="text-base font-semibold text-[var(--text-1)]">{acc?.fullName || acc?.username}</p>
-              <span className={`${ROLE_BADGE[userRole] || 'badge-neutral'} mt-0.5`}>
-                {ROLE_MAP[userRole] || userRole}
-              </span>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-            <Field label="Username" value={acc?.username} mono />
-            <Field label="Email"    value={acc?.email} />
-            <Field label="Họ tên"   value={acc?.fullName} />
-            <Field label="Trạng thái" value={acc?.status === 'ACTIVE' ? 'Hoạt động' : 'Đã khóa'} />
-          </div>
-        </div>
-      </div>
-
-      {/* Profile chi tiết */}
-      {(hasRole('STUDENT') || hasRole('TEACHER')) && (
-        <div className="card">
-          <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--border-subtle)]">
-            <h2 className="section-title">
-              {hasRole('STUDENT') ? 'Thông tin sinh viên' : 'Thông tin giảng viên'}
-            </h2>
-            {!editing && (
-              <div className="flex gap-2">
-                <button onClick={() => setShowChangePwd(true)} className="btn-ghost text-sm py-1.5 px-3">
-                  Đổi mật khẩu
-                </button>
-                <button onClick={() => setEditing(true)} className="btn-secondary text-sm py-1.5">
-                  Chỉnh sửa
-                </button>
-              </div>
+      <div className="card p-6">
+        {/* Header: avatar + tên + role */}
+        <div className="flex items-start gap-5">
+          <div className="relative shrink-0">
+            <Avatar name={acc?.fullName || acc?.username} color={avatarColor} avatarUrl={acc?.avatarUrl} />
+            {/* Upload ảnh */}
+            <label className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-[var(--bg-surface)] text-white text-[10px] flex items-center justify-center cursor-pointer"
+              style={{ background: avatarColor }} title="Đổi ảnh đại diện">
+              {uploading ? (
+                    <span className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"/>
+                  ) : CameraIcon}
+              <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploading}/>
+            </label>
+            {/* Đổi màu nền (chỉ hiện khi chưa có ảnh) */}
+            {!acc?.avatarUrl && (
+              <>
+                <button onClick={() => setShowColorPicker(p => !p)}
+                  className="absolute -top-1 -right-1 w-5 h-5 rounded-full border border-[var(--bg-surface)] text-white text-[9px] flex items-center justify-center"
+                  style={{ background: 'var(--bg-elevated)', color: 'var(--text-2)' }} title="Đổi màu">{PaletteIcon}</button>
+                {showColorPicker && (
+                  <div className="absolute top-full left-0 mt-2 p-2 rounded-xl border shadow-lg z-10 grid grid-cols-5 gap-1.5"
+                    style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-base)' }}>
+                    {AVATAR_COLORS.map(c => (
+                      <button key={c} onClick={() => pickColor(c)}
+                        className="w-6 h-6 rounded-full hover:scale-110 transition-transform"
+                        style={{ background: c, outline: c === avatarColor ? `2px solid ${c}` : 'none', outlineOffset: 2 }}/>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
-
-          <div className="px-5 py-4">
-            {!editing ? (
-              <div className="grid grid-cols-2 gap-x-6 gap-y-4">
-                {hasRole('STUDENT') ? (<>
-                  <Field label="Mã sinh viên" value={profile?.studentProfile?.studentCode} mono />
-                  <Field label="Lớp"          value={profile?.studentProfile?.className} />
-                  <Field label="Điện thoại"   value={profile?.studentProfile?.phone} />
-                  <Field label="Ngày sinh"    value={profile?.studentProfile?.dateOfBirth} />
-                </>) : (<>
-                  <Field label="Mã giảng viên" value={profile?.teacherProfile?.teacherCode} mono />
-                  <Field label="Khoa"          value={profile?.teacherProfile?.department} />
-                  <Field label="Điện thoại"    value={profile?.teacherProfile?.phone} />
-                  <Field label="Chuyên ngành"  value={profile?.teacherProfile?.specialization} />
-                </>)}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
+              <div>
+                <h2 className="text-lg font-semibold text-[var(--text-1)]">{acc?.fullName || acc?.username}</h2>
+                <p className="text-sm text-[var(--text-3)] font-mono mt-0.5">@{acc?.username}</p>
+                <span className="inline-block mt-2 text-xs font-medium px-2.5 py-1 rounded-full"
+                  style={{ color: rm.color, background: rm.bg }}>{rm.label}</span>
               </div>
-            ) : (
-              <form onSubmit={handleSave} className="space-y-4">
-                <div>
-                  <label className="input-label">Email</label>
-                  <input type="email" className="input-field" value={form.email || ''}
-                    onChange={e => setForm({...form, email: e.target.value})} />
-                </div>
+              <div className="flex gap-2 shrink-0">
+                <button onClick={() => setShowChangePwd(true)} className="btn-ghost text-sm px-3 py-1.5">Đổi mật khẩu</button>
+                {!editing && <button onClick={() => setEditing(true)} className="btn-secondary text-sm py-1.5">Chỉnh sửa</button>}
+              </div>
+            </div>
+          </div>
+        </div>
 
-                {/* Mã SV/GV chỉ đọc */}
+        {/* View mode */}
+        {!editing && (
+          <div className="mt-5 pt-5 border-t border-[var(--border-base)] grid grid-cols-2 gap-x-6 gap-y-4">
+            <Field label="Họ và tên" value={acc?.fullName} />
+            <Field label="Email"     value={acc?.email} />
+            <Field label="Trạng thái" value={acc?.status === 'ACTIVE' ? '✓ Hoạt động' : '✗ Bị khóa'} />
+            {isStudent && <>
+              <Field label="Mã sinh viên" value={profile?.studentProfile?.studentCode} mono />
+              <Field label="Lớp"          value={profile?.studentProfile?.className} />
+              <Field label="Điện thoại"   value={profile?.studentProfile?.phone} />
+              <Field label="Ngày sinh"    value={profile?.studentProfile?.dateOfBirth} />
+            </>}
+            {isTeacher && <>
+              <Field label="Mã giảng viên" value={profile?.teacherProfile?.teacherCode} mono />
+              <Field label="Khoa"          value={profile?.teacherProfile?.department} />
+              <Field label="Điện thoại"    value={profile?.teacherProfile?.phone} />
+              <Field label="Chuyên ngành"  value={profile?.teacherProfile?.specialization} />
+            </>}
+          </div>
+        )}
+
+        {/* Edit mode — 1 form duy nhất */}
+        {editing && (
+          <form onSubmit={handleSave} className="mt-5 pt-5 border-t border-[var(--border-base)] space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="input-label">Họ và tên</label>
+                <input className="input-field" value={form.fullName || ''}
+                  onChange={e => setForm({...form, fullName: e.target.value})} />
+              </div>
+              <div>
+                <label className="input-label">Email</label>
+                <input type="email" className="input-field" value={form.email || ''}
+                  onChange={e => setForm({...form, email: e.target.value})} />
+              </div>
+            </div>
+
+            {/* Student fields */}
+            {isStudent && (
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="input-label">
-                    {hasRole('STUDENT') ? 'Mã sinh viên' : 'Mã giảng viên'}
-                  </label>
-                  <div className="input-field bg-[var(--bg-elevated)] cursor-not-allowed flex items-center justify-between">
-                    <span className="font-mono text-[var(--text-1)] text-sm">
-                      {hasRole('STUDENT') ? profile?.studentProfile?.studentCode : profile?.teacherProfile?.teacherCode || '—'}
-                    </span>
+                  <label className="input-label">Mã sinh viên</label>
+                  <div className="input-field bg-[var(--bg-elevated)] flex items-center justify-between cursor-not-allowed">
+                    <span className="font-mono text-sm">{profile?.studentProfile?.studentCode || '—'}</span>
                     <span className="text-xs text-[var(--text-3)]">Không thể thay đổi</span>
                   </div>
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  {hasRole('STUDENT') ? (<>
-                    <div>
-                      <label className="input-label">Lớp</label>
-                      <input className="input-field" value={form.className || ''}
-                        onChange={e => setForm({...form, className: e.target.value})} />
-                    </div>
-                    <div>
-                      <label className="input-label">Điện thoại</label>
-                      <input className="input-field" value={form.phone || ''}
-                        onChange={e => setForm({...form, phone: e.target.value})} />
-                    </div>
-                    <div>
-                      <label className="input-label">Ngày sinh</label>
-                      <input type="date" className="input-field"
-                        value={form.dateOfBirth ? form.dateOfBirth.split('T')[0] : ''}
-                        onChange={e => setForm({...form, dateOfBirth: e.target.value})} />
-                    </div>
-                  </>) : (<>
-                    <div>
-                      <label className="input-label">Khoa</label>
-                      <input className="input-field" value={form.department || ''}
-                        onChange={e => setForm({...form, department: e.target.value})} />
-                    </div>
-                    <div>
-                      <label className="input-label">Điện thoại</label>
-                      <input className="input-field" value={form.phone || ''}
-                        onChange={e => setForm({...form, phone: e.target.value})} />
-                    </div>
-                    <div>
-                      <label className="input-label">Chuyên ngành</label>
-                      <input className="input-field" value={form.specialization || ''}
-                        onChange={e => setForm({...form, specialization: e.target.value})} />
-                    </div>
-                  </>)}
+                <div>
+                  <label className="input-label">Lớp</label>
+                  <input className="input-field" value={form.className || ''}
+                    onChange={e => setForm({...form, className: e.target.value})} />
                 </div>
-
-                <div className="flex gap-3 pt-2">
-                  <button type="submit" disabled={saving} className="btn-primary">
-                    {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
-                  </button>
-                  <button type="button" onClick={() => setEditing(false)} className="btn-secondary">Hủy</button>
+                <div>
+                  <label className="input-label">Điện thoại</label>
+                  <input className="input-field" value={form.phone || ''}
+                    onChange={e => setForm({...form, phone: e.target.value})} />
                 </div>
-              </form>
+                <div>
+                  <label className="input-label">Ngày sinh</label>
+                  <input type="date" className="input-field"
+                    value={form.dateOfBirth ? form.dateOfBirth.split('T')[0] : ''}
+                    onChange={e => setForm({...form, dateOfBirth: e.target.value})} />
+                </div>
+              </div>
             )}
-          </div>
-        </div>
-      )}
+
+            {/* Teacher fields */}
+            {isTeacher && (
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="input-label">Mã giảng viên</label>
+                  <div className="input-field bg-[var(--bg-elevated)] flex items-center justify-between cursor-not-allowed">
+                    <span className="font-mono text-sm">{profile?.teacherProfile?.teacherCode || '—'}</span>
+                    <span className="text-xs text-[var(--text-3)]">Không thể thay đổi</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="input-label">Khoa</label>
+                  <input className="input-field" value={form.department || ''}
+                    onChange={e => setForm({...form, department: e.target.value})} />
+                </div>
+                <div>
+                  <label className="input-label">Điện thoại</label>
+                  <input className="input-field" value={form.phone || ''}
+                    onChange={e => setForm({...form, phone: e.target.value})} />
+                </div>
+                <div>
+                  <label className="input-label">Chuyên ngành</label>
+                  <input className="input-field" value={form.specialization || ''}
+                    onChange={e => setForm({...form, specialization: e.target.value})} />
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button type="submit" disabled={saving} className="btn-primary text-sm">
+                {saving ? 'Đang lưu...' : 'Lưu thay đổi'}
+              </button>
+              <button type="button" onClick={() => setEditing(false)} className="btn-secondary text-sm">Hủy</button>
+            </div>
+          </form>
+        )}
+      </div>
 
       {showChangePwd && <ChangePasswordModal onClose={() => setShowChangePwd(false)} />}
     </div>

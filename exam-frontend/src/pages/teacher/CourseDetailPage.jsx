@@ -252,7 +252,7 @@ function AddLectureModal({ onClose, onSaved, lecture }) {
 }
 
 // ── Tab: Students ─────────────────────────────────────────
-function TabStudents({ course, isTeacher, onRefresh }) {
+function TabStudents({ course, isTeacher, isAdmin, onRefresh }) {
   const toast = useToast()
   const [confirmDialog, ConfirmDialogUI] = useConfirm()
   const [students, setStudents] = useState([])
@@ -316,10 +316,12 @@ function TabStudents({ course, isTeacher, onRefresh }) {
         </div>
         {isTeacher && (
           <div className="flex gap-2 shrink-0">
-            <button onClick={() => setShowCreateStudent(true)}
-              className="btn-secondary flex items-center gap-1.5 text-sm">
-              ✚ Tạo tài khoản
-            </button>
+            {isAdmin && (
+              <button onClick={() => setShowCreateStudent(true)}
+                className="btn-secondary flex items-center gap-1.5 text-sm">
+                ✚ Tạo tài khoản
+              </button>
+            )}
             <button onClick={() => setShowAdd(true)} className="btn-primary flex items-center gap-2">
               {Icon.plus} Thêm sinh viên có sẵn
             </button>
@@ -337,7 +339,9 @@ function TabStudents({ course, isTeacher, onRefresh }) {
           <p className="text-[var(--text-2)] text-sm">{search ? 'Không tìm thấy' : 'Chưa có sinh viên nào trong lớp'}</p>
           {isTeacher && !search && (
             <div className="flex gap-2 justify-center mt-4">
-              <button onClick={() => setShowCreateStudent(true)} className="btn-secondary text-sm">✚ Tạo tài khoản</button>
+              {isAdmin && (
+                <button onClick={() => setShowCreateStudent(true)} className="btn-secondary text-sm">✚ Tạo tài khoản</button>
+              )}
               <button onClick={() => setShowAdd(true)} className="btn-primary">{Icon.plus} Thêm sinh viên có sẵn</button>
             </div>
           )}
@@ -382,11 +386,13 @@ function TabStudents({ course, isTeacher, onRefresh }) {
                   {isTeacher && (
                     <td className="px-6 py-4.5">
                       <div className="flex items-center gap-1">
-                        <button onClick={() => setResetTarget(s)}
-                          className="btn-ghost p-1.5 text-[var(--text-3)] hover:text-yellow-400 hover:bg-yellow-400/10"
-                          title="Reset mật khẩu">
-                          
-                        </button>
+                        {isAdmin && (
+                          <button onClick={() => setResetTarget(s)}
+                            className="btn-ghost p-1.5 text-[var(--text-3)] hover:text-yellow-400 hover:bg-yellow-400/10"
+                            title="Reset mật khẩu">
+                            🔑
+                          </button>
+                        )}
                         <button onClick={() => handleRemove(s.id)} disabled={removing === s.id}
                           className="btn-ghost p-1.5 text-[var(--text-3)] hover:text-danger hover:bg-danger/10">
                           {removing === s.id
@@ -596,6 +602,7 @@ export default function CourseDetailPage() {
   const [confirmDialog, ConfirmDialogUI] = useConfirm()
   const { hasRole } = useAuth()
   const isTeacher = hasRole('TEACHER') || hasRole('ADMIN')
+  const isAdmin   = hasRole('ADMIN')
 
   const [course, setCourse] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -674,7 +681,7 @@ export default function CourseDetailPage() {
 
       {/* Tab Content */}
       <div className="animate-fade-in">
-        {tab === 'students' && <TabStudents course={course} isTeacher={isTeacher} onRefresh={loadCourse} />}
+        {tab === 'students' && <TabStudents course={course} isTeacher={isTeacher} isAdmin={isAdmin} onRefresh={loadCourse} />}
         {tab === 'lectures' && <TabLectures course={course} isTeacher={isTeacher} />}
         {tab === 'exams'    && <TabExams    course={course} isTeacher={isTeacher} />}
       </div>

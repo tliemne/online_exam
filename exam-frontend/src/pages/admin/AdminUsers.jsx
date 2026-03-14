@@ -3,6 +3,7 @@ import { userApi } from '../../api/services'
 import api from '../../api/client'
 import ResetPasswordModal from '../../components/common/ResetPasswordModal'
 import Pagination from '../../components/common/Pagination'
+import { useAuth } from '../../context/AuthContext'
 
 const ROLE_TABS = [
   { key: 'ALL',     label: 'Tất cả' },
@@ -160,8 +161,8 @@ function CreateUserModal({ onClose, onCreated }) {
             <div className="flex gap-2">
               {[
                 { v: 'TEACHER', label: 'Giảng viên', cls: 'border-info/40 bg-info/10 text-info' },
-                { v: 'STUDENT', label: 'Sinh viên',  cls: 'border-success/40 bg-success/t/10 text-success' },
-                { v: 'ADMIN',   label: 'Admin',       cls: 'border-danger/40 bg-danger/100 text-danger' },
+                { v: 'STUDENT', label: 'Sinh viên',  cls: 'border-info/40 bg-info/10 text-info' },
+                { v: 'ADMIN',   label: 'Admin',       cls: 'border-info/40 bg-info/10 text-info' },
               ].map(opt => (
                 <button key={opt.v} type="button"
                   onClick={() => setForm(p => ({ ...p, role: opt.v }))}
@@ -243,6 +244,7 @@ function CreateUserModal({ onClose, onCreated }) {
 // ── Main page ─────────────────────────────────────────────
 
 export default function AdminUsers() {
+  const { user: currentUser } = useAuth()
   const [users, setUsers]       = useState([])
   const [loading, setLoading]   = useState(true)
   const [search, setSearch]     = useState('')
@@ -401,10 +403,12 @@ export default function AdminUsers() {
                             className="btn-ghost text-[var(--text-3)] hover:text-accent hover:bg-accent/10 px-2 py-1 text-xs">
                             🔑 Reset
                           </button>
-                          <button onClick={() => handleDelete(u.id)} disabled={deleting === u.id}
-                            className="btn-ghost text-danger/70 hover:text-danger hover:bg-danger/8 px-2 py-1 text-xs">
-                            {deleting === u.id ? '...' : 'Xóa'}
-                          </button>
+                          {u.id !== currentUser?.id && (
+                            <button onClick={() => handleDelete(u.id)} disabled={deleting === u.id}
+                              className="btn-ghost text-danger/70 hover:text-danger hover:bg-danger/8 px-2 py-1 text-xs">
+                              {deleting === u.id ? '...' : 'Xóa'}
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

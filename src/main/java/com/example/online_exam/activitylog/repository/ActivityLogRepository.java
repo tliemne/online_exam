@@ -17,4 +17,9 @@ public interface ActivityLogRepository
     @Modifying
     @Query("DELETE FROM ActivityLog a WHERE a.createdAt < :cutoff")
     int deleteOlderThan(@Param("cutoff") LocalDateTime cutoff);
+
+    // Xóa toàn bộ log của 1 user — dùng khi xóa tài khoản
+    @Modifying
+    @Query("DELETE FROM ActivityLog a WHERE a.user.id = :userId")
+    void deleteByUserId(@Param("userId") Long userId);
 }

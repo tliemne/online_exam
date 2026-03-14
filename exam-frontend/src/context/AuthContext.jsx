@@ -44,6 +44,13 @@ export function AuthProvider({ children }) {
     setUser(null)
   }
 
+  const refreshUser = async () => {
+    try {
+      const res = await userApi.me()
+      setUser(res.data.data)
+    } catch {}
+  }
+
   // Hỗ trợ cả 2 dạng roles: ["ADMIN"] và [{name:"ADMIN"}]
   const hasRole = (role) => {
     if (!user?.roles) return false
@@ -51,7 +58,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, hasRole }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, hasRole, refreshUser }}>
       {children}
     </AuthContext.Provider>
   )

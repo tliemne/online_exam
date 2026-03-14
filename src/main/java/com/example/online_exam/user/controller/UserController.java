@@ -27,9 +27,16 @@ import org.springframework.security.core.AuthenticatedPrincipal;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/users")
@@ -86,6 +93,45 @@ public class UserController {
                 .data(userService.getMyProfile())
                 .timestamp(LocalDateTime.now())
                 .build();
+    }
+
+    // User tự cập nhật fullName + email
+    @PutMapping("/me")
+    public BaseResponse<UserResponse> updateMe(@Validated @RequestBody UserUpdateRequest request) {
+        return BaseResponse.<UserResponse>builder()
+                .status(200).message("Cập nhật thành công")
+                .data(userService.updateMe(request))
+                .timestamp(LocalDateTime.now()).build();
+    }
+
+    // Upload avatar
+    @PostMapping("/me/avatar")
+    public BaseResponse<String> uploadAvatar(@RequestParam("file") MultipartFile file) {
+        // Validate
+        String ct = file.getContentType();
+        if (ct == null || !ct.startsWith("image/"))
+            return BaseResponse.<String>builder().status(400).message("Chỉ chấp nhận file ảnh").timestamp(LocalDateTime.now()).build();
+        if (file.getSize() > 2 * 1024 * 1024)
+            return BaseResponse.<String>builder().status(400).message("Ảnh tối đa 2MB").timestamp(LocalDateTime.now()).build();
+
+        try {
+            String ext      = file.getOriginalFilename() != null
+                    ? file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf('.'))
+                    : ".jpg";
+            String fileName = UUID.randomUUID() + ext;
+            Path   uploadDir = Paths.get("uploads/avatars");
+            Files.createDirectories(uploadDir);
+            Files.copy(file.getInputStream(), uploadDir.resolve(fileName), StandardCopyOption.REPLACE_EXISTING);
+
+            String avatarUrl = "/uploads/avatars/" + fileName;
+            userService.updateAvatar(avatarUrl);
+
+            return BaseResponse.<String>builder()
+                    .status(200).message("Upload thành công")
+                    .data(avatarUrl).timestamp(LocalDateTime.now()).build();
+        } catch (IOException e) {
+            return BaseResponse.<String>builder().status(500).message("Lỗi upload file").timestamp(LocalDateTime.now()).build();
+        }
     }
 
     @PreAuthorize("hasRole('STUDENT')")
@@ -153,9 +199,9 @@ public class UserController {
                 .timestamp(LocalDateTime.now())
                 .build();
     }
-    // Teacher tạo tài khoản student (+ gắn vào lớp ngay nếu có courseId)
+    // Chỉ ADMIN tạo tài khoản student
     @PostMapping("/students")
-    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public BaseResponse<CreateStudentResult> createStudent(@Validated @RequestBody CreateStudentRequest request) {
         return BaseResponse.<CreateStudentResult>builder()
                 .status(200).message("Tạo tài khoản sinh viên thành công")
@@ -186,10 +232,9 @@ public class UserController {
                 .timestamp(LocalDateTime.now()).build();
     }
 
-    // Admin reset mật khẩu cho bất kỳ user nào
-    // Teacher reset mật khẩu cho student (chỉ STUDENT, không reset được ADMIN/TEACHER khác)
+    // Chỉ ADMIN reset mật khẩu
     @PutMapping("/{id}/reset-password")
-    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    @PreAuthorize("hasRole('ADMIN')")
     public BaseResponse<Void> resetPassword(@PathVariable Long id,
                                             @Validated @RequestBody ChangePasswordRequest request) {
         userService.resetPassword(id, request.getNewPassword());

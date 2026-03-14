@@ -18,6 +18,7 @@ public interface UserMapper {
 
         response.setUsername(user.getUsername());
         response.setFullName(user.getFullName());
+        response.setAvatarUrl(user.getAvatarUrl());
         response.setRoles(user.getRoles().stream()
                 .map(role -> role.getName().name())
                 .collect(Collectors.toSet()));

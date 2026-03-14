@@ -27,6 +27,8 @@ public interface UserService {
     MyProfileResponse getMyProfile();
 
     UserResponse update(Long id, UserUpdateRequest request);
+    UserResponse updateMe(UserUpdateRequest request);
+    void updateAvatar(String avatarUrl);
 
     StudentProfileResponse updateMyStudentProfile(StudentProfileUpdateRequest request);
 

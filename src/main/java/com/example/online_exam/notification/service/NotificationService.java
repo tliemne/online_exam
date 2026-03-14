@@ -64,6 +64,13 @@ public class NotificationService {
                 "/student/results");
     }
 
+    public void essayPendingGrade(User teacher, String examTitle, String studentName) {
+        sendById(teacher.getId(), "ESSAY_PENDING",
+                "Bài tự luận cần chấm: " + examTitle,
+                studentName + " vừa nộp bài có câu tự luận. Hãy vào chấm điểm!",
+                "/teacher/grading");
+    }
+
     // ── Query ─────────────────────────────────────────────────────────────
     @Transactional(readOnly = true)
     public NotificationResponse.Page getMyNotifications(int page, int size) {
