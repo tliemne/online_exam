@@ -70,6 +70,7 @@ function getNavItems(role) {
   // STUDENT — flat list
   return [
     { to: '/student',           label: 'Tổng quan',  end: true, icon: Icon.dashboard   },
+    { to: '/student/courses',   label: 'Lớp học',               icon: Icon.courses     },
     { to: '/student/exams',     label: 'Bài thi',               icon: Icon.exams        },
     { to: '/student/results',   label: 'Kết quả',               icon: Icon.results      },
     { to: '/student/schedule',  label: 'Lịch thi',              icon: Icon.schedule     },

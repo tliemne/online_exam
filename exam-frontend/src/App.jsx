@@ -18,6 +18,7 @@ import ProfilePage from './pages/profile/ProfilePage'
 
 
 import StudentDashboard from './pages/student/StudentDashboard'
+import StudentCoursesPage from './pages/student/StudentCoursesPage'
 
 
 import QuestionsPage from './pages/teacher/QuestionsPage'
@@ -89,6 +90,7 @@ export default function App() {
           <Route path="/student/schedule" element={<ProtectedRoute roles={['STUDENT']}><WithLayout><StudentSchedulePage /></WithLayout></ProtectedRoute>} />
           <Route path="/student/rankings" element={<ProtectedRoute roles={['STUDENT']}><WithLayout><StudentRankingsPage /></WithLayout></ProtectedRoute>} />
           <Route path="/student/exams/:examId/leaderboard" element={<ProtectedRoute roles={['STUDENT','TEACHER','ADMIN']}><WithLayout><ExamLeaderboardPage /></WithLayout></ProtectedRoute>} />
+          <Route path="/student/courses" element={<ProtectedRoute roles={['STUDENT']}><WithLayout><StudentCoursesPage /></WithLayout></ProtectedRoute>} />
           <Route path="/student/courses/:id" element={<ProtectedRoute roles={['STUDENT']}><WithLayout><CourseDetailPage /></WithLayout></ProtectedRoute>} />
 
           {/* profile */}  
