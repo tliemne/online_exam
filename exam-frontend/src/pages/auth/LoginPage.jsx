@@ -20,12 +20,19 @@ export default function LoginPage() {
   const navigate     = useNavigate()
   const [form, setForm]       = useState({ username: '', password: '' })
   const [error, setError]     = useState('')
+  const [blocked, setBlocked] = useState(false)
   const [loading, setLoading] = useState(false)
   const [showPass, setShowPass] = useState(false)
 
+  // Reset trạng thái block khi user đổi username
+  const handleUsernameChange = (e) => {
+    setForm({ ...form, username: e.target.value })
+    if (blocked) { setBlocked(false); setError('') }
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
-    setError(''); setLoading(true)
+    setError(''); setBlocked(false); setLoading(true)
     try {
       const user = await login(form.username, form.password)
       const roles = user?.roles || []
@@ -33,7 +40,14 @@ export default function LoginPage() {
       else if (roles.some(r => getRole(r) === 'TEACHER')) navigate('/teacher')
       else navigate('/student')
     } catch (err) {
-      setError(err.response?.data?.message || 'Sai tài khoản hoặc mật khẩu')
+      const status  = err.response?.status
+      const message = err.response?.data?.message
+      if (status === 429) {
+        setBlocked(true)
+        setError(message || 'Tài khoản tạm bị khóa. Vui lòng thử lại sau.')
+      } else {
+        setError('Sai tên đăng nhập hoặc mật khẩu.')
+      }
     } finally { setLoading(false) }
   }
 
@@ -58,7 +72,19 @@ export default function LoginPage() {
           <h2 className="font-display font-semibold text-base text-[var(--text-1)] mb-5">Đăng nhập</h2>
 
           {error && (
-            <div className="mb-4 px-3 py-2.5 rounded-md bg-danger/8 border border-danger/20 text-danger text-sm">
+            <div className={`mb-4 px-3 py-2.5 rounded-md border text-sm ${
+              blocked
+                ? 'bg-orange-500/10 border-orange-500/30 text-orange-400'
+                : 'bg-danger/8 border-danger/20 text-danger'
+            }`}>
+              {blocked && (
+                <div className="flex items-center gap-2 mb-1">
+                  <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
+                  </svg>
+                  <span className="font-medium">Tài khoản tạm bị khóa</span>
+                </div>
+              )}
               {error}
             </div>
           )}
@@ -66,8 +92,8 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="input-label">Tên đăng nhập</label>
-              <input className="input-field" placeholder="username"
-                value={form.username} onChange={e => setForm({...form, username: e.target.value})}
+              <input className="input-field" placeholder="Tên đăng nhập"
+                value={form.username} onChange={handleUsernameChange}
                 autoFocus required autoComplete="username"/>
             </div>
             <div>

@@ -3,6 +3,7 @@ package com.example.online_exam.question.repository;
 import com.example.online_exam.question.entity.Question;
 import com.example.online_exam.question.enums.Difficulty;
 import com.example.online_exam.question.enums.QuestionType;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -93,4 +94,19 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     @Query("DELETE FROM Question q WHERE q.createdBy.id = :userId")
     void deleteByCreatedById(@Param("userId") Long userId);
     java.util.List<com.example.online_exam.question.entity.Question> findByCreatedById(Long userId);
+
+    /** Random câu hỏi theo tag + course, tuỳ chọn lọc difficulty */
+    @Query("""
+        SELECT q FROM Question q JOIN q.tags t
+        WHERE q.course.id = :courseId
+          AND t.id = :tagId
+          AND (:difficulty IS NULL OR q.difficulty = :difficulty)
+        ORDER BY FUNCTION('RAND')
+    """)
+    List<Question> findRandomByTag(
+            @Param("courseId")   Long courseId,
+            @Param("tagId")      Long tagId,
+            @Param("difficulty") Difficulty difficulty,
+            Pageable pageable
+    );
 }

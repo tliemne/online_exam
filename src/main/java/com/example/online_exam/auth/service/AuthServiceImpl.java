@@ -18,25 +18,37 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
-    private final UserRepository            userRepository;
-    private final PasswordEncoder           passwordEncoder;
-    private final JwtService                jwtService;
+    private final UserRepository              userRepository;
+    private final PasswordEncoder             passwordEncoder;
+    private final JwtService                  jwtService;
     private final RedisRefreshTokenRepository redisTokenRepo;
-    private final ActivityLogService        activityLogService;
+    private final ActivityLogService          activityLogService;
+    private final LoginRateLimiter            rateLimiter;
 
     @Override
     public AuthResponse login(LoginRequest request) {
-        User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        // 1. Kiểm tra block trước
+        rateLimiter.checkBlocked(request.getUsername());
 
+        // 2. Tìm user
+        User user = userRepository.findByUsername(request.getUsername())
+                .orElseGet(() -> {
+                    rateLimiter.recordFailure(request.getUsername());
+                    throw new AppException(ErrorCode.USER_NOT_FOUND);
+                });
+
+        // 3. Kiểm tra password
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+            rateLimiter.recordFailure(request.getUsername());
             throw new AppException(ErrorCode.INVALID_PASSWORD);
         }
+
+        // 4. Thành công — xóa counter
+        rateLimiter.recordSuccess(request.getUsername());
 
         String accessToken  = jwtService.generateAccessToken(user);
         String refreshToken = jwtService.generateRefreshToken(user);
 
-        // Lưu vào Redis với TTL tự động — không cần cleanup job
         redisTokenRepo.save(refreshToken, user.getId());
 
         activityLogService.logUser(user, ActivityLogAction.LOGIN,

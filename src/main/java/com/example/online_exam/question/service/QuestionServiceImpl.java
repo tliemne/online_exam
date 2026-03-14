@@ -26,10 +26,12 @@ import com.example.online_exam.user.entity.User;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -43,6 +45,7 @@ public class QuestionServiceImpl implements QuestionService {
     private final ExamQuestionRepository examQuestionRepo;
     private final TagRepository tagRepository;
     private final ActivityLogService activityLogService;
+    private final QuestionCacheService cache;
 
     @Override
     public QuestionResponse create(QuestionRequest request) {
@@ -74,6 +77,7 @@ public class QuestionServiceImpl implements QuestionService {
                 "Tạo câu hỏi trong lớp: " + course.getName()
         );
 
+        cache.evictByCourse(course.getId());
         return resp;
     }
 
@@ -118,6 +122,7 @@ public class QuestionServiceImpl implements QuestionService {
                 "Cập nhật câu hỏi #" + id
         );
 
+        cache.evictByCourse(question.getCourse().getId());
         return resp;
     }
 
@@ -135,6 +140,7 @@ public class QuestionServiceImpl implements QuestionService {
 
         attemptAnswerRepo.nullifySelectedAnswerByQuestionId(id);
 
+        Long courseId = question.getCourse().getId();
         questionRepository.deleteById(id);
 
         User caller = currentUserService.requireCurrentUser();
@@ -146,6 +152,8 @@ public class QuestionServiceImpl implements QuestionService {
                 id,
                 "Xóa câu hỏi #" + id
         );
+
+        cache.evictByCourse(courseId);
     }
 
     @Override
@@ -170,11 +178,14 @@ public class QuestionServiceImpl implements QuestionService {
                                          QuestionType type,
                                          Difficulty difficulty,
                                          String keyword) {
+        String key = cache.listKey(courseId, type, difficulty, keyword, null);
+        Optional<List<QuestionResponse>> cached = cache.getList(key);
+        if (cached.isPresent()) return cached.get();
 
-        return questionRepository.search(courseId, type, difficulty, keyword)
-                .stream()
-                .map(this::toResponse)
-                .toList();
+        List<QuestionResponse> result = questionRepository.search(courseId, type, difficulty, keyword)
+                .stream().map(this::toResponse).toList();
+        cache.putList(key, courseId, result);
+        return result;
     }
 
     @Override
@@ -183,9 +194,18 @@ public class QuestionServiceImpl implements QuestionService {
                                               Difficulty difficulty,
                                               String keyword,
                                               Pageable pageable) {
+        String key = cache.pagedKey(courseId, type, difficulty, keyword, null, pageable.getPageNumber(), pageable.getPageSize());
+        Optional<List<QuestionResponse>> cached = cache.getList(key);
+        if (cached.isPresent()) {
+            // Rebuild Page từ cached content — count vẫn phải query nhưng content không cần
+            Page<Question> countPage = questionRepository.searchPaged(courseId, type, difficulty, keyword, pageable);
+            return new PageImpl<>(cached.get(), pageable, countPage.getTotalElements());
+        }
 
-        return questionRepository.searchPaged(courseId, type, difficulty, keyword, pageable)
+        Page<QuestionResponse> result = questionRepository.searchPaged(courseId, type, difficulty, keyword, pageable)
                 .map(this::toResponse);
+        cache.putPaged(key, courseId, result.getContent());
+        return result;
     }
 
     @Override
@@ -194,18 +214,20 @@ public class QuestionServiceImpl implements QuestionService {
                                                 Difficulty difficulty,
                                                 String keyword,
                                                 Long tagId) {
+        String key = cache.listKey(courseId, type, difficulty, keyword, tagId);
+        Optional<List<QuestionResponse>> cached = cache.getList(key);
+        if (cached.isPresent()) return cached.get();
 
+        List<QuestionResponse> result;
         if (tagId == null) {
-            return questionRepository.search(courseId, type, difficulty, keyword)
-                    .stream()
-                    .map(this::toResponse)
-                    .toList();
+            result = questionRepository.search(courseId, type, difficulty, keyword)
+                    .stream().map(this::toResponse).toList();
+        } else {
+            result = questionRepository.searchWithTag(courseId, type, difficulty, keyword, tagId)
+                    .stream().map(this::toResponse).toList();
         }
-
-        return questionRepository.searchWithTag(courseId, type, difficulty, keyword, tagId)
-                .stream()
-                .map(this::toResponse)
-                .toList();
+        cache.putList(key, courseId, result);
+        return result;
     }
 
     @Override
@@ -215,15 +237,18 @@ public class QuestionServiceImpl implements QuestionService {
                                                      String keyword,
                                                      Long tagId,
                                                      Pageable pageable) {
+        String key = cache.pagedKey(courseId, type, difficulty, keyword, tagId, pageable.getPageNumber(), pageable.getPageSize());
+        Optional<List<QuestionResponse>> cached = cache.getList(key);
+        if (cached.isPresent()) {
+            Page<Question> countPage = questionRepository.searchPagedWithTag(courseId, type, difficulty, keyword, tagId, pageable);
+            return new PageImpl<>(cached.get(), pageable, countPage.getTotalElements());
+        }
 
-        return questionRepository.searchPagedWithTag(
-                courseId,
-                type,
-                difficulty,
-                keyword,
-                tagId,
-                pageable
+        Page<QuestionResponse> result = questionRepository.searchPagedWithTag(
+                courseId, type, difficulty, keyword, tagId, pageable
         ).map(this::toResponse);
+        cache.putPaged(key, courseId, result.getContent());
+        return result;
     }
 
     // helpers

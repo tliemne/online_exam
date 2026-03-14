@@ -46,6 +46,7 @@ export default function AddQuestionsModal({ exam, onClose, onSaved }) {
   const [filterTag, setFilterTag] = useState('ALL')
   const [tags, setTags] = useState([])
   const [saving, setSaving] = useState(false)
+  const [showRandom, setShowRandom] = useState(false)
 
   useEffect(() => {
     tagApi.getAll().then(r => setTags(r.data.data || [])).catch(() => {})
@@ -134,6 +135,7 @@ export default function AddQuestionsModal({ exam, onClose, onSaved }) {
   }
 
   return (
+    <>
     <Modal title="Chọn câu hỏi cho đề thi" onClose={onClose} wide>
       <div className="p-7 space-y-5">
         {/* Toolbar */}
@@ -220,6 +222,9 @@ export default function AddQuestionsModal({ exam, onClose, onSaved }) {
         )}
 
         <div className="flex gap-3 px-7 py-4 border-t border-[var(--border-base)]">
+          <button onClick={() => setShowRandom(true)} className="btn-secondary flex-none px-3" title="Random câu hỏi theo tag">
+            {Icon.refresh}
+          </button>
           <button onClick={handleSave} disabled={saving || selected.size === 0} className="btn-primary flex-1">
             {saving ? 'Đang lưu...' : `Lưu ${selected.size} câu hỏi`}
           </button>
@@ -227,5 +232,133 @@ export default function AddQuestionsModal({ exam, onClose, onSaved }) {
         </div>
       </div>
     </Modal>
+
+    {showRandom && (
+      <RandomQuestionsModal
+        exam={exam}
+        tags={tags}
+        onClose={() => setShowRandom(false)}
+        onSaved={() => { setShowRandom(false); onSaved(); onClose() }}
+      />
+    )}
+  </>
+  )
+}
+
+// ── Random Questions Modal ────────────────────────────────
+function RandomQuestionsModal({ exam, tags, onClose, onSaved }) {
+  const [rules, setRules] = useState([{ tagId: '', count: 5, difficulty: '', score: 1 }])
+  const [replaceExisting, setReplaceExisting] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  const addRule = () => setRules(r => [...r, { tagId: '', count: 5, difficulty: '', score: 1 }])
+  const removeRule = (i) => setRules(r => r.filter((_, idx) => idx !== i))
+  const updateRule = (i, field, val) => setRules(r => r.map((rule, idx) => idx === i ? { ...rule, [field]: val } : rule))
+
+  const totalCount = rules.reduce((s, r) => s + (parseInt(r.count) || 0), 0)
+
+  const handleSubmit = async () => {
+    const validRules = rules.filter(r => r.tagId && r.count > 0)
+    if (validRules.length === 0) { setError('Cần chọn ít nhất 1 tag và số câu'); return }
+    setSaving(true); setError('')
+    try {
+      await api.post(`/exams/${exam.id}/random-questions`, {
+        rules: validRules.map(r => ({
+          tagId:      parseInt(r.tagId),
+          count:      parseInt(r.count),
+          difficulty: r.difficulty || null,
+          score:      parseFloat(r.score) || 1,
+        })),
+        replaceExisting,
+      })
+      onSaved()
+    } catch (err) {
+      setError(err?.response?.data?.message || 'Có lỗi xảy ra')
+    } finally { setSaving(false) }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-base)] rounded-xl w-full max-w-lg shadow-modal animate-slide-up">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-base)]">
+          <div>
+            <h2 className="section-title">Random câu hỏi theo tag</h2>
+            <p className="text-xs text-[var(--text-3)] mt-0.5">Hệ thống tự chọn ngẫu nhiên từ ngân hàng câu hỏi</p>
+          </div>
+          <button onClick={onClose} className="btn-ghost p-1.5">{Icon.x}</button>
+        </div>
+
+        <div className="p-6 space-y-4">
+          {/* Rules */}
+          <div className="space-y-3">
+            {rules.map((rule, i) => (
+              <div key={i} className="flex gap-2 items-center p-3 rounded-lg border border-[var(--border-base)] bg-[var(--bg-elevated)]">
+                <div className="flex-1 grid grid-cols-2 gap-2">
+                  <select className="input-field text-sm" value={rule.tagId}
+                    onChange={e => updateRule(i, 'tagId', e.target.value)}>
+                    <option value="">-- Chọn tag --</option>
+                    {tags.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  </select>
+                  <select className="input-field text-sm" value={rule.difficulty}
+                    onChange={e => updateRule(i, 'difficulty', e.target.value)}>
+                    <option value="">Tất cả độ khó</option>
+                    <option value="EASY">Dễ</option>
+                    <option value="MEDIUM">Trung bình</option>
+                    <option value="HARD">Khó</option>
+                  </select>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-[var(--text-3)] shrink-0">Số câu:</span>
+                    <input type="number" min="1" max="50" className="input-field text-sm w-full"
+                      value={rule.count} onChange={e => updateRule(i, 'count', e.target.value)}/>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-[var(--text-3)] shrink-0">Điểm/câu:</span>
+                    <input type="number" min="0.1" step="0.1" className="input-field text-sm w-full"
+                      value={rule.score} onChange={e => updateRule(i, 'score', e.target.value)}/>
+                  </div>
+                </div>
+                {rules.length > 1 && (
+                  <button onClick={() => removeRule(i)} className="btn-ghost p-1.5 text-danger shrink-0">
+                    {Icon.trash}
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Add rule */}
+          <button onClick={addRule} className="btn-secondary w-full text-sm gap-2 flex items-center justify-center">
+            {Icon.plus} Thêm nhóm tag
+          </button>
+
+          {/* Replace option */}
+          <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-[var(--border-base)] hover:bg-[var(--bg-elevated)] transition-colors">
+            <input type="checkbox" checked={replaceExisting} onChange={e => setReplaceExisting(e.target.checked)}
+              className="w-4 h-4 accent-accent"/>
+            <div>
+              <p className="text-sm text-[var(--text-1)]">Xóa câu hỏi cũ trước khi random</p>
+              <p className="text-xs text-[var(--text-3)] mt-0.5">Nếu bỏ chọn, câu mới sẽ được thêm vào danh sách hiện tại</p>
+            </div>
+          </label>
+
+          {/* Summary */}
+          <div className="text-sm text-[var(--text-2)] text-center">
+            Sẽ random tổng cộng <span className="font-semibold text-accent">{totalCount}</span> câu hỏi
+          </div>
+
+          {error && <p className="text-sm text-danger text-center">{error}</p>}
+        </div>
+
+        {/* Footer */}
+        <div className="flex gap-3 px-6 py-4 border-t border-[var(--border-base)]">
+          <button onClick={handleSubmit} disabled={saving} className="btn-primary flex-1">
+            {saving ? 'Đang random...' : `Random ${totalCount} câu`}
+          </button>
+          <button onClick={onClose} className="btn-secondary flex-1">Hủy</button>
+        </div>
+      </div>
+    </div>
   )
 }

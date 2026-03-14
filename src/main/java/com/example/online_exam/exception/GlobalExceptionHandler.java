@@ -17,7 +17,7 @@ public class GlobalExceptionHandler {
 
         BaseResponse<?> response = BaseResponse.builder()
                 .status(code.getStatus().value())
-                .message(code.getMessage())
+                .message(ex.getMessage())
                 .timestamp(LocalDateTime.now())
                 .build();
 

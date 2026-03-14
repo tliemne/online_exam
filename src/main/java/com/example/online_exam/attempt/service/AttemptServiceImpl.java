@@ -12,6 +12,7 @@ import com.example.online_exam.exception.ErrorCode;
 import com.example.online_exam.question.entity.Answer;
 import com.example.online_exam.question.entity.Question;
 import com.example.online_exam.question.repository.QuestionRepository;
+import com.example.online_exam.question.service.QuestionStatService;
 import com.example.online_exam.common.service.EmailService;
 import com.example.online_exam.secutity.service.CurrentUserService;
 import com.example.online_exam.user.entity.User;
@@ -42,6 +43,7 @@ public class AttemptServiceImpl implements AttemptService {
     private final QuestionRepository      questionRepo;
     private final CurrentUserService      currentUserService;
     private final EmailService            emailService;
+    private final QuestionStatService     questionStatService;
 
     // ── Start Exam → tạo attempt IN_PROGRESS (hoặc trả lại nếu đã có) ─────
     @Override
@@ -207,6 +209,9 @@ public class AttemptServiceImpl implements AttemptService {
                     exam.getCourse() != null ? exam.getCourse().getName() : null,
                     attempt.getScore(), attempt.getTotalScore(), attempt.getPassed());
         }
+
+        // Cập nhật QuestionStat async — không block response
+        questionStatService.updateStats(savedAnswers);
 
         return toResponse(attempt, false);
     }

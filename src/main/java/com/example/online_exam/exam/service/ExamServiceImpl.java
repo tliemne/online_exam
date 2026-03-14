@@ -15,17 +15,21 @@ import com.example.online_exam.exception.AppException;
 import com.example.online_exam.exception.ErrorCode;
 import com.example.online_exam.question.entity.Question;
 import com.example.online_exam.question.repository.QuestionRepository;
+import com.example.online_exam.tag.repository.TagRepository;
 import com.example.online_exam.common.service.EmailService;
 import com.example.online_exam.secutity.service.CurrentUserService;
 import com.example.online_exam.user.entity.User;
 import com.example.online_exam.user.enums.RoleName;
 import com.example.online_exam.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Collectors;
 
 @Service
@@ -37,6 +41,7 @@ public class ExamServiceImpl implements ExamService {
     private final ExamQuestionRepository examQRepo;
     private final CourseRepository       courseRepo;
     private final QuestionRepository     questionRepo;
+    private final TagRepository          tagRepository;
     private final UserRepository         userRepo;
     private final CurrentUserService     currentUserService;
     private final AttemptRepository      attemptRepo;
@@ -283,6 +288,56 @@ public class ExamServiceImpl implements ExamService {
         exam.setRandomizeQuestions(req.getRandomizeQuestions() != null && req.getRandomizeQuestions());
         exam.setMaxAttempts(req.getMaxAttempts() != null ? req.getMaxAttempts() : 1);
         exam.setAllowResume(req.getAllowResume() != null ? req.getAllowResume() : false);
+    }
+
+    @Override
+    public ExamResponse randomQuestions(Long examId, RandomQuestionRequest request) {
+        Exam exam = findExam(examId);
+        User caller = currentUser();
+        if (isTeacher(caller)) checkOwnership(exam, caller);
+
+        Long courseId = exam.getCourse().getId();
+
+        // Xóa câu cũ nếu yêu cầu
+        if (request.isReplaceExisting()) {
+            examQRepo.deleteByExamId(examId);
+        }
+
+        // ID câu đã có trong đề (để tránh trùng)
+        Set<Long> existingIds = examQRepo.findByExamIdOrderByOrderIndex(examId)
+                .stream().map(eq -> eq.getQuestion().getId()).collect(Collectors.toSet());
+
+        List<ExamQuestion> toAdd = new ArrayList<>();
+        int orderIndex = examQRepo.findByExamIdOrderByOrderIndex(examId).size();
+
+        for (RandomQuestionRequest.RandomRule rule : request.getRules()) {
+            if (rule.getTagId() == null || rule.getCount() <= 0) continue;
+
+            // Lấy nhiều hơn cần để trừ đi câu đã có
+            int fetchSize = rule.getCount() + existingIds.size() + 5;
+            List<Question> candidates = questionRepo.findRandomByTag(
+                    courseId, rule.getTagId(), rule.getDifficulty(),
+                    PageRequest.of(0, fetchSize)
+            );
+
+            int added = 0;
+            for (Question q : candidates) {
+                if (added >= rule.getCount()) break;
+                if (existingIds.contains(q.getId())) continue;
+
+                ExamQuestion eq = new ExamQuestion();
+                eq.setExam(exam);
+                eq.setQuestion(q);
+                eq.setScore(rule.getScore() != null ? rule.getScore() : 1.0);
+                eq.setOrderIndex(++orderIndex);
+                toAdd.add(eq);
+                existingIds.add(q.getId());
+                added++;
+            }
+        }
+
+        examQRepo.saveAll(toAdd);
+        return toResponse(examRepo.findById(examId).orElseThrow(), true, false);
     }
 
     private void addQuestionsToExam(Exam exam, List<ExamQuestionItem> items) {

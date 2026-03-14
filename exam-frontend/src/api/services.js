@@ -60,6 +60,8 @@ export const questionApi = {
     })
   },
   importJson: (data, courseId) => api.post(`/questions/import/json?courseId=${courseId}`, data),
+  getStatsByCourse: (courseId) => api.get(`/questions/stats/course/${courseId}`),
+  getFlaggedByCourse: (courseId) => api.get(`/questions/stats/course/${courseId}/flagged`),
 }
 
 // ── EXAMS ────────────────────────────────────────────────
@@ -74,6 +76,7 @@ export const examApi = {
   // Quản lý câu hỏi trong đề
   addQuestions: (examId, items) => api.post(`/exams/${examId}/questions`, items),
   removeQuestion: (examId, questionId) => api.delete(`/exams/${examId}/questions/${questionId}`),
+  randomQuestions: (examId, data) => api.post(`/exams/${examId}/random-questions`, data),
   reorderQuestions: (examId, items) => api.put(`/exams/${examId}/questions/reorder`, items),
 }
 

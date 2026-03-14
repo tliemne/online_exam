@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { examApi, courseApi } from '../../api/services'
-import api from '../../api/client'
 
 export default function TeacherStatsPage() {
   const [data, setData]     = useState(null)
@@ -12,7 +11,6 @@ export default function TeacherStatsPage() {
     Promise.all([
       examApi.getAll(),
       courseApi.getAll(),
-      api.get('/attempts/my-exams-stats').catch(() => ({ data: { data: null } }))
     ]).then(([examsRes, coursesRes]) => {
       const exams   = examsRes.data.data   || []
       const courses = coursesRes.data.data || []

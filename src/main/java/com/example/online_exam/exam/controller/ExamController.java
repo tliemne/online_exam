@@ -114,6 +114,14 @@ public class ExamController {
         return ok(examService.reorderQuestions(id, items));
     }
 
+    @PostMapping("/{id}/random-questions")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    public BaseResponse<ExamResponse> randomQuestions(
+            @PathVariable Long id,
+            @RequestBody RandomQuestionRequest request) {
+        return ok(examService.randomQuestions(id, request));
+    }
+
     // ── Helper ────────────────────────────────────────────
     private <T> BaseResponse<T> ok(T data) {
         return BaseResponse.<T>builder()

@@ -41,7 +41,10 @@ public enum ErrorCode {
     EXAM_ALREADY_ATTEMPTED(HttpStatus.BAD_REQUEST, "Exam already attempted"),
 
     // ===== SYSTEM =====
-    INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");
+    INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error"),
+
+    // ===== RATE LIMIT =====
+    TOO_MANY_LOGIN_ATTEMPTS(HttpStatus.TOO_MANY_REQUESTS, "Quá nhiều lần đăng nhập sai. Vui lòng thử lại sau.");
 
     private final HttpStatus status;
     private final String message;
