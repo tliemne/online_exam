@@ -98,7 +98,7 @@ public class QuestionController {
 
     /** AI preview: tạo câu hỏi theo chủ đề, chưa lưu DB */
     @PostMapping("/ai-generate")
-    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    @PreAuthorize("isAuthenticated()")
     public BaseResponse<List<AiQuestionService.GeneratedQuestion>> aiGenerate(
             @RequestBody AiQuestionService.GenerateRequest req) {
         return BaseResponse.<List<AiQuestionService.GeneratedQuestion>>builder()

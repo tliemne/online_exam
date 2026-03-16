@@ -79,10 +79,171 @@ function Skeleton({ w = 'w-12', h = 'h-7' }) {
 }
 
 // ── Weakness Widget ────────────────────────────────────────
+// ── Practice Modal ─────────────────────────────────────────
+function PracticeModal({ topic, difficulty, onClose }) {
+  const [questions, setQuestions]   = useState([])
+  const [loading, setLoading]       = useState(false)
+  const [answers, setAnswers]       = useState({})
+  const [submitted, setSubmitted]   = useState(false)
+  const [score, setScore]           = useState(null)
+  const [error, setError]           = useState('')
+  const [count, setCount]           = useState(5)
+  const [diff, setDiff]             = useState(difficulty)
+  const [started, setStarted]       = useState(false)
+
+  const handleStart = () => {
+    setStarted(true)
+    setLoading(true)
+    api.post('/questions/ai-generate', {
+      topic, type: 'MULTIPLE_CHOICE', difficulty: diff, count,
+      courseId: null, tags: null,
+    })
+      .then(r => setQuestions(r.data.data || []))
+      .catch(() => setError('Không tải được bài luyện. Thử lại.'))
+      .finally(() => setLoading(false))
+  }
+
+  const handleSubmit = () => {
+    let correct = 0
+    questions.forEach((q, i) => {
+      const chosen = answers[i]
+      if (chosen != null && q.answers[chosen]?.correct) correct++
+    })
+    setScore({ correct, total: questions.length })
+    setSubmitted(true)
+  }
+
+  const DIFF_LABEL = { EASY: 'Dễ', MEDIUM: 'Trung bình', HARD: 'Khó' }
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.7)' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="w-full max-w-xl max-h-[88vh] overflow-y-auto rounded-xl border"
+        style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-base)' }}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b sticky top-0"
+          style={{ borderColor: 'var(--border-base)', background: 'var(--bg-surface)' }}>
+          <div>
+            <h3 className="font-semibold" style={{ color: 'var(--text-1)' }}>Luyện tập: {topic}</h3>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>
+              {started ? `${DIFF_LABEL[diff]} · ${count} câu · AI tạo` : 'Cấu hình bài luyện'}
+            </p>
+          </div>
+          <button onClick={onClose} className="btn-ghost p-1.5">✕</button>
+        </div>
+
+        <div className="p-5 space-y-5">
+          {/* Config screen */}
+          {!started && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="input-label">Độ khó</label>
+                  <select className="input-field" value={diff} onChange={e => setDiff(e.target.value)}>
+                    <option value="EASY">Dễ</option>
+                    <option value="MEDIUM">Trung bình</option>
+                    <option value="HARD">Khó</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="input-label">Số câu</label>
+                  <input type="number" className="input-field" min={3} max={15}
+                    value={count} onChange={e => setCount(+e.target.value)}/>
+                </div>
+              </div>
+              <button onClick={handleStart} className="btn-primary w-full">
+                Bắt đầu luyện tập
+              </button>
+            </div>
+          )}
+          {loading && (
+            <div className="flex flex-col items-center py-10 gap-3">
+              <div className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin"
+                style={{ borderColor: 'var(--accent)' }}/>
+              <p className="text-sm" style={{ color: 'var(--text-3)' }}>AI đang tạo bài luyện tập...</p>
+            </div>
+          )}
+
+          {error && <p className="text-center text-sm py-4" style={{ color: 'var(--danger)' }}>{error}</p>}
+
+          {/* Score result */}
+          {submitted && score && (
+            <div className="px-4 py-4 rounded-lg text-center"
+              style={{ background: score.correct / score.total >= 0.6 ? 'var(--success-subtle)' : 'var(--warning-subtle)' }}>
+              <p className="text-2xl font-bold"
+                style={{ color: score.correct / score.total >= 0.6 ? 'var(--success)' : 'var(--warning)' }}>
+                {score.correct}/{score.total}
+              </p>
+              <p className="text-sm mt-1" style={{ color: 'var(--text-2)' }}>
+                {score.correct / score.total >= 0.8 ? 'Xuất sắc! Bạn đã nắm vững chủ đề này.'
+                  : score.correct / score.total >= 0.6 ? 'Khá tốt! Tiếp tục luyện tập nhé.'
+                  : 'Cần ôn lại thêm chủ đề này.'}
+              </p>
+            </div>
+          )}
+
+          {/* Questions */}
+          {!loading && questions.map((q, qi) => {
+            const chosen = answers[qi]
+            return (
+              <div key={qi} className="space-y-3">
+                <p className="text-sm font-medium" style={{ color: 'var(--text-1)' }}>
+                  <span className="text-xs mr-2" style={{ color: 'var(--text-3)' }}>{qi + 1}.</span>
+                  {q.content}
+                </p>
+                <div className="space-y-2">
+                  {q.answers?.map((a, ai) => {
+                    let bg = 'var(--bg-elevated)', clr = 'var(--text-2)', border = 'var(--border-base)'
+                    if (submitted) {
+                      if (a.correct) { bg = 'var(--success-subtle)'; clr = 'var(--success)'; border = 'var(--success-border)' }
+                      else if (chosen === ai && !a.correct) { bg = 'var(--danger-subtle)'; clr = 'var(--danger)'; border = 'var(--danger-border)' }
+                    } else if (chosen === ai) {
+                      bg = 'var(--accent-subtle)'; clr = 'var(--accent)'; border = 'var(--accent-border)'
+                    }
+                    return (
+                      <button key={ai} disabled={submitted}
+                        onClick={() => setAnswers(p => ({...p, [qi]: ai}))}
+                        className="w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all"
+                        style={{ background: bg, color: clr, border: `1px solid ${border}` }}>
+                        {String.fromCharCode(65 + ai)}. {a.content}
+                      </button>
+                    )
+                  })}
+                </div>
+                {/* Show explanation after submit */}
+                {submitted && q.explanation && (
+                  <p className="text-xs px-3 py-2 rounded" style={{ background: 'var(--bg-elevated)', color: 'var(--text-3)' }}>
+                    {q.explanation}
+                  </p>
+                )}
+              </div>
+            )
+          })}
+
+          {/* Actions */}
+          {!loading && !submitted && questions.length > 0 && (
+            <button onClick={handleSubmit}
+              disabled={Object.keys(answers).length < questions.length}
+              className="btn-primary w-full">
+              Nộp bài ({Object.keys(answers).length}/{count} câu)
+            </button>
+          )}
+          {submitted && (
+            <button onClick={onClose} className="btn-secondary w-full">Đóng</button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function WeaknessWidget() {
   const [data, setData]       = useState(null)
   const [loading, setLoading] = useState(false)
   const [open, setOpen]       = useState(false)
+  const [practice, setPractice] = useState(null) // {topic, difficulty}
 
   const load = async () => {
     if (data) { setOpen(true); return }
@@ -276,6 +437,12 @@ function WeaknessWidget() {
                                 ))}
                               </div>
                             )}
+                            <button
+                              onClick={() => setPractice({ topic: item.topic, difficulty: item.priority === 'HIGH' ? 'EASY' : 'MEDIUM' })}
+                              className="text-xs px-3 py-1.5 rounded-lg w-full transition-all"
+                              style={{ background: 'var(--accent-subtle)', color: 'var(--accent)', border: '1px solid var(--accent-border)' }}>
+                              Luyện tập ngay →
+                            </button>
                           </div>
                         )
                       })}
@@ -286,6 +453,13 @@ function WeaknessWidget() {
             </div>
           </div>
         </div>
+      )}
+      {practice && (
+        <PracticeModal
+          topic={practice.topic}
+          difficulty={practice.difficulty}
+          onClose={() => setPractice(null)}
+        />
       )}
     </>
   )
