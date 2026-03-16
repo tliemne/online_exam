@@ -11,25 +11,25 @@ import java.util.List;
 @lombok.Setter
 public class ExamStatsResponse {
 
-    // Tổng quan
+
     private Long examId;
     private String examTitle;
-    private int totalAttempts;       // tổng bài nộp
-    private int passCount;           // số đạt
-    private int failCount;           // số trượt
-    private double passRate;         // % đạt
-    private double avgScore;         // điểm TB
-    private double maxScore;         // cao nhất
-    private double minScore;         // thấp nhất
-    private double totalScoreMax;    // điểm tối đa của đề
+    private int totalAttempts;
+    private int passCount;
+    private int failCount;
+    private double passRate;
+    private double avgScore;
+    private double maxScore;
+    private double minScore;
+    private double totalScoreMax;
 
-    // Top 10 leaderboard
+
     private List<LeaderboardEntry> leaderboard;
 
-    // Phân phối điểm (histogram)
+
     private List<ScoreBucket> scoreDistribution;
 
-    // Điểm TB theo từng câu hỏi
+
     private List<QuestionStat> questionStats;
 
     @Data @Builder @NoArgsConstructor @AllArgsConstructor
@@ -57,7 +57,7 @@ public class ExamStatsResponse {
         private String questionContent;
         private int totalAnswered;
         private int correctCount;
-        private double correctRate;   // % đúng
+        private double correctRate;
         private double avgScore;
     }
 }

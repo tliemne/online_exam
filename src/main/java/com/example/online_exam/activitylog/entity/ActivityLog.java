@@ -25,20 +25,20 @@ public class ActivityLog {
 
     // Loại hành động — dùng String để linh hoạt
     @Column(nullable = false, length = 64)
-    private String action;          // LOGIN, LOGOUT, CREATE_EXAM, PUBLISH_EXAM, ...
+    private String action;
 
     // Loại đối tượng bị tác động
     @Column(length = 64)
     private String targetType;      // EXAM, QUESTION, COURSE, USER, ATTEMPT, ...
 
-    // ID đối tượng
+
     private Long targetId;
 
-    // Mô tả ngắn
+
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    // IP address
+
     @Column(length = 64)
     private String ipAddress;
 

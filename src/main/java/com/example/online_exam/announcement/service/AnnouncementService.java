@@ -26,7 +26,7 @@ public class AnnouncementService {
     private final CurrentUserService     currentUserService;
     private final NotificationService    notificationService;
 
-    // ── Create ────────────────────────────────────────────
+
     @Transactional
     public AnnouncementDto.Response create(Long courseId, AnnouncementDto.Request req) {
         User caller = currentUserService.requireCurrentUser();
@@ -54,7 +54,7 @@ public class AnnouncementService {
         return toResponse(a);
     }
 
-    // ── Read ──────────────────────────────────────────────
+
     @Transactional(readOnly = true)
     public List<AnnouncementDto.Response> getByCourse(Long courseId) {
         User caller = currentUserService.requireCurrentUser();
@@ -64,7 +64,7 @@ public class AnnouncementService {
                 .stream().map(this::toResponse).toList();
     }
 
-    // ── Update ────────────────────────────────────────────
+
     @Transactional
     public AnnouncementDto.Response update(Long courseId, Long id, AnnouncementDto.Request req) {
         User caller = currentUserService.requireCurrentUser();
@@ -80,7 +80,7 @@ public class AnnouncementService {
         return toResponse(a);
     }
 
-    // ── Delete ────────────────────────────────────────────
+
     @Transactional
     public void delete(Long courseId, Long id) {
         User caller = currentUserService.requireCurrentUser();
@@ -91,7 +91,7 @@ public class AnnouncementService {
         announcementRepo.delete(a);
     }
 
-    // ── Helpers ───────────────────────────────────────────
+
     private Course findCourse(Long id) {
         return courseRepo.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));

@@ -7,23 +7,23 @@ import org.springframework.http.HttpStatus;
 public enum ErrorCode {
 
     // ===== USER =====
-    USERNAME_EXISTS(HttpStatus.BAD_REQUEST, "Username already exists"),
-    EMAIL_EXISTS(HttpStatus.BAD_REQUEST, "Email already exists"),
-    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "User not found"),
-    INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "Invalid password"),
-    ROLE_NOT_FOUND(HttpStatus.NOT_FOUND, "Role not found"),
-    TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "Token expired"),
-    COURSE_NOT_FOUND(HttpStatus.NOT_FOUND, "Course not found"),
-    INVALID_TEACHER(HttpStatus.BAD_REQUEST, "Assigned user is not a teacher"),
+    USERNAME_EXISTS(HttpStatus.BAD_REQUEST, "Username đã tồn tại"),
+    EMAIL_EXISTS(HttpStatus.BAD_REQUEST, "Email đã tồn tại"),
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "User không tồn tại"),
+    INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "Mật khẩu không đúng"),
+    ROLE_NOT_FOUND(HttpStatus.NOT_FOUND, "Role không tồn tại"),
+    TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "Token đã hết hạn"),
+    COURSE_NOT_FOUND(HttpStatus.NOT_FOUND, "Course không tồn tại"),
+    INVALID_TEACHER(HttpStatus.BAD_REQUEST, "Giáo viên không hợp lệ"),
 
     // ===== AUTH =====
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "Unauthorized"),
     FORBIDDEN(HttpStatus.FORBIDDEN, "Access denied"),
-    TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "Token invalid"),
+    TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "Token không hợp lệ"),
 
     // ===== REQUEST =====
-    INVALID_REQUEST(HttpStatus.BAD_REQUEST, "Invalid request data"),
-    VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "Validation failed"),
+    INVALID_REQUEST(HttpStatus.BAD_REQUEST, "Yêu cầu không hợp lệ"),
+    VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "Dữ liệu không hợp lệ"),
 
     // ===== QUESTION =====
     QUESTION_NOT_FOUND(HttpStatus.NOT_FOUND, "Không tìm thấy câu hỏi"),

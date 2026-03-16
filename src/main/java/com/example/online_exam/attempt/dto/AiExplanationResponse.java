@@ -8,11 +8,11 @@ import java.util.List;
 public class AiExplanationResponse {
     private Long   attemptAnswerId;
     private Long   questionId;
-    private String questionContent;   // câu hỏi gốc
-    private String yourAnswer;        // đáp án student chọn
-    private String correctAnswer;     // đáp án đúng
-    private String explanation;       // AI giải thích
-    private String tip;               // gợi ý ghi nhớ ngắn
+    private String questionContent;
+    private String yourAnswer;
+    private String correctAnswer;
+    private String explanation;
+    private String tip;
 
     @Data @Builder
     public static class Summary {

@@ -28,7 +28,7 @@ public class AttemptResponse {
     private Integer tabViolationCount;
     private Boolean allowResume;
 
-    // Số câu đúng / tổng
+
     private Integer correctCount;
     private Integer totalQuestions;
 
