@@ -1,6 +1,7 @@
 package com.example.online_exam.attempt.controller;
 
 import com.example.online_exam.attempt.dto.*;
+import com.example.online_exam.attempt.service.AiClassAnalysisService;
 import com.example.online_exam.attempt.service.AiGradingService;
 import com.example.online_exam.attempt.service.ExportService;
 import com.example.online_exam.attempt.service.AttemptService;
@@ -20,9 +21,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class AttemptController {
 
-    private final AttemptService  attemptService;
-    private final ExportService    exportService;
-    private final AiGradingService aiGradingService;
+    private final AttemptService         attemptService;
+    private final ExportService          exportService;
+    private final AiGradingService       aiGradingService;
+    private final AiClassAnalysisService aiClassAnalysisService;
 
     // POST /attempts/exams/{examId}/start — tạo attempt IN_PROGRESS (hoặc trả lại nếu đã có)
     @PostMapping("/exams/{examId}/start")
@@ -156,6 +158,24 @@ public class AttemptController {
             @org.springframework.security.core.annotation.AuthenticationPrincipal
             com.example.online_exam.user.entity.User currentUser) {
         return ok(aiGradingService.analyzeWeakness(currentUser.getId()));
+    }
+
+    // DELETE /attempts/ai-weakness/cache  — Xóa cache để phân tích lại
+    @DeleteMapping("/ai-weakness/cache")
+    @PreAuthorize("hasRole('STUDENT')")
+    public BaseResponse<String> clearWeaknessCache(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal
+            com.example.online_exam.user.entity.User currentUser) {
+        aiGradingService.clearWeaknessCache(currentUser.getId());
+        return ok("Cache đã được xóa");
+    }
+
+    // GET /attempts/ai-class/{courseId}  — AI phân tích lớp học (Teacher)
+    @GetMapping("/ai-class/{courseId}")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    public BaseResponse<AiClassAnalysisService.ClassAnalysis> aiClass(
+            @PathVariable Long courseId) {
+        return ok(aiClassAnalysisService.analyze(courseId));
     }
 
     private <T> BaseResponse<T> ok(T data) {

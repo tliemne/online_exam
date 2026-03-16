@@ -484,6 +484,7 @@ function AiGenerateModal({ courses, defaultCourseId, tags = [], onClose, onSaved
                 onChange={e => setForm({...form, type: e.target.value})}>
                 <option value="MULTIPLE_CHOICE">Trắc nghiệm</option>
                 <option value="TRUE_FALSE">Đúng/Sai</option>
+                <option value="ESSAY">Tự luận</option>
               </select>
             </div>
             <div>

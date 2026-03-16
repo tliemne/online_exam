@@ -51,6 +51,16 @@ public interface AttemptRepository extends JpaRepository<Attempt, Long> {
     """)
     List<Attempt> findGradedWithAnswersByStudent(@Param("studentId") Long studentId);
 
+    @Query("""
+        SELECT DISTINCT a FROM Attempt a
+        LEFT JOIN FETCH a.answers aa
+        LEFT JOIN FETCH aa.question q
+        LEFT JOIN FETCH q.tags
+        WHERE a.exam.course.id = :courseId
+          AND a.status = 'GRADED'
+    """)
+    List<Attempt> findGradedWithAnswersByCourse(@Param("courseId") Long courseId);
+
     // Query 1: fetch exam + examQuestions
     @Query("SELECT a FROM Attempt a " +
             "LEFT JOIN FETCH a.exam e " +

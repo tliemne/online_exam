@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { examApi, courseApi } from '../../api/services'
+import api from '../../api/client'
 
 import ExamFormModal from './modals/ExamFormModal'
 import AddQuestionsModal from './modals/AddQuestionsModal'
@@ -53,6 +54,7 @@ export default function ExamsPage() {
 
   const [modal, setModal] = useState(null)
   const [selected, setSelected] = useState(null)
+  const [showAiExam, setShowAiExam] = useState(false)
 
   const [previewExam, setPreviewExam] = useState(null)
 
@@ -194,12 +196,20 @@ export default function ExamsPage() {
 
         </div>
 
-        <button
-          onClick={() => { setSelected(null); setModal('create') }}
-          className="btn-primary"
-        >
-          {Icon.plus} Tạo đề thi
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowAiExam(true)}
+            className="btn-secondary flex items-center gap-2"
+            style={{ color: 'var(--purple)', borderColor: 'var(--purple-subtle)' }}>
+            ✦ AI Tạo đề
+          </button>
+          <button
+            onClick={() => { setSelected(null); setModal('create') }}
+            className="btn-primary"
+          >
+            {Icon.plus} Tạo đề thi
+          </button>
+        </div>
 
       </div>
 
@@ -373,7 +383,197 @@ export default function ExamsPage() {
 
       )}
 
+      {showAiExam && (
+        <AiExamModal
+          courses={courses}
+          onClose={() => setShowAiExam(false)}
+          onCreated={(exam) => { setShowAiExam(false); load(); navigate(`/teacher/exams/${exam.id}`) }}
+        />
+      )}
+
     </div>
     </>
+  )
+}
+
+// ── AI Exam Generator Modal ────────────────────────────────
+function AiExamModal({ courses, onClose, onCreated }) {
+  const toast = useToast()
+  const [step, setStep] = useState(1) // 1=config, 2=generating, 3=done
+  const [form, setForm] = useState({
+    title: '',
+    courseId: courses[0]?.id || '',
+    durationMinutes: 45,
+    totalScore: 10,
+    passScore: 5,
+  })
+  const [topics, setTopics] = useState([
+    { topic: '', difficulty: 'MEDIUM', count: 5, type: 'MULTIPLE_CHOICE' }
+  ])
+  const [result, setResult] = useState(null)
+  const [error, setError]   = useState('')
+
+  const addTopic = () => setTopics(p => [...p, { topic: '', difficulty: 'MEDIUM', count: 5, type: 'MULTIPLE_CHOICE' }])
+  const removeTopic = (i) => setTopics(p => p.filter((_, idx) => idx !== i))
+  const updateTopic = (i, key, val) => setTopics(p => p.map((t, idx) => idx === i ? {...t, [key]: val} : t))
+
+  const totalQuestions = topics.reduce((s, t) => {
+    return s + (t.difficulty === 'ALL' ? Math.floor(t.count / 3) * 3 : t.count)
+  }, 0)
+
+  const handleGenerate = async () => {
+    if (!form.courseId) return setError('Chọn lớp học')
+    if (topics.some(t => !t.topic.trim())) return setError('Nhập chủ đề cho tất cả dòng')
+    setStep(2); setError('')
+    try {
+      const r = await api.post('/exams/ai-generate', {
+        ...form,
+        topics: topics.map(t => ({...t, count: +t.count}))
+      })
+      setResult(r.data.data)
+      setStep(3)
+    } catch (e) {
+      setError(e?.response?.data?.message || 'Lỗi tạo đề. Thử lại.')
+      setStep(1)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.65)' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-xl border"
+        style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-base)' }}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b sticky top-0 z-10"
+          style={{ borderColor: 'var(--border-base)', background: 'var(--bg-surface)' }}>
+          <div>
+            <h3 className="font-semibold" style={{ color: 'var(--text-1)' }}>✦ AI Tạo đề thi</h3>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>
+              AI tạo câu hỏi → lưu ngân hàng → tạo đề thi hoàn chỉnh
+            </p>
+          </div>
+          <button onClick={onClose} className="btn-ghost p-1.5">✕</button>
+        </div>
+
+        <div className="p-5 space-y-5">
+          {/* Step 2: generating */}
+          {step === 2 && (
+            <div className="flex flex-col items-center py-12 gap-4">
+              <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
+                style={{ borderColor: 'var(--purple)' }}/>
+              <p className="text-sm font-medium" style={{ color: 'var(--text-1)' }}>AI đang tạo đề thi...</p>
+              <p className="text-xs" style={{ color: 'var(--text-3)' }}>
+                Tạo {totalQuestions} câu hỏi cho {topics.length} chủ đề
+              </p>
+            </div>
+          )}
+
+          {/* Step 3: done */}
+          {step === 3 && result && (
+            <div className="space-y-4">
+              <div className="p-4 rounded-lg text-center"
+                style={{ background: 'var(--success-subtle)' }}>
+                <p className="font-semibold" style={{ color: 'var(--success)' }}>Tạo đề thành công!</p>
+                <p className="text-sm mt-1" style={{ color: 'var(--text-2)' }}>
+                  {result.totalSaved} câu hỏi · đề "{result.exam?.title}"
+                </p>
+              </div>
+              {result.errors?.length > 0 && (
+                <div className="space-y-1">
+                  {result.errors.map((e, i) => (
+                    <p key={i} className="text-xs" style={{ color: 'var(--warning)' }}>{e}</p>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-3">
+                <button onClick={() => onCreated(result.exam)} className="btn-primary flex-1">
+                  Xem đề thi →
+                </button>
+                <button onClick={onClose} className="btn-secondary">Đóng</button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 1: config */}
+          {step === 1 && (<>
+            {/* Exam info */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="col-span-2">
+                <label className="input-label">Tên đề thi</label>
+                <input className="input-field" placeholder="Để trống sẽ tự đặt tên..."
+                  value={form.title} onChange={e => setForm({...form, title: e.target.value})}/>
+              </div>
+              <div>
+                <label className="input-label">Lớp học *</label>
+                <select className="input-field" value={form.courseId}
+                  onChange={e => setForm({...form, courseId: e.target.value})}>
+                  {courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="input-label">Thời gian (phút)</label>
+                <input type="number" className="input-field" min={10}
+                  value={form.durationMinutes} onChange={e => setForm({...form, durationMinutes: +e.target.value})}/>
+              </div>
+              <div>
+                <label className="input-label">Tổng điểm</label>
+                <input type="number" className="input-field" min={1}
+                  value={form.totalScore} onChange={e => setForm({...form, totalScore: +e.target.value})}/>
+              </div>
+              <div>
+                <label className="input-label">Điểm đạt</label>
+                <input type="number" className="input-field" min={1}
+                  value={form.passScore} onChange={e => setForm({...form, passScore: +e.target.value})}/>
+              </div>
+            </div>
+
+            {/* Topics */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <p className="text-sm font-medium" style={{ color: 'var(--text-1)' }}>
+                  Chủ đề · {totalQuestions} câu
+                </p>
+                <button onClick={addTopic} className="btn-ghost text-xs px-2 py-1">+ Thêm chủ đề</button>
+              </div>
+              <div className="space-y-2">
+                {topics.map((t, i) => (
+                  <div key={i} className="grid grid-cols-12 gap-2 items-center">
+                    <input className="input-field col-span-4 text-sm" placeholder="Chủ đề..."
+                      value={t.topic} onChange={e => updateTopic(i, 'topic', e.target.value)}/>
+                    <select className="input-field col-span-3 text-sm" value={t.type}
+                      onChange={e => updateTopic(i, 'type', e.target.value)}>
+                      <option value="MULTIPLE_CHOICE">Trắc nghiệm</option>
+                      <option value="TRUE_FALSE">Đúng/Sai</option>
+                      <option value="ESSAY">Tự luận</option>
+                    </select>
+                    <select className="input-field col-span-2 text-sm" value={t.difficulty}
+                      onChange={e => updateTopic(i, 'difficulty', e.target.value)}>
+                      <option value="EASY">Dễ</option>
+                      <option value="MEDIUM">TB</option>
+                      <option value="HARD">Khó</option>
+                      <option value="ALL">Tất cả</option>
+                    </select>
+                    <input type="number" className="input-field col-span-2 text-sm" min={1} placeholder="Số câu"
+                      value={t.count} onChange={e => updateTopic(i, 'count', e.target.value)}/>
+                    <button onClick={() => removeTopic(i)} disabled={topics.length === 1}
+                      className="btn-icon col-span-1 text-xs" style={{ color: 'var(--danger)' }}>✕</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {error && <p className="text-sm" style={{ color: 'var(--danger)' }}>{error}</p>}
+
+            <button onClick={handleGenerate}
+              disabled={topics.some(t => !t.topic.trim())}
+              className="btn-primary w-full">
+              ✦ Tạo {totalQuestions} câu hỏi + đề thi
+            </button>
+          </>)}
+        </div>
+      </div>
+    </div>
   )
 }

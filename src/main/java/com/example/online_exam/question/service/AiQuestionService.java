@@ -45,12 +45,13 @@ public class AiQuestionService {
 
     // ── Request DTO ───────────────────────────────────────
     public record GenerateRequest(
-            String topic,        // chủ đề: "Java OOP", "SQL JOIN"...
-            String type,         // MULTIPLE_CHOICE | TRUE_FALSE
-            String difficulty,   // EASY | MEDIUM | HARD
-            int    count,        // số câu muốn tạo (1-20)
+            String topic,
+            String type,
+            String difficulty,
+            int    count,
             Long   courseId,
-            String tags          // tag gắn vào (tuỳ chọn, cách nhau dấu phẩy)
+            String tags,
+            Long   _nocache  // optional, bust Redis cache key khi student luyện tập
     ) {}
 
     // ── Response DTO ─────────────────────────────────────
@@ -73,16 +74,20 @@ public class AiQuestionService {
                 + ":" + req.type() + ":" + req.difficulty() + ":" + count
                 + (req.tags() != null && !req.tags().isBlank() ? ":" + req.tags().toLowerCase().replaceAll("\\s+","") : "");
 
+        boolean useCache = req._nocache() == null; // skip cache khi student luyện tập
+
         // Check cache
-        try {
-            String cached = redis.opsForValue().get(cacheKey);
-            if (cached != null) {
-                List<GeneratedQuestion> result = objectMapper.readValue(cached,
-                        objectMapper.getTypeFactory().constructCollectionType(List.class, GeneratedQuestion.class));
-                log.info("[AiQuestion] cache hit: {}", cacheKey);
-                return result;
-            }
-        } catch (Exception ignored) {}
+        if (useCache) {
+            try {
+                String cached = redis.opsForValue().get(cacheKey);
+                if (cached != null) {
+                    List<GeneratedQuestion> result = objectMapper.readValue(cached,
+                            objectMapper.getTypeFactory().constructCollectionType(List.class, GeneratedQuestion.class));
+                    log.info("[AiQuestion] cache hit: {}", cacheKey);
+                    return result;
+                }
+            } catch (Exception ignored) {}
+        }
 
         if (geminiApiKey == null || geminiApiKey.isBlank()) {
             log.warn("[AiQuestion] Gemini API key chưa cấu hình");
@@ -102,10 +107,12 @@ public class AiQuestionService {
 
             List<GeneratedQuestion> result = parseResponse(resp.getBody(), req.type(), req.difficulty());
 
-            // Cache kết quả
-            try {
-                redis.opsForValue().set(cacheKey, objectMapper.writeValueAsString(result), CACHE_TTL);
-            } catch (Exception ignored) {}
+            // Cache kết quả (chỉ khi không có _nocache flag)
+            if (useCache) {
+                try {
+                    redis.opsForValue().set(cacheKey, objectMapper.writeValueAsString(result), CACHE_TTL);
+                } catch (Exception ignored) {}
+            }
 
             return result;
 
@@ -144,14 +151,19 @@ public class AiQuestionService {
 
     // ── Prompt builder ────────────────────────────────────
     private String buildPrompt(String topic, String type, String difficulty, int count) {
-        String typeDesc = type.equals("MULTIPLE_CHOICE")
-                ? "trắc nghiệm 4 đáp án (1 đúng, 3 sai)"
-                : "đúng/sai (2 đáp án: Đúng và Sai, 1 cái đúng)";
+        String typeDesc = switch (type) {
+            case "MULTIPLE_CHOICE" -> "trắc nghiệm 4 đáp án (1 đúng, 3 sai)";
+            case "TRUE_FALSE"      -> "đúng/sai (2 đáp án: Đúng và Sai, 1 cái đúng)";
+            case "ESSAY"           -> "tự luận (không có đáp án cố định, cần đánh giá mở)";
+            default                -> "trắc nghiệm 4 đáp án (1 đúng, 3 sai)";
+        };
         String diffDesc = switch (difficulty) {
             case "EASY"   -> "dễ, kiến thức cơ bản";
             case "HARD"   -> "khó, cần suy luận sâu";
             default       -> "trung bình";
         };
+
+        boolean isEssay = type.equals("ESSAY");
 
         return String.format("""
             Tạo %d câu hỏi %s về chủ đề "%s", mức độ %s.
@@ -162,19 +174,23 @@ public class AiQuestionService {
             [
               {
                 "content": "<nội dung câu hỏi>",
-                "answers": [
-                  {"content": "<đáp án>", "correct": true},
-                  {"content": "<đáp án>", "correct": false}
-                ],
-                "explanation": "<giải thích ngắn tại sao đáp án đúng, ≤30 từ>"
+                "answers": %s,
+                "explanation": "<gợi ý đáp án / tiêu chí chấm, ≤50 từ>"
               }
             ]
             
             Yêu cầu:
             - Câu hỏi rõ ràng, không mơ hồ
-            - Đáp án sai phải hợp lý (gây nhiễu tốt)
+            %s
             - Không lặp lại câu hỏi
-            """, count, typeDesc, topic, diffDesc);
+            """, count, typeDesc, topic, diffDesc,
+                isEssay ? "[]" : """
+                    [
+                      {"content": "<đáp án>", "correct": true},
+                      {"content": "<đáp án>", "correct": false}
+                    ]""",
+                isEssay ? "- Câu hỏi yêu cầu trình bày/phân tích, không có đáp án đúng/sai cố định"
+                        : "- Đáp án sai phải hợp lý (gây nhiễu tốt)");
     }
 
     // ── Response parser ───────────────────────────────────

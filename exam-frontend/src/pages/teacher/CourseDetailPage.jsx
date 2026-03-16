@@ -6,6 +6,7 @@ import { courseApi, userApi, lectureApi, announcementApi } from '../../api/servi
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import { useConfirm } from '../../components/common/ConfirmDialog'
+import api from '../../api/client'
 
 // ── Icons ─────────────────────────────────────────────────
 const Icon = {
@@ -713,11 +714,136 @@ function TabAnnouncements({ course, isTeacher }) {
   )
 }
 
+// ── Tab: AI Analysis ──────────────────────────────────────
+function TabAiAnalysis({ courseId }) {
+  const [data, setData]       = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError]     = useState('')
+
+  useEffect(() => {
+    api.get(`/attempts/ai-class/${courseId}`)
+      .then(r => setData(r.data.data))
+      .catch(() => setError('Không tải được phân tích. Thử lại.'))
+      .finally(() => setLoading(false))
+  }, [courseId])
+
+  if (loading) return (
+    <div className="flex items-center justify-center py-16 gap-3">
+      <div className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin"
+        style={{ borderColor: 'var(--accent)' }}/>
+      <span className="text-sm" style={{ color: 'var(--text-3)' }}>AI đang phân tích lớp học...</span>
+    </div>
+  )
+  if (error) return <p className="text-center py-8 text-sm" style={{ color: 'var(--danger)' }}>{error}</p>
+  if (!data)  return null
+
+  return (
+    <div className="space-y-6 py-2">
+      {/* Overview stats */}
+      <div className="grid grid-cols-4 gap-3">
+        {[
+          { label: 'Sinh viên',   value: data.totalStudents },
+          { label: 'Lượt thi',    value: data.totalAttempts },
+          { label: 'Điểm TB',     value: data.avgScore ? data.avgScore.toFixed(1) + '%' : '—' },
+          { label: 'Tỉ lệ đạt',  value: data.passRate + '%',
+            color: data.passRate >= 70 ? 'var(--success)' : data.passRate >= 50 ? 'var(--warning)' : 'var(--danger)' },
+        ].map(s => (
+          <div key={s.label} className="card p-4">
+            <p className="text-xs" style={{ color: 'var(--text-3)' }}>{s.label}</p>
+            <p className="text-2xl font-semibold mt-1" style={{ color: s.color || 'var(--text-1)' }}>{s.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* AI advice */}
+      {data.aiAdvice && (
+        <div className="card p-4">
+          <p className="text-xs font-medium mb-2" style={{ color: 'var(--text-3)' }}>NHẬN XÉT CỦA AI</p>
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--text-2)' }}>{data.aiAdvice}</p>
+        </div>
+      )}
+
+      {/* Suggestions */}
+      {data.suggestions?.length > 0 && (
+        <div className="card p-4 space-y-2">
+          <p className="text-xs font-medium mb-3" style={{ color: 'var(--text-3)' }}>GỢI Ý CẢI THIỆN</p>
+          {data.suggestions.map((s, i) => (
+            <div key={i} className="flex items-start gap-2.5 text-sm" style={{ color: 'var(--text-2)' }}>
+              <div className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: 'var(--accent)' }}/>
+              {s}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-4">
+        {/* Topic stats */}
+        {data.topicStats?.length > 0 && (
+          <div className="card p-4">
+            <p className="text-xs font-medium mb-4" style={{ color: 'var(--text-3)' }}>TỈ LỆ ĐÚNG THEO CHỦ ĐỀ</p>
+            <div className="space-y-3">
+              {data.topicStats.map(t => {
+                const clr = t.correctPct >= 70 ? 'var(--success)' : t.correctPct >= 50 ? 'var(--warning)' : 'var(--danger)'
+                return (
+                  <div key={t.topic}>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span style={{ color: 'var(--text-2)' }}>{t.topic}</span>
+                      <span className="font-mono" style={{ color: clr }}>{t.correctPct}%</span>
+                    </div>
+                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border-base)' }}>
+                      <div className="h-full rounded-full" style={{ width: `${t.correctPct}%`, background: clr }}/>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Weak questions */}
+        {data.weakQuestions?.length > 0 && (
+          <div className="card p-4">
+            <p className="text-xs font-medium mb-4" style={{ color: 'var(--text-3)' }}>CÂU HỎI CẦN XEM LẠI</p>
+            <div className="space-y-3">
+              {data.weakQuestions.map(q => {
+                const { bg, clr, label } = q.flag === 'TOO_HARD'
+                  ? { bg: 'var(--danger-subtle)', clr: 'var(--danger)', label: 'Quá khó' }
+                  : q.flag === 'TOO_EASY'
+                  ? { bg: 'var(--success-subtle)', clr: 'var(--success)', label: 'Quá dễ' }
+                  : { bg: 'var(--warning-subtle)', clr: 'var(--warning)', label: 'Bất thường' }
+                return (
+                  <div key={q.questionId} className="rounded-lg p-3 space-y-1"
+                    style={{ background: bg }}>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+                        style={{ background: clr + '20', color: clr }}>{label}</span>
+                      <span className="text-xs font-mono" style={{ color: clr }}>{q.correctPct}% đúng</span>
+                    </div>
+                    <p className="text-xs line-clamp-2" style={{ color: 'var(--text-2)' }}>{q.content}</p>
+                    <p className="text-[10px]" style={{ color: 'var(--text-3)' }}>{q.totalAnswers} lượt trả lời</p>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {data.topicStats?.length === 0 && data.weakQuestions?.length === 0 && (
+        <p className="text-center py-8 text-sm" style={{ color: 'var(--text-3)' }}>
+          Cần thêm dữ liệu bài thi đã chấm để phân tích (mỗi chủ đề ≥5 lượt trả lời).
+        </p>
+      )}
+    </div>
+  )
+}
+
 const TEACHER_TABS = [
   { key: 'students',      label: 'Sinh viên'  },
   { key: 'announcements', label: 'Thông báo'  },
   { key: 'lectures',      label: 'Bài giảng'  },
   { key: 'exams',         label: 'Đề thi'     },
+  { key: 'ai_analysis',   label: '✦ AI Phân tích' },
 ]
 
 const STUDENT_TABS = [
@@ -817,6 +943,7 @@ export default function CourseDetailPage() {
         {tab === 'students' && <TabStudents course={course} isTeacher={isTeacher} isAdmin={isAdmin} onRefresh={loadCourse} />}
         {tab === 'lectures' && <TabLectures course={course} isTeacher={isTeacher} />}
         {tab === 'exams'    && <TabExams    course={course} isTeacher={isTeacher} />}
+        {tab === 'ai_analysis' && <TabAiAnalysis courseId={course.id} />}
       </div>
     </div>
     </>

@@ -363,6 +363,10 @@ public class AiGradingService {
                 .build()).collect(Collectors.toList());
     }
 
+    public void clearWeaknessCache(Long studentId) {
+        try { redis.delete("ai:weakness:" + studentId); } catch (Exception ignored) {}
+    }
+
     // ── Analyze student weakness ──────────────────────────
     public WeaknessAnalysis analyzeWeakness(Long studentId) {
         String cacheKey = "ai:weakness:" + studentId;
@@ -424,7 +428,7 @@ public class AiGradingService {
 
         WeaknessAnalysis result = new WeaknessAnalysis(topics, advice, suggestions, roadmap);
         try {
-            redis.opsForValue().set(cacheKey, objectMapper.writeValueAsString(result), Duration.ofHours(2));
+            redis.opsForValue().set(cacheKey, objectMapper.writeValueAsString(result), Duration.ofMinutes(30));
         } catch (Exception ignored) {}
         return result;
     }

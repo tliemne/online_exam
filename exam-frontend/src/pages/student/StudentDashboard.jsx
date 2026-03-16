@@ -89,14 +89,17 @@ function PracticeModal({ topic, difficulty, onClose }) {
   const [error, setError]           = useState('')
   const [count, setCount]           = useState(5)
   const [diff, setDiff]             = useState(difficulty)
+  const [qtype, setQtype]           = useState('MULTIPLE_CHOICE')
   const [started, setStarted]       = useState(false)
 
   const handleStart = () => {
     setStarted(true)
     setLoading(true)
+    // Practice không cache — thêm timestamp để bypass Redis cache
     api.post('/questions/ai-generate', {
-      topic, type: 'MULTIPLE_CHOICE', difficulty: diff, count,
+      topic, type: qtype, difficulty: diff, count,
       courseId: null, tags: null,
+      _nocache: Date.now(), // bust cache key
     })
       .then(r => setQuestions(r.data.data || []))
       .catch(() => setError('Không tải được bài luyện. Thử lại.'))
@@ -104,12 +107,16 @@ function PracticeModal({ topic, difficulty, onClose }) {
   }
 
   const handleSubmit = () => {
-    let correct = 0
-    questions.forEach((q, i) => {
-      const chosen = answers[i]
-      if (chosen != null && q.answers[chosen]?.correct) correct++
-    })
-    setScore({ correct, total: questions.length })
+    if (qtype === 'ESSAY') {
+      setScore({ essay: true, total: questions.length })
+    } else {
+      let correct = 0
+      questions.forEach((q, i) => {
+        const chosen = answers[i]
+        if (chosen != null && q.answers[chosen]?.correct) correct++
+      })
+      setScore({ correct, total: questions.length })
+    }
     setSubmitted(true)
   }
 
@@ -138,7 +145,15 @@ function PracticeModal({ topic, difficulty, onClose }) {
           {/* Config screen */}
           {!started && (
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="input-label">Loại câu</label>
+                  <select className="input-field" value={qtype} onChange={e => setQtype(e.target.value)}>
+                    <option value="MULTIPLE_CHOICE">Trắc nghiệm</option>
+                    <option value="TRUE_FALSE">Đúng/Sai</option>
+                    <option value="ESSAY">Tự luận</option>
+                  </select>
+                </div>
                 <div>
                   <label className="input-label">Độ khó</label>
                   <select className="input-field" value={diff} onChange={e => setDiff(e.target.value)}>
@@ -149,7 +164,7 @@ function PracticeModal({ topic, difficulty, onClose }) {
                 </div>
                 <div>
                   <label className="input-label">Số câu</label>
-                  <input type="number" className="input-field" min={3} max={15}
+                  <input type="number" className="input-field" min={1} max={15}
                     value={count} onChange={e => setCount(+e.target.value)}/>
                 </div>
               </div>
@@ -170,18 +185,28 @@ function PracticeModal({ topic, difficulty, onClose }) {
 
           {/* Score result */}
           {submitted && score && (
-            <div className="px-4 py-4 rounded-lg text-center"
-              style={{ background: score.correct / score.total >= 0.6 ? 'var(--success-subtle)' : 'var(--warning-subtle)' }}>
-              <p className="text-2xl font-bold"
-                style={{ color: score.correct / score.total >= 0.6 ? 'var(--success)' : 'var(--warning)' }}>
-                {score.correct}/{score.total}
-              </p>
-              <p className="text-sm mt-1" style={{ color: 'var(--text-2)' }}>
-                {score.correct / score.total >= 0.8 ? 'Xuất sắc! Bạn đã nắm vững chủ đề này.'
-                  : score.correct / score.total >= 0.6 ? 'Khá tốt! Tiếp tục luyện tập nhé.'
-                  : 'Cần ôn lại thêm chủ đề này.'}
-              </p>
-            </div>
+            score.essay ? (
+              <div className="px-4 py-4 rounded-lg text-center"
+                style={{ background: 'var(--accent-subtle)' }}>
+                <p className="font-semibold" style={{ color: 'var(--accent)' }}>Đã nộp {score.total} câu tự luận</p>
+                <p className="text-sm mt-1" style={{ color: 'var(--text-3)' }}>
+                  Xem gợi ý đáp án bên dưới để tự đánh giá
+                </p>
+              </div>
+            ) : (
+              <div className="px-4 py-4 rounded-lg text-center"
+                style={{ background: score.correct / score.total >= 0.6 ? 'var(--success-subtle)' : 'var(--warning-subtle)' }}>
+                <p className="text-2xl font-bold"
+                  style={{ color: score.correct / score.total >= 0.6 ? 'var(--success)' : 'var(--warning)' }}>
+                  {score.correct}/{score.total}
+                </p>
+                <p className="text-sm mt-1" style={{ color: 'var(--text-2)' }}>
+                  {score.correct / score.total >= 0.8 ? 'Xuất sắc! Bạn đã nắm vững chủ đề này.'
+                    : score.correct / score.total >= 0.6 ? 'Khá tốt! Tiếp tục luyện tập nhé.'
+                    : 'Cần ôn lại thêm chủ đề này.'}
+                </p>
+              </div>
+            )
           )}
 
           {/* Questions */}
@@ -193,30 +218,48 @@ function PracticeModal({ topic, difficulty, onClose }) {
                   <span className="text-xs mr-2" style={{ color: 'var(--text-3)' }}>{qi + 1}.</span>
                   {q.content}
                 </p>
-                <div className="space-y-2">
-                  {q.answers?.map((a, ai) => {
-                    let bg = 'var(--bg-elevated)', clr = 'var(--text-2)', border = 'var(--border-base)'
-                    if (submitted) {
-                      if (a.correct) { bg = 'var(--success-subtle)'; clr = 'var(--success)'; border = 'var(--success-border)' }
-                      else if (chosen === ai && !a.correct) { bg = 'var(--danger-subtle)'; clr = 'var(--danger)'; border = 'var(--danger-border)' }
-                    } else if (chosen === ai) {
-                      bg = 'var(--accent-subtle)'; clr = 'var(--accent)'; border = 'var(--accent-border)'
-                    }
-                    return (
-                      <button key={ai} disabled={submitted}
-                        onClick={() => setAnswers(p => ({...p, [qi]: ai}))}
-                        className="w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all"
-                        style={{ background: bg, color: clr, border: `1px solid ${border}` }}>
-                        {String.fromCharCode(65 + ai)}. {a.content}
-                      </button>
-                    )
-                  })}
-                </div>
-                {/* Show explanation after submit */}
-                {submitted && q.explanation && (
-                  <p className="text-xs px-3 py-2 rounded" style={{ background: 'var(--bg-elevated)', color: 'var(--text-3)' }}>
-                    {q.explanation}
-                  </p>
+                {qtype === 'ESSAY' ? (
+                  <div className="space-y-2">
+                    <textarea
+                      disabled={submitted}
+                      rows={4}
+                      placeholder="Viết câu trả lời của bạn..."
+                      value={answers[qi] || ''}
+                      onChange={e => setAnswers(p => ({...p, [qi]: e.target.value}))}
+                      className="input-field w-full resize-none text-sm"/>
+                    {submitted && q.explanation && (
+                      <div className="px-3 py-2.5 rounded-lg text-xs space-y-1"
+                        style={{ background: 'var(--accent-subtle)' }}>
+                        <p className="font-medium" style={{ color: 'var(--accent)' }}>Gợi ý / Tiêu chí chấm:</p>
+                        <p style={{ color: 'var(--text-2)' }}>{q.explanation}</p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {q.answers?.map((a, ai) => {
+                      let bg = 'var(--bg-elevated)', clr = 'var(--text-2)', border = 'var(--border-base)'
+                      if (submitted) {
+                        if (a.correct) { bg = 'var(--success-subtle)'; clr = 'var(--success)'; border = 'var(--success-border)' }
+                        else if (chosen === ai && !a.correct) { bg = 'var(--danger-subtle)'; clr = 'var(--danger)'; border = 'var(--danger-border)' }
+                      } else if (chosen === ai) {
+                        bg = 'var(--accent-subtle)'; clr = 'var(--accent)'; border = 'var(--accent-border)'
+                      }
+                      return (
+                        <button key={ai} disabled={submitted}
+                          onClick={() => setAnswers(p => ({...p, [qi]: ai}))}
+                          className="w-full text-left px-3 py-2.5 rounded-lg text-sm transition-all"
+                          style={{ background: bg, color: clr, border: `1px solid ${border}` }}>
+                          {String.fromCharCode(65 + ai)}. {a.content}
+                        </button>
+                      )
+                    })}
+                    {submitted && q.explanation && (
+                      <p className="text-xs px-3 py-2 rounded" style={{ background: 'var(--bg-elevated)', color: 'var(--text-3)' }}>
+                        {q.explanation}
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
             )
@@ -225,9 +268,13 @@ function PracticeModal({ topic, difficulty, onClose }) {
           {/* Actions */}
           {!loading && !submitted && questions.length > 0 && (
             <button onClick={handleSubmit}
-              disabled={Object.keys(answers).length < questions.length}
+              disabled={qtype === 'ESSAY'
+                ? Object.keys(answers).length < questions.length
+                : Object.keys(answers).length < questions.length}
               className="btn-primary w-full">
-              Nộp bài ({Object.keys(answers).length}/{count} câu)
+              {qtype === 'ESSAY'
+                ? `Nộp bài (${Object.values(answers).filter(Boolean).length}/${count} câu)`
+                : `Nộp bài (${Object.keys(answers).length}/${count} câu)`}
             </button>
           )}
           {submitted && (
@@ -240,10 +287,11 @@ function PracticeModal({ topic, difficulty, onClose }) {
 }
 
 function WeaknessWidget() {
-  const [data, setData]       = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [open, setOpen]       = useState(false)
-  const [practice, setPractice] = useState(null) // {topic, difficulty}
+  const [data, setData]         = useState(null)
+  const [loading, setLoading]   = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+  const [open, setOpen]         = useState(false)
+  const [practice, setPractice] = useState(null)
 
   const load = async () => {
     if (data) { setOpen(true); return }
@@ -253,6 +301,15 @@ function WeaknessWidget() {
       setData(r.data.data)
       setOpen(true)
     } catch {} finally { setLoading(false) }
+  }
+
+  const refresh = async () => {
+    setRefreshing(true)
+    try {
+      await api.delete('/attempts/ai-weakness/cache')
+      const r = await attemptApi.aiWeakness()
+      setData(r.data.data)
+    } catch {} finally { setRefreshing(false) }
   }
 
   // Tính điểm tổng quát từ data (không cần AI)
@@ -308,9 +365,19 @@ function WeaknessWidget() {
               style={{ borderColor: 'var(--border-base)', background: 'var(--bg-surface)' }}>
               <div>
                 <h3 className="font-semibold" style={{ color: 'var(--text-1)' }}>✦ Phân tích học lực</h3>
-                <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>Powered by Gemini AI · Cache 2 giờ</p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>Powered by Gemini AI · Cache 30 phút</p>
               </div>
-              <button onClick={() => setOpen(false)} className="btn-ghost p-1.5">✕</button>
+              <div className="flex items-center gap-1">
+                <button onClick={refresh} disabled={refreshing}
+                  className="btn-ghost p-1.5 text-xs"
+                  style={{ color: 'var(--text-3)' }}
+                  title="Phân tích lại">
+                  {refreshing
+                    ? <span className="w-3 h-3 border border-t-transparent rounded-full animate-spin inline-block" style={{ borderColor: 'var(--text-3)' }}/>
+                    : '↻'}
+                </button>
+                <button onClick={() => setOpen(false)} className="btn-ghost p-1.5">✕</button>
+              </div>
             </div>
 
             <div className="p-5 space-y-5">

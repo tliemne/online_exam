@@ -3,15 +3,19 @@ package com.example.online_exam.exam.controller;
 import com.example.online_exam.common.dto.BaseResponse;
 import com.example.online_exam.exam.dto.*;
 import com.example.online_exam.exam.service.ExamService;
+import com.example.online_exam.question.service.AiQuestionService;
+import com.example.online_exam.question.service.QuestionService;
 import com.example.online_exam.secutity.service.CurrentUserService;
 import com.example.online_exam.user.entity.User;
 import com.example.online_exam.user.repository.UserRepository;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -19,9 +23,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ExamController {
 
-    private final ExamService examService;
-    private final UserRepository userRepo;
+    private final ExamService        examService;
+    private final UserRepository     userRepo;
     private final CurrentUserService currentUserService;
+    private final AiQuestionService  aiQuestionService;
+    private final QuestionService    questionService;
 
     // ── CRUD ──────────────────────────────────────────────
 
@@ -120,6 +126,104 @@ public class ExamController {
             @PathVariable Long id,
             @RequestBody RandomQuestionRequest request) {
         return ok(examService.randomQuestions(id, request));
+    }
+
+    // ── AI tạo đề thi tự động ────────────────────────────
+    @Data
+    public static class AiExamRequest {
+        private String  title;
+        private Long    courseId;
+        private Integer durationMinutes = 45;
+        private Double  totalScore      = 10.0;
+        private Double  passScore       = 5.0;
+        // Các topic cần tạo câu hỏi
+        private List<TopicConfig> topics;
+
+        @Data
+        public static class TopicConfig {
+            private String topic;
+            private String difficulty;  // EASY | MEDIUM | HARD | ALL
+            private int    count;
+            private String type;        // MULTIPLE_CHOICE | TRUE_FALSE
+        }
+    }
+
+    @Data
+    public static class AiExamResult {
+        private ExamResponse exam;
+        private int          totalGenerated;
+        private int          totalSaved;
+        private List<String> errors;
+    }
+
+    @PostMapping("/ai-generate")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    public BaseResponse<AiExamResult> aiGenerateExam(@RequestBody AiExamRequest req) {
+        // 1. Tạo exam trước (DRAFT)
+        ExamRequest examReq = new ExamRequest();
+        examReq.setTitle(req.getTitle() != null && !req.getTitle().isBlank()
+                ? req.getTitle() : "Đề thi AI - " + LocalDateTime.now().toLocalDate());
+        examReq.setCourseId(req.getCourseId());
+        examReq.setDurationMinutes(req.getDurationMinutes());
+        examReq.setTotalScore(req.getTotalScore());
+        examReq.setPassScore(req.getPassScore());
+        ExamResponse exam = examService.create(examReq);
+
+        // 2. Với mỗi topic, gọi AI tạo câu hỏi → lưu DB → gắn vào exam
+        List<ExamQuestionItem> items = new ArrayList<>();
+        List<String> errors = new ArrayList<>();
+        int totalGenerated = 0;
+
+        for (AiExamRequest.TopicConfig tc : req.getTopics()) {
+            try {
+                String diff = tc.getDifficulty() != null ? tc.getDifficulty() : "MEDIUM";
+                String type = tc.getType() != null ? tc.getType() : "MULTIPLE_CHOICE";
+
+                List<String> difficulties = diff.equals("ALL")
+                        ? List.of("EASY", "MEDIUM", "HARD") : List.of(diff);
+
+                int perDiff = diff.equals("ALL")
+                        ? Math.max(1, tc.getCount() / 3) : tc.getCount();
+
+                for (String d : difficulties) {
+                    var genReq = new AiQuestionService.GenerateRequest(
+                            tc.getTopic(), type, d, perDiff, req.getCourseId(), tc.getTopic(), null);
+                    var generated = aiQuestionService.generate(genReq);
+                    totalGenerated += generated.size();
+
+                    for (var gq : generated) {
+                        try {
+                            var qReq = aiQuestionService.toQuestionRequest(gq, req.getCourseId(), tc.getTopic());
+                            var saved = questionService.create(qReq);
+                            double score = req.getTotalScore() / Math.max(1, req.getTopics().stream()
+                                    .mapToInt(AiExamRequest.TopicConfig::getCount).sum());
+                            ExamQuestionItem item = new ExamQuestionItem();
+                            item.setQuestionId(saved.getId());
+                            item.setScore(Math.round(score * 10.0) / 10.0);
+                            item.setOrderIndex(items.size() + 1);
+                            items.add(item);
+                        } catch (Exception e) {
+                            errors.add("Lưu câu hỏi lỗi: " + e.getMessage());
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                errors.add("Topic '" + tc.getTopic() + "': " + e.getMessage());
+            }
+        }
+
+        // 3. Gắn tất cả câu hỏi vào exam
+        ExamResponse finalExam = exam;
+        if (!items.isEmpty()) {
+            finalExam = examService.addQuestions(exam.getId(), items);
+        }
+
+        AiExamResult result = new AiExamResult();
+        result.setExam(finalExam);
+        result.setTotalGenerated(totalGenerated);
+        result.setTotalSaved(items.size());
+        result.setErrors(errors);
+        return ok(result);
     }
 
     // ── Helper ────────────────────────────────────────────
