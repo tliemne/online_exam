@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { questionApi, courseApi, tagApi } from '../../api/services'
+import api from '../../api/client'
+import * as XLSX from 'xlsx'
 import Pagination from '../../components/common/Pagination'
 import { useAuth } from '../../context/AuthContext'
 import ImportQuestionsModal from '../../components/teacher/questions/ImportQuestionsModal'
@@ -100,7 +102,8 @@ export default function QuestionsPage() {
   const [modal, setModal]       = useState(null)
   const [selected, setSelected] = useState(null)
   const [deleting, setDeleting] = useState(null)
-  const [showImport, setShowImport] = useState(false)
+  const [showImport, setShowImport]     = useState(false)
+  const [showAiGenerate, setShowAiGenerate] = useState(false)
 
   useEffect(() => {
     courseApi.getAll().then(r => {
@@ -178,6 +181,11 @@ export default function QuestionsPage() {
         </div>
         {isTeacherOrAdmin && (
           <div className="flex items-center gap-2">
+            <button onClick={() => setShowAiGenerate(true)}
+              className="btn-secondary flex items-center gap-2"
+              style={{ color: 'var(--purple)', borderColor: 'var(--purple-subtle)' }}>
+              ✦ AI Tạo câu hỏi
+            </button>
             <button onClick={() => setShowImport(true)} className="btn-secondary flex items-center gap-2">
               {Icon.upload} Import file
             </button>
@@ -310,7 +318,301 @@ export default function QuestionsPage() {
       {showImport && selectedCourse && (
         <ImportQuestionsModal courseId={selectedCourse} onClose={() => setShowImport(false)} onImported={loadQuestions} />
       )}
+      {showAiGenerate && (
+        <AiGenerateModal
+          courses={courses}
+          defaultCourseId={selectedCourse}
+          tags={tags}
+          onClose={() => setShowAiGenerate(false)}
+          onSaved={loadQuestions}
+        />
+      )}
     </div>
     </>
+  )
+}
+
+// ── AI Generate Modal ──────────────────────────────────────
+function AiGenerateModal({ courses, defaultCourseId, tags = [], onClose, onSaved }) {
+  const toast = useToast()
+  const [form, setForm] = useState({
+    topic: '', type: 'MULTIPLE_CHOICE', difficulty: 'MEDIUM', count: 5,
+    courseId: defaultCourseId || courses[0]?.id || '',
+    tags: '',
+  })
+  const [loading, setLoading]   = useState(false)
+  const [generated, setGenerated] = useState([])
+  const [saving, setSaving]     = useState(new Set())
+  const [saved, setSaved]       = useState(new Set())
+  const [error, setError]       = useState('')
+
+  const handleGenerate = async () => {
+    if (!form.topic.trim()) return setError('Nhập chủ đề trước')
+    setLoading(true); setError(''); setGenerated([])
+    try {
+      let list = []
+      if (form.difficulty === 'ALL') {
+        // Chia đều: mỗi mức 1/3 số câu (ít nhất 1)
+        const perLevel = Math.max(1, Math.floor(form.count / 3))
+        const levels = ['EASY', 'MEDIUM', 'HARD']
+        const results = await Promise.all(levels.map(diff =>
+          api.post('/questions/ai-generate', {
+            topic: form.topic, type: form.type,
+            difficulty: diff, count: perLevel,
+            courseId: form.courseId, tags: form.tags || null,
+          }).then(r => r.data.data || []).catch(() => [])
+        ))
+        list = results.flat()
+      } else {
+        const r = await api.post('/questions/ai-generate', {
+          topic: form.topic, type: form.type,
+          difficulty: form.difficulty, count: form.count,
+          courseId: form.courseId, tags: form.tags || null,
+        })
+        list = r.data.data || []
+      }
+      if (!list.length) setError('AI không tạo được câu hỏi. Thử lại.')
+      setGenerated(list)
+    } catch { setError('Lỗi kết nối AI. Thử lại.') }
+    finally { setLoading(false) }
+  }
+
+  const handleSave = async (q, idx) => {
+    setSaving(p => new Set(p).add(idx))
+    try {
+      const tagParam = form.tags ? `&tags=${encodeURIComponent(form.tags)}` : ''
+      await api.post(`/questions/ai-save?courseId=${form.courseId}${tagParam}`, q)
+      setSaved(p => new Set(p).add(idx))
+      toast.success('Đã lưu câu hỏi')
+      onSaved?.()
+    } catch { toast.error('Lưu thất bại') }
+    finally { setSaving(p => { const s = new Set(p); s.delete(idx); return s }) }
+  }
+
+  const handleSaveAll = async () => {
+    for (let i = 0; i < generated.length; i++) {
+      if (!saved.has(i)) await handleSave(generated[i], i)
+    }
+  }
+
+  const exportToExcel = () => {
+    // Map generated questions → Excel format đúng chuẩn import
+    const rows = generated.map(q => {
+      if (q.type === 'MULTIPLE_CHOICE') {
+        const answers = q.answers || []
+        const correctIdx = answers.findIndex(a => a.correct)
+        const correctLabel = ['A','B','C','D'][correctIdx] || 'A'
+        return [
+          q.content,
+          'MULTIPLE_CHOICE',
+          q.difficulty,
+          answers[0]?.content || '',
+          answers[1]?.content || '',
+          answers[2]?.content || '',
+          answers[3]?.content || '',
+          correctLabel,
+          form.topic, // dùng chủ đề làm tag
+        ]
+      } else { // TRUE_FALSE
+        const correct = q.answers?.find(a => a.correct)
+        const label = correct?.content?.toLowerCase().includes('đúng') ? 'ĐÚNG' : 'SAI'
+        return [
+          q.content,
+          'TRUE_FALSE',
+          q.difficulty,
+          'Đúng', 'Sai', '', '', label,
+          form.topic,
+        ]
+      }
+    })
+
+    const header = ['content', 'type', 'difficulty', 'A', 'B', 'C', 'D', 'correct', 'tags']
+    const ws = XLSX.utils.aoa_to_sheet([header, ...rows])
+
+    // Column widths
+    ws['!cols'] = [
+      { wch: 60 }, { wch: 18 }, { wch: 12 },
+      { wch: 30 }, { wch: 30 }, { wch: 30 }, { wch: 30 },
+      { wch: 10 }, { wch: 20 },
+    ]
+
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Questions')
+    const filename = `AI_${form.topic.replace(/\s+/g, '_')}_${form.difficulty}_${generated.length}q.xlsx`
+    XLSX.writeFile(wb, filename)
+  }
+
+  const TYPE_LABEL = { MULTIPLE_CHOICE: 'Trắc nghiệm', TRUE_FALSE: 'Đúng/Sai' }
+  const DIFF_LABEL = { ALL: 'Tất cả', EASY: 'Dễ', MEDIUM: 'Trung bình', HARD: 'Khó' }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.65)' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="w-full max-w-2xl max-h-[88vh] overflow-y-auto rounded-xl border"
+        style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-base)' }}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b sticky top-0 z-10"
+          style={{ borderColor: 'var(--border-base)', background: 'var(--bg-surface)' }}>
+          <div>
+            <h3 className="font-semibold" style={{ color: 'var(--text-1)' }}>✦ AI Tạo câu hỏi</h3>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>Powered by Gemini · Kết quả được cache 30 phút</p>
+          </div>
+          <button onClick={onClose} className="btn-ghost p-1.5">✕</button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          {/* Config form */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2">
+              <label className="input-label">Chủ đề *</label>
+              <input className="input-field" placeholder="vd: Java OOP, SQL JOIN, Mạng máy tính..."
+                value={form.topic} onChange={e => setForm({...form, topic: e.target.value})}
+                onKeyDown={e => e.key === 'Enter' && handleGenerate()}/>
+            </div>
+            <div>
+              <label className="input-label">Lớp học</label>
+              <select className="input-field" value={form.courseId}
+                onChange={e => setForm({...form, courseId: e.target.value})}>
+                {courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="input-label">Loại câu</label>
+              <select className="input-field" value={form.type}
+                onChange={e => setForm({...form, type: e.target.value})}>
+                <option value="MULTIPLE_CHOICE">Trắc nghiệm</option>
+                <option value="TRUE_FALSE">Đúng/Sai</option>
+              </select>
+            </div>
+            <div>
+              <label className="input-label">Độ khó</label>
+              <select className="input-field" value={form.difficulty}
+                onChange={e => setForm({...form, difficulty: e.target.value})}>
+                <option value="ALL">Tất cả mức độ</option>
+                <option value="EASY">Dễ</option>
+                <option value="MEDIUM">Trung bình</option>
+                <option value="HARD">Khó</option>
+              </select>
+            </div>
+            <div>
+              <label className="input-label">Số câu</label>
+              <input type="number" className="input-field" min={1}
+                value={form.count} onChange={e => setForm({...form, count: +e.target.value})}/>
+            </div>
+            <div className="col-span-2">
+              <label className="input-label">Tags gắn vào (tuỳ chọn)</label>
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {tags.map(t => (
+                  <button key={t.id} type="button"
+                    onClick={() => {
+                      const cur = form.tags ? form.tags.split(',').map(s=>s.trim()).filter(Boolean) : []
+                      const exists = cur.includes(t.name)
+                      setForm({...form, tags: exists
+                        ? cur.filter(s => s !== t.name).join(', ')
+                        : [...cur, t.name].join(', ')
+                      })
+                    }}
+                    className="text-xs px-2 py-0.5 rounded-full transition-all"
+                    style={{
+                      background: form.tags?.includes(t.name) ? t.color || 'var(--accent)' : 'var(--bg-elevated)',
+                      color: form.tags?.includes(t.name) ? '#fff' : 'var(--text-2)',
+                      border: '1px solid var(--border-base)',
+                    }}>
+                    {t.name}
+                  </button>
+                ))}
+              </div>
+              <input className="input-field text-xs" placeholder="Hoặc nhập tên tag, cách nhau dấu phẩy..."
+                value={form.tags} onChange={e => setForm({...form, tags: e.target.value})}/>
+            </div>
+          </div>
+
+          {error && <p className="text-sm" style={{ color: 'var(--danger)' }}>{error}</p>}
+
+          <button onClick={handleGenerate} disabled={loading || !form.topic.trim()}
+            className="btn-primary w-full">
+            {loading
+              ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Đang tạo...</>
+              : '✦ Tạo câu hỏi'}
+          </button>
+
+          {/* Generated list */}
+          {generated.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium" style={{ color: 'var(--text-1)' }}>
+                  {generated.length} câu hỏi được tạo
+                </p>
+                <div className="flex items-center gap-2">
+                <button onClick={exportToExcel}
+                  className="btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5">
+                  ↓ Xuất Excel
+                </button>
+                <button onClick={handleSaveAll}
+                  disabled={saved.size === generated.length}
+                  className="btn-secondary text-xs py-1.5 px-3">
+                  {saved.size === generated.length ? '✓ Đã lưu tất cả' : `Lưu tất cả (${generated.length - saved.size} câu)`}
+                </button>
+              </div>
+              </div>
+
+              {generated.map((q, i) => (
+                <div key={i} className="rounded-lg border p-4 space-y-3"
+                  style={{ borderColor: saved.has(i) ? 'var(--success-border)' : 'var(--border-base)',
+                           background: saved.has(i) ? 'var(--success-subtle)' : 'transparent' }}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="text-xs px-1.5 py-0.5 rounded"
+                          style={{ background: 'var(--bg-elevated)', color: 'var(--text-3)' }}>
+                          {TYPE_LABEL[q.type]}
+                        </span>
+                        <span className="text-xs px-1.5 py-0.5 rounded"
+                          style={{ background: 'var(--bg-elevated)', color: 'var(--text-3)' }}>
+                          {DIFF_LABEL[q.difficulty]}
+                        </span>
+                      </div>
+                      <p className="text-sm font-medium" style={{ color: 'var(--text-1)' }}>{q.content}</p>
+                    </div>
+                    <button onClick={() => handleSave(q, i)}
+                      disabled={saving.has(i) || saved.has(i)}
+                      className="shrink-0 text-xs px-3 py-1.5 rounded-lg transition-all"
+                      style={{
+                        background: saved.has(i) ? 'var(--success-subtle)' : 'var(--bg-elevated)',
+                        color: saved.has(i) ? 'var(--success)' : 'var(--text-2)',
+                        border: '1px solid var(--border-base)',
+                      }}>
+                      {saving.has(i) ? '...' : saved.has(i) ? '✓ Đã lưu' : 'Lưu'}
+                    </button>
+                  </div>
+
+                  {/* Answers */}
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {q.answers?.map((a, j) => (
+                      <div key={j} className="text-xs px-2.5 py-1.5 rounded flex items-center gap-1.5"
+                        style={{
+                          background: a.correct ? 'var(--success-subtle)' : 'var(--bg-elevated)',
+                          color: a.correct ? 'var(--success)' : 'var(--text-2)',
+                        }}>
+                        {a.correct ? '✓' : '○'} {a.content}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Explanation */}
+                  {q.explanation && (
+                    <p className="text-xs italic" style={{ color: 'var(--text-3)' }}>
+                      💡 {q.explanation}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   )
 }

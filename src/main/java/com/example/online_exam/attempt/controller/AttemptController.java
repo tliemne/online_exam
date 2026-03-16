@@ -142,6 +142,22 @@ public class AttemptController {
         return ok(aiGradingService.suggestGrades(id));
     }
 
+    // GET /attempts/{id}/ai-explain  — AI giải thích câu sai (student dùng sau khi nộp)
+    @GetMapping("/{id}/ai-explain")
+    @PreAuthorize("isAuthenticated()")
+    public BaseResponse<AiExplanationResponse.Summary> aiExplain(@PathVariable Long id) {
+        return ok(aiGradingService.explainWrongAnswers(id));
+    }
+
+    // GET /attempts/ai-weakness  — AI phân tích điểm yếu student
+    @GetMapping("/ai-weakness")
+    @PreAuthorize("hasRole('STUDENT')")
+    public BaseResponse<AiGradingService.WeaknessAnalysis> aiWeakness(
+            @org.springframework.security.core.annotation.AuthenticationPrincipal
+            com.example.online_exam.user.entity.User currentUser) {
+        return ok(aiGradingService.analyzeWeakness(currentUser.getId()));
+    }
+
     private <T> BaseResponse<T> ok(T data) {
         return BaseResponse.<T>builder()
                 .status(200).message("success")

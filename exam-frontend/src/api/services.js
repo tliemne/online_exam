@@ -87,10 +87,13 @@ export const examApi = {
 
 // ── ATTEMPTS ─────────────────────────────────────────────
 export const attemptApi = {
-  start: (examId) => api.post(`/exams/${examId}/start`),
-  submit: (attemptId, answers) => api.post(`/attempts/${attemptId}/submit`, { answers }),
-  getResult: (attemptId) => api.get(`/attempts/${attemptId}/result`),
-  getMyAttempts: () => api.get('/attempts/my'),
+  start:         (examId)             => api.post(`/exams/${examId}/start`),
+  submit:        (attemptId, answers) => api.post(`/attempts/${attemptId}/submit`, { answers }),
+  getResult:     (attemptId)          => api.get(`/attempts/${attemptId}/result`),
+  getMyAttempts: ()                   => api.get('/attempts/my'),
+  aiExplain:     (attemptId)          => api.get(`/attempts/${attemptId}/ai-explain`),
+  aiSuggest:     (attemptId)          => api.get(`/attempts/${attemptId}/ai-suggest`),
+  aiWeakness:    ()                   => api.get('/attempts/ai-weakness'),
 }
 
 // ── LECTURES ──────────────────────────────────────────────

@@ -5,6 +5,7 @@ import com.example.online_exam.question.dto.QuestionRequest;
 import com.example.online_exam.question.dto.QuestionResponse;
 import com.example.online_exam.question.enums.Difficulty;
 import com.example.online_exam.question.enums.QuestionType;
+import com.example.online_exam.question.service.AiQuestionService;
 import com.example.online_exam.question.service.QuestionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -23,7 +24,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class QuestionController {
 
-    private final QuestionService questionService;
+    private final QuestionService   questionService;
+    private final AiQuestionService aiQuestionService;
 
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
@@ -92,5 +94,30 @@ public class QuestionController {
             return BaseResponse.<List<QuestionResponse>>builder()
                     .status(200).message("success").data(result).timestamp(LocalDateTime.now()).build();
         }
+    }
+
+    /** AI preview: tạo câu hỏi theo chủ đề, chưa lưu DB */
+    @PostMapping("/ai-generate")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    public BaseResponse<List<AiQuestionService.GeneratedQuestion>> aiGenerate(
+            @RequestBody AiQuestionService.GenerateRequest req) {
+        return BaseResponse.<List<AiQuestionService.GeneratedQuestion>>builder()
+                .status(200).message("success")
+                .data(aiQuestionService.generate(req))
+                .timestamp(LocalDateTime.now()).build();
+    }
+
+    /** Lưu 1 câu hỏi do AI tạo vào DB */
+    @PostMapping("/ai-save")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    public BaseResponse<QuestionResponse> aiSave(
+            @RequestBody AiQuestionService.GeneratedQuestion gq,
+            @RequestParam Long courseId,
+            @RequestParam(required = false) String tags) {
+        QuestionRequest req = aiQuestionService.toQuestionRequest(gq, courseId, tags);
+        return BaseResponse.<QuestionResponse>builder()
+                .status(200).message("Đã lưu câu hỏi")
+                .data(questionService.create(req))
+                .timestamp(LocalDateTime.now()).build();
     }
 }

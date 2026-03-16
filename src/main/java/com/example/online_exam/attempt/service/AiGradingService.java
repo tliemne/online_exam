@@ -1,6 +1,7 @@
 package com.example.online_exam.attempt.service;
 
 import com.example.online_exam.attempt.dto.AiSuggestionResponse;
+import com.example.online_exam.attempt.dto.AiExplanationResponse;
 import com.example.online_exam.attempt.entity.Attempt;
 import com.example.online_exam.attempt.entity.AttemptAnswer;
 import com.example.online_exam.attempt.repository.AttemptRepository;
@@ -11,11 +12,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -25,15 +28,184 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class AiGradingService {
 
-    private final AttemptRepository attemptRepo;
-    private final ObjectMapper      objectMapper;
-    private final RestTemplate      restTemplate;   // inject bean có timeout
+    private final AttemptRepository    attemptRepo;
+    private final ObjectMapper         objectMapper;
+    private final RestTemplate         restTemplate;
+    private final StringRedisTemplate  redis;
 
     @Value("${gemini.api.key:}")
     private String geminiApiKey;
 
-    private static final String GEMINI_URL =
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
+    @Value("${gemini.model:}")
+    private String geminiModel;
+
+    private String getGeminiUrl() {
+        return "https://generativelanguage.googleapis.com/v1beta/models/"
+                + geminiModel + ":generateContent";
+    }
+
+    private static final Duration EXPLAIN_TTL = Duration.ofHours(1);
+    private static final String   EXPLAIN_PREFIX = "ai:explain:";
+
+    // ── Explain wrong answers for student ────────────────────
+    public AiExplanationResponse.Summary explainWrongAnswers(Long attemptId) {
+        // Cache check — tránh gọi lại AI cho cùng 1 attempt
+        String cacheKey = EXPLAIN_PREFIX + attemptId;
+        try {
+            String cached = redis.opsForValue().get(cacheKey);
+            if (cached != null)
+                return objectMapper.readValue(cached, AiExplanationResponse.Summary.class);
+        } catch (Exception ignored) {}
+
+        Attempt attempt = attemptRepo.findById(attemptId)
+                .orElseThrow(() -> new AppException(ErrorCode.ATTEMPT_NOT_FOUND));
+
+        // Chỉ lấy câu SAI (MC/TF) — không lấy essay, không lấy câu đúng → tiết kiệm token
+        List<AttemptAnswer> wrong = attempt.getAnswers().stream()
+                .filter(aa -> Boolean.FALSE.equals(aa.getIsCorrect()))
+                .filter(aa -> !aa.getQuestion().getType().name().equals("ESSAY"))
+                .limit(10) // tối đa 10 câu để không tốn token
+                .collect(Collectors.toList());
+
+        if (wrong.isEmpty()) {
+            return AiExplanationResponse.Summary.builder()
+                    .explanations(List.of())
+                    .overallFeedback("Tuyệt vời! Bạn trả lời đúng tất cả các câu.")
+                    .weakTopics(List.of())
+                    .build();
+        }
+
+        if (geminiApiKey == null || geminiApiKey.isBlank()) {
+            return fallbackExplanation(wrong);
+        }
+
+        try {
+            String prompt = buildExplainPrompt(wrong);
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            Map<String, Object> body = Map.of(
+                    "contents", List.of(Map.of("parts", List.of(Map.of("text", prompt))))
+            );
+            String url = getGeminiUrl() + "?key=" + geminiApiKey;
+            ResponseEntity<String> resp = restTemplate.postForEntity(
+                    url, new HttpEntity<>(body, headers), String.class);
+
+            AiExplanationResponse.Summary result = parseExplainResponse(resp.getBody(), wrong);
+
+            // Cache kết quả 1 giờ
+            try {
+                redis.opsForValue().set(cacheKey, objectMapper.writeValueAsString(result), EXPLAIN_TTL);
+            } catch (Exception ignored) {}
+
+            return result;
+        } catch (Exception e) {
+            log.error("AI explain failed: {}", e.getMessage());
+            return fallbackExplanation(wrong);
+        }
+    }
+
+    private String buildExplainPrompt(List<AttemptAnswer> wrong) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("""
+            Bạn là gia sư giải thích câu hỏi thi. Với mỗi câu sai dưới đây, hãy:
+            1. Giải thích ngắn tại sao đáp án đúng là đúng (≤40 từ)
+            2. Gợi ý ghi nhớ (≤15 từ)
+            Return ONLY valid JSON. No markdown, no explanation outside JSON.
+            
+            """);
+        for (AttemptAnswer aa : wrong) {
+            String correct = aa.getQuestion().getAnswers().stream()
+                    .filter(a -> a.isCorrect()).map(a -> a.getContent())
+                    .findFirst().orElse("?");
+            String chosen = aa.getSelectedAnswer() != null
+                    ? aa.getSelectedAnswer().getContent() : "(không chọn)";
+            sb.append(String.format(
+                    "id=%d | Câu: %s | Bạn chọn: %s | Đúng: %s\n",
+                    aa.getId(),
+                    aa.getQuestion().getContent(),
+                    chosen, correct));
+        }
+        sb.append("""
+            
+            JSON format:
+            {
+              "explanations": [{"id":<answerId>,"explanation":"...","tip":"..."}],
+              "overallFeedback": "<nhận xét chung ≤30 từ>",
+              "weakTopics": ["<chủ đề 1>","<chủ đề 2>"]
+            }
+            """);
+        return sb.toString();
+    }
+
+    private AiExplanationResponse.Summary parseExplainResponse(
+            String responseBody, List<AttemptAnswer> wrong) {
+        try {
+            JsonNode root = objectMapper.readTree(responseBody);
+            String text = root.path("candidates").get(0)
+                    .path("content").path("parts").get(0).path("text").asText();
+            text = text.replaceAll("(?s)```json|```", "").trim();
+
+            JsonNode json   = objectMapper.readTree(text);
+            JsonNode expArr = json.path("explanations");
+
+            Map<Long, AttemptAnswer> answerMap = wrong.stream()
+                    .collect(Collectors.toMap(AttemptAnswer::getId, a -> a));
+
+            List<AiExplanationResponse> explanations = new ArrayList<>();
+            for (JsonNode node : expArr) {
+                long id = node.path("id").asLong();
+                AttemptAnswer aa = answerMap.get(id);
+                if (aa == null) continue;
+
+                String correct = aa.getQuestion().getAnswers().stream()
+                        .filter(a -> a.isCorrect()).map(a -> a.getContent())
+                        .findFirst().orElse("?");
+                String chosen = aa.getSelectedAnswer() != null
+                        ? aa.getSelectedAnswer().getContent() : "(không chọn)";
+
+                explanations.add(AiExplanationResponse.builder()
+                        .attemptAnswerId(id)
+                        .questionId(aa.getQuestion().getId())
+                        .questionContent(aa.getQuestion().getContent())
+                        .yourAnswer(chosen)
+                        .correctAnswer(correct)
+                        .explanation(node.path("explanation").asText(""))
+                        .tip(node.path("tip").asText(""))
+                        .build());
+            }
+
+            List<String> weakTopics = new ArrayList<>();
+            json.path("weakTopics").forEach(t -> weakTopics.add(t.asText()));
+
+            return AiExplanationResponse.Summary.builder()
+                    .explanations(explanations)
+                    .overallFeedback(json.path("overallFeedback").asText(""))
+                    .weakTopics(weakTopics)
+                    .build();
+        } catch (Exception e) {
+            log.error("Parse explain response failed: {}", e.getMessage());
+            return fallbackExplanation(wrong);
+        }
+    }
+
+    private AiExplanationResponse.Summary fallbackExplanation(List<AttemptAnswer> wrong) {
+        List<AiExplanationResponse> list = wrong.stream().map(aa -> {
+            String correct = aa.getQuestion().getAnswers().stream()
+                    .filter(a -> a.isCorrect()).map(a -> a.getContent())
+                    .findFirst().orElse("?");
+            return AiExplanationResponse.builder()
+                    .attemptAnswerId(aa.getId())
+                    .questionId(aa.getQuestion().getId())
+                    .questionContent(aa.getQuestion().getContent())
+                    .yourAnswer(aa.getSelectedAnswer() != null ? aa.getSelectedAnswer().getContent() : "(không chọn)")
+                    .correctAnswer(correct)
+                    .explanation("AI chưa được cấu hình.")
+                    .tip("")
+                    .build();
+        }).collect(Collectors.toList());
+        return AiExplanationResponse.Summary.builder()
+                .explanations(list).overallFeedback("").weakTopics(List.of()).build();
+    }
 
     /**
      * Gợi ý điểm tất cả câu tự luận chưa chấm — CHỈ 1 request duy nhất.
@@ -86,7 +258,7 @@ public class AiGradingService {
                     ))
             );
 
-            String url = GEMINI_URL + "?key=" + geminiApiKey;
+            String url = getGeminiUrl() + "?key=" + geminiApiKey;
             ResponseEntity<String> resp = restTemplate.postForEntity(
                     url, new HttpEntity<>(body, headers), String.class);
 
@@ -190,4 +362,147 @@ public class AiGradingService {
                 .comment(msg)
                 .build()).collect(Collectors.toList());
     }
+
+    // ── Analyze student weakness ──────────────────────────
+    public WeaknessAnalysis analyzeWeakness(Long studentId) {
+        String cacheKey = "ai:weakness:" + studentId;
+        try {
+            String cached = redis.opsForValue().get(cacheKey);
+            if (cached != null)
+                return objectMapper.readValue(cached, WeaknessAnalysis.class);
+        } catch (Exception ignored) {}
+
+        List<Attempt> attempts = attemptRepo.findGradedWithAnswersByStudent(studentId);
+
+        if (attempts.isEmpty())
+            return new WeaknessAnalysis(List.of(), "Chưa có đủ dữ liệu để phân tích.", List.of(), List.of());
+
+        // Tính tỉ lệ đúng theo từng tag
+        Map<String, int[]> tagStats = new java.util.LinkedHashMap<>();
+        int totalWrong = 0;
+        for (var attempt : attempts) {
+            for (var aa : attempt.getAnswers()) {
+                if (aa.getQuestion() == null) continue;
+                boolean correct = Boolean.TRUE.equals(aa.getIsCorrect());
+                if (!correct) totalWrong++;
+                for (var tag : aa.getQuestion().getTags()) {
+                    tagStats.computeIfAbsent(tag.getName(), k -> new int[]{0, 0});
+                    tagStats.get(tag.getName())[0]++;
+                    if (correct) tagStats.get(tag.getName())[1]++;
+                }
+            }
+        }
+
+        List<TopicStat> topics = tagStats.entrySet().stream()
+                .filter(e -> e.getValue()[0] >= 3)
+                .map(e -> {
+                    int total = e.getValue()[0], correct = e.getValue()[1];
+                    int pct = (int) Math.round((double) correct / total * 100);
+                    return new TopicStat(e.getKey(), total, correct, pct);
+                })
+                .sorted(java.util.Comparator.comparingInt(TopicStat::correctPct))
+                .limit(8)
+                .collect(Collectors.toList());
+
+        String advice;
+        List<RoadmapItem> roadmap = List.of();
+        if (geminiApiKey != null && !geminiApiKey.isBlank() && !topics.isEmpty()) {
+            AiAdviceResult aiResult = callAiForAdvice(topics, attempts.size(), totalWrong);
+            advice = aiResult.advice();
+            roadmap = aiResult.roadmap();
+        } else {
+            List<String> weak = topics.stream().filter(t -> t.correctPct() < 60).map(TopicStat::topic).toList();
+            advice = weak.isEmpty()
+                    ? "Bạn đang học tốt! Tiếp tục duy trì."
+                    : "Bạn cần ôn tập thêm: " + String.join(", ", weak) + ".";
+        }
+
+        List<String> suggestions = topics.stream()
+                .filter(t -> t.correctPct() < 60)
+                .map(t -> t.topic() + " (" + t.correctPct() + "% đúng)")
+                .toList();
+
+        WeaknessAnalysis result = new WeaknessAnalysis(topics, advice, suggestions, roadmap);
+        try {
+            redis.opsForValue().set(cacheKey, objectMapper.writeValueAsString(result), Duration.ofHours(2));
+        } catch (Exception ignored) {}
+        return result;
+    }
+
+    /** Gọi AI để lấy lộ trình học tập có cấu trúc */
+    private AiAdviceResult callAiForAdvice(List<TopicStat> topics, int totalAttempts, int totalWrong) {
+        try {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Student đã làm ").append(totalAttempts)
+                    .append(" bài thi, sai ").append(totalWrong).append(" câu.\n");
+            sb.append("Thống kê theo chủ đề:\n");
+            topics.forEach(t -> sb.append(String.format("- %s: %d/%d đúng (%d%%)\n",
+                    t.topic(), t.correct(), t.total(), t.correctPct())));
+            sb.append("""
+
+                Hãy phân tích và trả về JSON (không markdown):
+                {
+                  "advice": "<nhận xét tổng thể 1-2 câu tiếng Việt>",
+                  "roadmap": [
+                    {
+                      "topic": "<tên chủ đề>",
+                      "priority": "HIGH|MEDIUM|LOW",
+                      "action": "<việc cần làm cụ thể, 1 câu>",
+                      "keywords": ["<từ khóa 1>", "<từ khóa 2>", "<từ khóa 3>"]
+                    }
+                  ]
+                }
+                Chỉ đưa chủ đề có tỉ lệ đúng < 70% vào roadmap. Tối đa 5 mục.
+                """);
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            Map<String, Object> body = Map.of(
+                    "contents", List.of(Map.of("parts", List.of(Map.of("text", sb.toString()))))
+            );
+            ResponseEntity<String> resp = restTemplate.postForEntity(
+                    getGeminiUrl() + "?key=" + geminiApiKey,
+                    new HttpEntity<>(body, headers), String.class);
+            JsonNode root = objectMapper.readTree(resp.getBody());
+            String text = root.path("candidates").get(0)
+                    .path("content").path("parts").get(0).path("text").asText("");
+            text = text.replaceAll("(?s)```json|```", "").trim();
+
+            JsonNode json = objectMapper.readTree(text);
+            String advice = json.path("advice").asText("");
+
+            List<RoadmapItem> roadmap = new ArrayList<>();
+            for (JsonNode item : json.path("roadmap")) {
+                List<String> kws = new ArrayList<>();
+                item.path("keywords").forEach(k -> kws.add(k.asText()));
+                roadmap.add(new RoadmapItem(
+                        item.path("topic").asText(),
+                        item.path("priority").asText("MEDIUM"),
+                        item.path("action").asText(""),
+                        kws));
+            }
+            return new AiAdviceResult(advice, roadmap);
+        } catch (Exception e) {
+            log.warn("[AiWeakness] advice failed: {}", e.getMessage());
+            return new AiAdviceResult("", List.of());
+        }
+    }
+
+    private record AiAdviceResult(String advice, List<RoadmapItem> roadmap) {}
+
+    public record TopicStat(String topic, int total, int correct, int correctPct) {}
+
+    public record WeaknessAnalysis(
+            List<TopicStat> topics,
+            String          advice,
+            List<String>    suggestions,
+            List<RoadmapItem> roadmap
+    ) {}
+
+    public record RoadmapItem(
+            String topic,
+            String priority,   // HIGH | MEDIUM | LOW
+            String action,     // việc cần làm cụ thể
+            List<String> keywords  // từ khóa cần học
+    ) {}
 }

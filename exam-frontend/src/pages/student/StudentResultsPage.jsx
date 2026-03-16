@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import api from '../../api/client'
+import { attemptApi } from '../../api/services'
 
 const Icon = {
   x:      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>,
@@ -260,6 +261,128 @@ function AttemptDetailPage({ attempt, onBack }) {
   )
 }
 
+// ── AI Explain Button + Modal ─────────────────────────────
+function AiExplainButton({ attemptId }) {
+  const [open, setOpen]       = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [result, setResult]   = useState(null)
+  const [error, setError]     = useState('')
+
+  const handleOpen = async () => {
+    setOpen(true)
+    if (result) return // đã cache ở frontend
+    setLoading(true); setError('')
+    try {
+      const r = await attemptApi.aiExplain(attemptId)
+      setResult(r.data.data)
+    } catch {
+      setError('Không thể tải giải thích. Thử lại sau.')
+    } finally { setLoading(false) }
+  }
+
+  return (
+    <>
+      <button onClick={handleOpen}
+        className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all"
+        style={{ color: 'var(--purple)', border: '1px solid var(--purple-subtle)',
+                 background: 'var(--purple-subtle)' }}>
+        ✦ AI Giải thích
+      </button>
+
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.6)' }}
+          onClick={e => { if (e.target === e.currentTarget) setOpen(false) }}>
+          <div className="w-full max-w-xl max-h-[80vh] overflow-y-auto rounded-xl border"
+            style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-base)' }}>
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b sticky top-0"
+              style={{ borderColor: 'var(--border-base)', background: 'var(--bg-surface)' }}>
+              <div>
+                <h3 className="font-semibold" style={{ color: 'var(--text-1)' }}>✦ AI Giải thích câu sai</h3>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>Phân tích bởi Gemini AI</p>
+              </div>
+              <button onClick={() => setOpen(false)} className="btn-ghost p-1.5">✕</button>
+            </div>
+
+            <div className="p-5 space-y-4">
+              {loading && (
+                <div className="flex flex-col items-center py-8 gap-3">
+                  <div className="w-8 h-8 rounded-full border-2 border-t-transparent animate-spin"
+                    style={{ borderColor: 'var(--purple)' }}/>
+                  <p className="text-sm" style={{ color: 'var(--text-3)' }}>AI đang phân tích bài làm...</p>
+                </div>
+              )}
+
+              {error && <p className="text-sm text-center py-4" style={{ color: 'var(--danger)' }}>{error}</p>}
+
+              {result && !loading && (<>
+                {/* Overall feedback */}
+                {result.overallFeedback && (
+                  <div className="px-4 py-3 rounded-lg text-sm"
+                    style={{ background: 'var(--accent-subtle)', color: 'var(--text-2)' }}>
+                    {result.overallFeedback}
+                  </div>
+                )}
+
+                {/* Weak topics */}
+                {result.weakTopics?.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium mb-2" style={{ color: 'var(--text-3)' }}>Chủ đề cần ôn tập</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {result.weakTopics.map((t, i) => (
+                        <span key={i} className="text-xs px-2 py-0.5 rounded-full"
+                          style={{ background: 'var(--warning-subtle)', color: 'var(--warning)' }}>{t}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* No wrong answers */}
+                {result.explanations?.length === 0 && (
+                  <p className="text-center py-4 text-sm" style={{ color: 'var(--success)' }}>
+                    🎉 Bạn trả lời đúng tất cả các câu!
+                  </p>
+                )}
+
+                {/* Explanations */}
+                {result.explanations?.map((e, i) => (
+                  <div key={e.attemptAnswerId} className="rounded-lg border p-4 space-y-2"
+                    style={{ borderColor: 'var(--border-base)' }}>
+                    <p className="text-sm font-medium" style={{ color: 'var(--text-1)' }}>
+                      <span className="text-xs mr-2" style={{ color: 'var(--text-3)' }}>Câu {i + 1}</span>
+                      {e.questionContent}
+                    </p>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="px-2.5 py-1.5 rounded"
+                        style={{ background: 'var(--danger-subtle)', color: 'var(--danger)' }}>
+                        ✗ Bạn chọn: {e.yourAnswer}
+                      </div>
+                      <div className="px-2.5 py-1.5 rounded"
+                        style={{ background: 'var(--success-subtle)', color: 'var(--success)' }}>
+                        ✓ Đúng: {e.correctAnswer}
+                      </div>
+                    </div>
+                    <p className="text-xs leading-relaxed" style={{ color: 'var(--text-2)' }}>
+                      {e.explanation}
+                    </p>
+                    {e.tip && (
+                      <p className="text-xs italic" style={{ color: 'var(--text-3)' }}>
+                        💡 {e.tip}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </>)}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+}
+
 // ── Main Results List ─────────────────────────────────────
 export default function StudentResultsPage() {
   const [attempts, setAttempts]   = useState([])
@@ -388,6 +511,9 @@ export default function StudentResultsPage() {
                   {Icon.eye}
                   <span>Xem chi tiết</span>
                 </button>
+                {a.status === 'GRADED' && (
+                  <AiExplainButton attemptId={a.id}/>
+                )}
               </div>
             </div>
           ))}

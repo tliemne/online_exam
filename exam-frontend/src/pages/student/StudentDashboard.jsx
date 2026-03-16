@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { attemptApi } from '../../api/services'
 import api from '../../api/client'
 
 // ── Wave score chart ───────────────────────────────────────
@@ -75,6 +76,219 @@ function StatPill({ label, value, color }) {
 function Skeleton({ w = 'w-12', h = 'h-7' }) {
   return <span className={`inline-block rounded animate-pulse ${w} ${h}`}
     style={{ background: 'var(--bg-elevated)' }}/>
+}
+
+// ── Weakness Widget ────────────────────────────────────────
+function WeaknessWidget() {
+  const [data, setData]       = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [open, setOpen]       = useState(false)
+
+  const load = async () => {
+    if (data) { setOpen(true); return }
+    setLoading(true)
+    try {
+      const r = await attemptApi.aiWeakness()
+      setData(r.data.data)
+      setOpen(true)
+    } catch {} finally { setLoading(false) }
+  }
+
+  // Tính điểm tổng quát từ data (không cần AI)
+  const getOverall = (topics) => {
+    if (!topics?.length) return null
+    const avg = topics.reduce((s, t) => s + t.correctPct, 0) / topics.length
+    if (avg >= 80) return { label: 'Xuất sắc',      color: 'var(--success)' }
+    if (avg >= 65) return { label: 'Khá',            color: 'var(--accent)'  }
+    if (avg >= 50) return { label: 'Trung bình',     color: 'var(--warning)' }
+    return           { label: 'Cần cải thiện',   color: 'var(--danger)'  }
+  }
+
+  // Gợi ý cụ thể dựa trên data
+  const getSuggestions = (topics) => {
+    if (!topics?.length) return []
+    const weak = topics.filter(t => t.correctPct < 60)
+    const ok   = topics.filter(t => t.correctPct >= 80)
+    const tips = []
+    weak.forEach(t => {
+      const pct = t.correctPct
+      if (pct < 30)      tips.push({ topic: t.topic, msg: `Rất yếu — nên học lại từ đầu`, level: 'danger' })
+      else if (pct < 50) tips.push({ topic: t.topic, msg: `Yếu — cần luyện thêm nhiều bài tập`, level: 'danger' })
+      else               tips.push({ topic: t.topic, msg: `Trung bình — ôn lại các điểm dễ nhầm`, level: 'warning' })
+    })
+    if (ok.length > 0 && weak.length > 0) {
+      tips.push({ topic: ok[0].topic, msg: `Điểm mạnh — tiếp tục duy trì`, level: 'success' })
+    }
+    return tips
+  }
+
+  return (
+    <>
+      <button onClick={load} disabled={loading}
+        className="card p-4 w-full text-left hover:border-[var(--border-strong)] transition-all flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium" style={{ color: 'var(--text-1)' }}>✦ Phân tích học lực</p>
+          <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>AI phân tích từ lịch sử thi của bạn</p>
+        </div>
+        {loading
+          ? <span className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--purple)' }}/>
+          : <span style={{ color: 'var(--purple)' }}>→</span>}
+      </button>
+
+      {open && data && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.6)' }}
+          onClick={e => { if (e.target === e.currentTarget) setOpen(false) }}>
+          <div className="w-full max-w-lg max-h-[85vh] overflow-y-auto rounded-xl border"
+            style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-base)' }}>
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b sticky top-0"
+              style={{ borderColor: 'var(--border-base)', background: 'var(--bg-surface)' }}>
+              <div>
+                <h3 className="font-semibold" style={{ color: 'var(--text-1)' }}>✦ Phân tích học lực</h3>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>Powered by Gemini AI · Cache 2 giờ</p>
+              </div>
+              <button onClick={() => setOpen(false)} className="btn-ghost p-1.5">✕</button>
+            </div>
+
+            <div className="p-5 space-y-5">
+              {data.topics?.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-sm font-medium" style={{ color: 'var(--text-1)' }}>Chưa đủ dữ liệu</p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-3)' }}>Cần ít nhất 3 câu/chủ đề để phân tích</p>
+                </div>
+              ) : (<>
+                {/* Overall score */}
+                {(() => {
+                  const overall = getOverall(data.topics)
+                  const avgPct = Math.round(data.topics.reduce((s, t) => s + t.correctPct, 0) / data.topics.length)
+                  return overall && (
+                    <div className="flex items-center gap-4 p-4 rounded-lg"
+                      style={{ background: 'var(--bg-elevated)' }}>
+                <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="font-semibold text-sm" style={{ color: overall.color }}>{overall.label}</p>
+                          <span className="text-lg font-bold" style={{ color: overall.color }}>{avgPct}%</span>
+                        </div>
+                        <div className="h-2 rounded-full mt-1.5 overflow-hidden" style={{ background: 'var(--border-base)' }}>
+                          <div className="h-full rounded-full transition-all"
+                            style={{ width: `${avgPct}%`, background: overall.color }}/>
+                        </div>
+                        <p className="text-xs mt-1" style={{ color: 'var(--text-3)' }}>
+                          Trung bình {data.topics.length} chủ đề · {data.topics.reduce((s,t)=>s+t.total,0)} câu hỏi
+                        </p>
+                      </div>
+                    </div>
+                  )
+                })()}
+
+                {/* AI advice nếu có */}
+                {data.advice && (
+                  <div className="px-4 py-3 rounded-lg"
+                    style={{ background: 'var(--accent-subtle)' }}>
+                    <p className="text-sm leading-relaxed" style={{ color: 'var(--text-2)' }}>{data.advice}</p>
+                  </div>
+                )}
+
+                {/* Topic breakdown */}
+                <div>
+                  <p className="text-xs font-medium mb-3" style={{ color: 'var(--text-3)' }}>
+                    CHI TIẾT TỪNG CHỦ ĐỀ
+                  </p>
+                  <div className="space-y-3">
+                    {data.topics.map(t => {
+                      const clr = t.correctPct >= 70 ? 'var(--success)' : t.correctPct >= 50 ? 'var(--warning)' : 'var(--danger)'
+                      const label = t.correctPct >= 70 ? 'Tốt' : t.correctPct >= 50 ? 'TB' : 'Yếu'
+                      return (
+                        <div key={t.topic} className="space-y-1">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-medium" style={{ color: 'var(--text-1)' }}>{t.topic}</span>
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full"
+                                style={{ background: clr + '20', color: clr }}>{label}</span>
+                            </div>
+                            <span className="text-xs font-mono" style={{ color: clr }}>
+                              {t.correct}/{t.total} ({t.correctPct}%)
+                            </span>
+                          </div>
+                          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border-base)' }}>
+                            <div className="h-full rounded-full" style={{ width: `${t.correctPct}%`, background: clr }}/>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* Specific suggestions */}
+                {(() => {
+                  const tips = getSuggestions(data.topics)
+                  return tips.length > 0 && (
+                    <div>
+                      <p className="text-xs font-medium mb-3" style={{ color: 'var(--text-3)' }}>
+                        GỢI Ý CỤ THỂ
+                      </p>
+                      <div className="space-y-2">
+                        {tips.map((tip, i) => {
+                          const clr = tip.level === 'danger' ? 'var(--danger)' : tip.level === 'warning' ? 'var(--warning)' : 'var(--success)'
+                          
+                          return (
+                            <div key={i} className="flex items-start gap-3 px-3 py-2.5 rounded-lg"
+                              style={{ background: 'var(--bg-elevated)' }}>
+                              <div className="w-1.5 h-1.5 rounded-full mt-1.5 shrink-0" style={{ background: clr }}/>
+                              <div>
+                                <span className="text-xs font-semibold" style={{ color: clr }}>{tip.topic}</span>
+                                <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>{tip.msg}</p>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })()}
+
+                {/* AI Roadmap */}
+                {data.roadmap?.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium mb-3" style={{ color: 'var(--text-3)' }}>
+                      LỘ TRÌNH HỌC TẬP
+                    </p>
+                    <div className="space-y-3">
+                      {data.roadmap.map((item, i) => {
+                        const priClr = item.priority === 'HIGH' ? 'var(--danger)' : item.priority === 'MEDIUM' ? 'var(--warning)' : 'var(--accent)'
+                        const priLabel = item.priority === 'HIGH' ? 'Ưu tiên cao' : item.priority === 'MEDIUM' ? 'Trung bình' : 'Thấp'
+                        return (
+                          <div key={i} className="rounded-lg border p-3.5 space-y-2"
+                            style={{ borderColor: 'var(--border-base)' }}>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium" style={{ color: 'var(--text-1)' }}>{item.topic}</span>
+                              <span className="text-[10px] px-2 py-0.5 rounded-full"
+                                style={{ background: priClr + '18', color: priClr }}>{priLabel}</span>
+                            </div>
+                            <p className="text-xs" style={{ color: 'var(--text-2)' }}>{item.action}</p>
+                            {item.keywords?.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {item.keywords.map((kw, j) => (
+                                  <span key={j} className="text-[10px] px-1.5 py-0.5 rounded"
+                                    style={{ background: 'var(--bg-elevated)', color: 'var(--text-3)' }}>{kw}</span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </>)}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
 }
 
 export default function StudentDashboard() {
@@ -159,6 +373,9 @@ export default function StudentDashboard() {
           <p className="text-sm font-medium" style={{ color: 'var(--text-1)' }}>Kết quả của tôi</p>
           <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>Xem điểm và lịch sử thi</p>
         </Link>
+        <div className="col-span-2">
+          <WeaknessWidget/>
+        </div>
       </div>
 
       {/* Recent table */}
