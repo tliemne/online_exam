@@ -16,7 +16,7 @@ function ScoreRing({ score, total, size = 80 }) {
   const r      = (size - 10) / 2
   const circ   = 2 * Math.PI * r
   const offset = circ * (1 - pct)
-  const color  = pct >= 0.8 ? '#16a34a' : pct >= 0.5 ? '#d97706' : '#dc2626'
+  const color  = pct >= 0.8 ? 'var(--success)' : pct >= 0.5 ? 'var(--warning)' : 'var(--danger)'
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
       <circle cx={size/2} cy={size/2} r={r} fill="none" stroke="var(--border-strong)" strokeWidth={8}/>
@@ -61,7 +61,7 @@ function AttemptDetailPage({ attempt, onBack }) {
   const wrong      = answers.filter(a => a.isCorrect === false)
   const pending    = answers.filter(a => a.isCorrect == null)
   const pct        = answers.length > 0 ? Math.round(correct.length / answers.length * 100) : 0
-  const scoreColor = detail?.passed ? '#16a34a' : detail?.passed === false ? '#dc2626' : '#d97706'
+  const scoreColor = detail?.passed ? 'var(--success)' : detail?.passed === false ? 'var(--danger)' : 'var(--warning)'
 
   const filtered = answers.filter(a => {
     if (filter === 'correct') return a.isCorrect === true
@@ -126,7 +126,7 @@ function AttemptDetailPage({ attempt, onBack }) {
             </div>
             <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
               <div className="h-full rounded-full transition-all duration-700"
-                style={{ width: `${pct}%`, background: pct >= 80 ? '#16a34a' : pct >= 50 ? '#d97706' : '#dc2626' }}/>
+                style={{ width: `${pct}%`, background: pct >= 80 ? 'var(--success)' : pct >= 50 ? 'var(--warning)' : 'var(--danger)' }}/>
             </div>
           </div>
         )}
@@ -136,15 +136,15 @@ function AttemptDetailPage({ attempt, onBack }) {
       {!loading && (
         <div className="grid grid-cols-3 gap-3">
           <div className="card p-3 text-center">
-            <p className="text-xl font-bold" style={{ color: '#16a34a' }}>{correct.length}</p>
+            <p className="text-xl font-bold" style={{ color: 'var(--success)' }}>{correct.length}</p>
             <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>Đúng</p>
           </div>
           <div className="card p-3 text-center">
-            <p className="text-xl font-bold" style={{ color: '#dc2626' }}>{wrong.length}</p>
+            <p className="text-xl font-bold" style={{ color: 'var(--danger)' }}>{wrong.length}</p>
             <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>Sai</p>
           </div>
           <div className="card p-3 text-center">
-            <p className="text-xl font-bold" style={{ color: '#d97706' }}>{pending.length}</p>
+            <p className="text-xl font-bold" style={{ color: 'var(--warning)' }}>{pending.length}</p>
             <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>Chờ chấm</p>
           </div>
         </div>
@@ -185,7 +185,7 @@ function AttemptDetailPage({ attempt, onBack }) {
             const isPending  = a.isCorrect == null
             const borderClr  = isCorrect ? 'rgba(22,163,74,0.3)' : isWrong ? 'rgba(220,38,38,0.3)' : 'rgba(217,119,6,0.3)'
             const bgClr      = isCorrect ? 'rgba(22,163,74,0.04)' : isWrong ? 'rgba(220,38,38,0.04)' : 'rgba(217,119,6,0.04)'
-            const accentClr  = isCorrect ? '#16a34a' : isWrong ? '#dc2626' : '#d97706'
+            const accentClr  = isCorrect ? 'var(--success)' : isWrong ? 'var(--danger)' : 'var(--warning)'
             const idx        = answers.indexOf(a)
 
             return (
@@ -218,7 +218,7 @@ function AttemptDetailPage({ attempt, onBack }) {
                   {a.selectedAnswerContent && (
                     <div className="flex items-start gap-2">
                       <span className="text-xs shrink-0 mt-0.5 font-medium" style={{ color: 'var(--text-3)' }}>Bạn chọn:</span>
-                      <span className="font-medium" style={{ color: isCorrect ? '#16a34a' : isWrong ? '#dc2626' : 'var(--text-2)' }}>
+                      <span className="font-medium" style={{ color: isCorrect ? 'var(--success)' : isWrong ? 'var(--danger)' : 'var(--text-2)' }}>
                         {a.selectedAnswerContent}
                       </span>
                     </div>
@@ -232,7 +232,7 @@ function AttemptDetailPage({ attempt, onBack }) {
                   {a.correctAnswerContent && isWrong && (
                     <div className="flex items-start gap-2">
                       <span className="text-xs shrink-0 mt-0.5 font-medium" style={{ color: 'var(--text-3)' }}>Đáp án đúng:</span>
-                      <span className="font-semibold" style={{ color: '#16a34a' }}>{a.correctAnswerContent}</span>
+                      <span className="font-semibold" style={{ color: 'var(--success)' }}>{a.correctAnswerContent}</span>
                     </div>
                   )}
                 </div>
@@ -298,7 +298,7 @@ export default function StudentResultsPage() {
   }) : '—'
 
   const statusColor = (a) =>
-    a.status === 'GRADED' ? (a.passed ? '#16a34a' : '#dc2626') : '#d97706'
+    a.status === 'GRADED' ? (a.passed ? 'var(--success)' : 'var(--danger)') : 'var(--warning)'
   const statusLabel = (a) =>
     a.status === 'GRADED' ? (a.passed ? 'Đạt' : 'Chưa đạt') : 'Chờ chấm'
 
@@ -314,8 +314,8 @@ export default function StudentResultsPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
           { label: 'Bài đã nộp',  value: attempts.length,         color: 'var(--accent)' },
-          { label: 'Đã chấm',     value: graded.length,           color: '#16a34a'       },
-          { label: 'Chờ chấm',    value: pending.length,          color: '#d97706'       },
+          { label: 'Đã chấm',     value: graded.length,           color: 'var(--success)'       },
+          { label: 'Chờ chấm',    value: pending.length,          color: 'var(--warning)'       },
           { label: 'Điểm TB',     value: avgScore ?? '—',         color: 'var(--text-1)' },
         ].map(s => (
           <div key={s.label} className="card text-center py-4">

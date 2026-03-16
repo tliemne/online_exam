@@ -146,9 +146,9 @@ function NavGroup({ item, collapsed }) {
 }
 
 const roleConfig = {
-  ADMIN:   { label: 'Admin',      color: '#dc2626', bg: 'rgba(220,38,38,0.1)',  border: 'rgba(220,38,38,0.2)'  },
-  TEACHER: { label: 'Giảng viên', color: '#0891b2', bg: 'rgba(8,145,178,0.1)', border: 'rgba(8,145,178,0.2)'  },
-  STUDENT: { label: 'Sinh viên',  color: '#16a34a', bg: 'rgba(22,163,74,0.1)', border: 'rgba(22,163,74,0.2)'  },
+  ADMIN:   { label: 'Admin',      color: 'var(--danger)', bg: 'var(--danger-subtle)',  border: 'var(--danger-border)'  },
+  TEACHER: { label: 'Giảng viên', color: 'var(--cyan)', bg: 'var(--cyan-subtle)', border: 'rgba(8,145,178,0.2)'  },
+  STUDENT: { label: 'Sinh viên',  color: 'var(--success)', bg: 'var(--success-subtle)', border: 'var(--success-border)'  },
 }
 
 function SideBtn({ onClick, icon, label, collapsed, danger }) {
@@ -157,8 +157,8 @@ function SideBtn({ onClick, icon, label, collapsed, danger }) {
       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-all duration-150 ${collapsed ? 'justify-center' : ''}`}
       style={{ color: 'var(--text-3)' }}
       onMouseEnter={e => {
-        e.currentTarget.style.background = danger ? 'rgba(220,38,38,0.08)' : 'var(--bg-hover)'
-        e.currentTarget.style.color      = danger ? '#dc2626' : 'var(--text-1)'
+        e.currentTarget.style.background = danger ? 'var(--danger-subtle)' : 'var(--bg-hover)'
+        e.currentTarget.style.color      = danger ? 'var(--danger)' : 'var(--text-1)'
       }}
       onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'var(--text-3)' }}>
       {icon}
@@ -225,6 +225,7 @@ function NotificationBell() {
     ATTEMPT_GRADED: '#3b82f6',
     ESSAY_GRADED:   '#8b5cf6',
     ESSAY_PENDING:  '#f59e0b',
+    ANNOUNCEMENT:   '#06b6d4',
     SYSTEM:         '#6b7280',
   }
 

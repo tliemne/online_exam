@@ -119,3 +119,11 @@ export const notifApi = {
   markRead:     (id)                  => api.patch(`/notifications/${id}/read`),
   markAllRead:  ()                    => api.patch('/notifications/read-all'),
 }
+
+// ── ANNOUNCEMENTS ─────────────────────────────────────────
+export const announcementApi = {
+  getAll:  (courseId)          => api.get(`/courses/${courseId}/announcements`),
+  create:  (courseId, data)    => api.post(`/courses/${courseId}/announcements`, data),
+  update:  (courseId, id, data)=> api.put(`/courses/${courseId}/announcements/${id}`, data),
+  delete:  (courseId, id)      => api.delete(`/courses/${courseId}/announcements/${id}`),
+}

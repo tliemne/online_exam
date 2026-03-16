@@ -14,9 +14,9 @@ const Icon = {
 // ── Confidence badge ──────────────────────────────────────
 function ConfBadge({ conf }) {
   const map = {
-    HIGH:   { label: 'Tin cậy cao', bg: 'rgba(22,163,74,0.12)',   color: '#16a34a', border: 'rgba(22,163,74,0.3)' },
-    MEDIUM: { label: 'Trung bình',  bg: 'rgba(217,119,6,0.12)',   color: '#d97706', border: 'rgba(217,119,6,0.3)' },
-    LOW:    { label: 'Thấp',        bg: 'rgba(220,38,38,0.12)',   color: '#dc2626', border: 'rgba(220,38,38,0.3)' },
+    HIGH:   { label: 'Tin cậy cao', bg: 'rgba(22,163,74,0.12)',   color: 'var(--success)', border: 'rgba(22,163,74,0.3)' },
+    MEDIUM: { label: 'Trung bình',  bg: 'rgba(217,119,6,0.12)',   color: 'var(--warning)', border: 'rgba(217,119,6,0.3)' },
+    LOW:    { label: 'Thấp',        bg: 'rgba(220,38,38,0.12)',   color: 'var(--danger)', border: 'rgba(220,38,38,0.3)' },
   }
   const s = map[conf] || map.LOW
   return (
@@ -127,7 +127,7 @@ function GradeModal({ attempt, onClose, onGraded }) {
             {(detail?.answers || []).some(a => a.questionType === 'ESSAY') && (
               <button onClick={handleAiSuggest} disabled={aiLoading}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all"
-                style={{ background: 'rgba(139,92,246,0.12)', color: '#7c3aed',
+                style={{ background: 'rgba(139,92,246,0.12)', color: 'var(--purple)',
                          border: '1px solid rgba(139,92,246,0.3)' }}>
                 {aiLoading
                   ? <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin"/>
@@ -160,7 +160,7 @@ function GradeModal({ attempt, onClose, onGraded }) {
                 <div>
                   <p className="text-xs mb-1" style={{ color: 'var(--text-3)' }}>Trạng thái</p>
                   <p className="text-sm font-semibold"
-                    style={{ color: detail.status === 'GRADED' ? '#16a34a' : '#d97706' }}>
+                    style={{ color: detail.status === 'GRADED' ? 'var(--success)' : 'var(--warning)' }}>
                     {detail.status === 'GRADED' ? '✓ Đã chấm' : '○ Chờ chấm'}
                   </p>
                 </div>
@@ -176,7 +176,7 @@ function GradeModal({ attempt, onClose, onGraded }) {
               {Object.keys(aiSuggests).length > 0 && (
                 <div className="rounded-xl px-4 py-3 text-sm flex items-center gap-2"
                   style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.25)',
-                           color: '#7c3aed' }}>
+                           color: 'var(--purple)' }}>
                   {Icon.ai}
                   <span>AI đã gợi ý điểm cho {Object.keys(aiSuggests).length} câu tự luận.
                     Nhấn <b>"Áp dụng"</b> để điền vào ô điểm, hoặc tự nhập tay.</span>
@@ -200,13 +200,13 @@ function GradeModal({ attempt, onClose, onGraded }) {
                         style={{ background: 'var(--bg-surface)', color: 'var(--text-2)' }}>{i + 1}</span>
                       <span className="text-xs px-2 py-0.5 rounded-full font-medium"
                         style={isEssay
-                          ? { background: 'rgba(139,92,246,0.12)', color: '#7c3aed', border: '1px solid rgba(139,92,246,0.25)' }
+                          ? { background: 'rgba(139,92,246,0.12)', color: 'var(--purple)', border: '1px solid rgba(139,92,246,0.25)' }
                           : { background: 'var(--bg-surface)', color: 'var(--text-3)', border: '1px solid var(--border-base)' }}>
                         {isEssay ? '✏ Tự luận' : a.questionType === 'MULTIPLE_CHOICE' ? 'Trắc nghiệm' : 'Đúng/Sai'}
                       </span>
                       {!isEssay && (
                         <span className="ml-auto text-xs font-medium"
-                          style={{ color: a.isCorrect ? '#16a34a' : '#dc2626' }}>
+                          style={{ color: a.isCorrect ? 'var(--success)' : 'var(--danger)' }}>
                           {a.isCorrect ? '✓ Đúng' : '✗ Sai'} · {a.score ?? 0}đ
                         </span>
                       )}
@@ -219,7 +219,7 @@ function GradeModal({ attempt, onClose, onGraded }) {
                     {a.selectedAnswerContent && (
                       <div className="mb-2 p-2 rounded-lg" style={{ background: 'var(--bg-surface)' }}>
                         <p className="text-xs mb-0.5" style={{ color: 'var(--text-3)' }}>Đáp án chọn:</p>
-                        <p className="text-sm" style={{ color: a.isCorrect ? '#16a34a' : '#dc2626' }}>
+                        <p className="text-sm" style={{ color: a.isCorrect ? 'var(--success)' : 'var(--danger)' }}>
                           {a.selectedAnswerContent}
                         </p>
                       </div>
@@ -241,21 +241,21 @@ function GradeModal({ attempt, onClose, onGraded }) {
                           <div className="rounded-lg p-3 mb-3"
                             style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)' }}>
                             <div className="flex items-center justify-between mb-1.5">
-                              <div className="flex items-center gap-1.5 text-xs font-medium" style={{ color: '#7c3aed' }}>
+                              <div className="flex items-center gap-1.5 text-xs font-medium" style={{ color: 'var(--purple)' }}>
                                 {Icon.ai} Gợi ý AI
                               </div>
                               <div className="flex items-center gap-2">
                                 <ConfBadge conf={suggest.confidence}/>
                                 <button onClick={() => applyAiSuggest(a.id)}
                                   className="text-xs px-2.5 py-1 rounded-lg font-medium transition-all"
-                                  style={{ background: '#7c3aed', color: '#fff' }}>
+                                  style={{ background: 'var(--purple)', color: '#fff' }}>
                                   Áp dụng
                                 </button>
                               </div>
                             </div>
                             <div className="flex items-center gap-3 text-sm">
                               <span style={{ color: 'var(--text-2)' }}>
-                                Điểm gợi ý: <b style={{ color: '#7c3aed' }}>{suggest.suggestedScore ?? '—'}</b>
+                                Điểm gợi ý: <b style={{ color: 'var(--purple)' }}>{suggest.suggestedScore ?? '—'}</b>
                               </span>
                             </div>
                             {suggest.comment && (
@@ -459,8 +459,8 @@ export default function TeacherGradingPage() {
             <div className="grid grid-cols-3 gap-4 flex-1">
               {[
                 { l: 'Tổng bài nộp', v: attempts.length, color: 'var(--accent)' },
-                { l: 'Chờ chấm',     v: pendingCount,    color: '#d97706' },
-                { l: 'Đã chấm',      v: gradedCount,     color: '#16a34a' },
+                { l: 'Chờ chấm',     v: pendingCount,    color: 'var(--warning)' },
+                { l: 'Đã chấm',      v: gradedCount,     color: 'var(--success)' },
               ].map(s => (
                 <div key={s.l} className="card text-center py-4">
                   <p className="text-2xl font-bold" style={{ color: s.color }}>{s.v}</p>
@@ -472,7 +472,7 @@ export default function TeacherGradingPage() {
             {/* Export button */}
             <button onClick={handleExport} disabled={exporting || attempts.length === 0}
               className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all self-stretch"
-              style={{ background: 'rgba(22,163,74,0.1)', color: '#16a34a',
+              style={{ background: 'var(--success-subtle)', color: 'var(--success)',
                        border: '1px solid rgba(22,163,74,0.3)',
                        opacity: attempts.length === 0 ? 0.5 : 1 }}>
               {exporting
@@ -560,7 +560,7 @@ export default function TeacherGradingPage() {
                           {a.score != null ? `${a.score}/${a.totalScore}` : '—'}
                         </span>
                         {a.passed != null && (
-                          <span className="ml-2 text-xs" style={{ color: a.passed ? '#16a34a' : '#dc2626' }}>
+                          <span className="ml-2 text-xs" style={{ color: a.passed ? 'var(--success)' : 'var(--danger)' }}>
                             {a.passed ? '✓' : '✗'}
                           </span>
                         )}
@@ -571,7 +571,7 @@ export default function TeacherGradingPage() {
                           {(a.tabViolationCount > 0) ? (
                             <span className="text-xs px-2 py-0.5 rounded-full font-medium"
                               style={{ background: a.tabViolationCount >= 3 ? 'rgba(220,38,38,0.12)' : 'rgba(245,158,11,0.12)',
-                                       color: a.tabViolationCount >= 3 ? '#dc2626' : '#d97706',
+                                       color: a.tabViolationCount >= 3 ? 'var(--danger)' : 'var(--warning)',
                                        border: `1px solid ${a.tabViolationCount >= 3 ? 'rgba(220,38,38,0.3)' : 'rgba(245,158,11,0.3)'}` }}>
                               ⚠ {a.tabViolationCount} lần
                             </span>
@@ -583,8 +583,8 @@ export default function TeacherGradingPage() {
                       <td className="px-5 py-3 text-center">
                         <span className="text-xs px-2.5 py-1 rounded-full font-medium"
                           style={a.status === 'GRADED'
-                            ? { background: 'rgba(22,163,74,0.1)', color: '#16a34a', border: '1px solid rgba(22,163,74,0.3)' }
-                            : { background: 'rgba(217,119,6,0.1)', color: '#d97706', border: '1px solid rgba(217,119,6,0.3)' }}>
+                            ? { background: 'var(--success-subtle)', color: 'var(--success)', border: '1px solid rgba(22,163,74,0.3)' }
+                            : { background: 'var(--warning-subtle)', color: 'var(--warning)', border: '1px solid rgba(217,119,6,0.3)' }}>
                           {a.status === 'GRADED' ? '✓ Đã chấm' : '○ Chờ chấm'}
                         </span>
                       </td>
@@ -603,8 +603,8 @@ export default function TeacherGradingPage() {
                             disabled={resetting === a.id}
                             title="Reset — cho sinh viên làm lại"
                             className="text-xs px-2 py-1.5 rounded-lg font-medium transition-all"
-                            style={{ color: '#dc2626', border: '1px solid rgba(220,38,38,0.3)',
-                                     background: 'rgba(220,38,38,0.06)' }}>
+                            style={{ color: 'var(--danger)', border: '1px solid rgba(220,38,38,0.3)',
+                                     background: 'var(--danger-subtle)' }}>
                             {resetting === a.id ? '...' : '↺'}
                           </button>
                         </div>
@@ -624,8 +624,8 @@ export default function TeacherGradingPage() {
           <div className="rounded-2xl p-6 w-full max-w-sm shadow-2xl"
             style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-base)' }}>
             <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4"
-              style={{ background: 'rgba(220,38,38,0.1)' }}>
-              <svg className="w-6 h-6" fill="none" stroke="#dc2626" viewBox="0 0 24 24">
+              style={{ background: 'var(--danger-subtle)' }}>
+              <svg className="w-6 h-6" fill="none" stroke="var(--danger)" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
               </svg>
@@ -645,7 +645,7 @@ export default function TeacherGradingPage() {
               </button>
               <button onClick={handleReset}
                 className="flex-1 py-2 px-4 rounded-xl text-sm font-medium text-white transition-all"
-                style={{ background: '#dc2626' }}>
+                style={{ background: 'var(--danger)' }}>
                 Xác nhận Reset
               </button>
             </div>

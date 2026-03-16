@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import CreateStudentModal from '../../components/common/CreateStudentModal'
 import ResetPasswordModal from '../../components/common/ResetPasswordModal'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { courseApi, userApi, lectureApi } from '../../api/services'
+import { courseApi, userApi, lectureApi, announcementApi } from '../../api/services'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import { useConfirm } from '../../components/common/ConfirmDialog'
@@ -583,15 +583,147 @@ function TabExams({ course, isTeacher }) {
 }
 
 // ── MAIN PAGE ─────────────────────────────────────────────
+// ── Tab: Announcements ────────────────────────────────────
+function TabAnnouncements({ course, isTeacher }) {
+  const toast = useToast()
+  const [confirmDialog, ConfirmDialogUI] = useConfirm()
+  const [list, setList]       = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [editing, setEditing]   = useState(null)
+  const [form, setForm]         = useState({ title: '', content: '' })
+  const [saving, setSaving]     = useState(false)
+
+  const load = () => {
+    setLoading(true)
+    announcementApi.getAll(course.id)
+      .then(r => setList(r.data.data || []))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }
+
+  useEffect(() => { load() }, [course.id])
+
+  const openCreate = () => { setEditing(null); setForm({ title: '', content: '' }); setShowForm(true) }
+  const openEdit   = (a) => { setEditing(a); setForm({ title: a.title, content: a.content }); setShowForm(true) }
+
+  const handleSave = async (e) => {
+    e.preventDefault(); setSaving(true)
+    try {
+      if (editing) await announcementApi.update(course.id, editing.id, form)
+      else         await announcementApi.create(course.id, form)
+      toast.success(editing ? 'Đã cập nhật' : 'Đã đăng thông báo')
+      setShowForm(false); load()
+    } catch (err) { toast.error(err.response?.data?.message || 'Có lỗi xảy ra') }
+    finally { setSaving(false) }
+  }
+
+  const handleDelete = async (id) => {
+    if (!(await confirmDialog({ title: 'Xóa thông báo này?', danger: true, confirmLabel: 'Xóa' }))) return
+    await announcementApi.delete(course.id, id).catch(() => {})
+    setList(p => p.filter(a => a.id !== id))
+  }
+
+  const timeAgo = (dt) => {
+    if (!dt) return ''
+    const diff = Date.now() - new Date(dt).getTime()
+    const m = Math.floor(diff / 60000)
+    if (m < 1)  return 'Vừa xong'
+    if (m < 60) return `${m} phút trước`
+    const h = Math.floor(m / 60)
+    if (h < 24) return `${h} giờ trước`
+    return `${Math.floor(h / 24)} ngày trước`
+  }
+
+  return (
+    <>
+      {ConfirmDialogUI}
+      <div className="space-y-4">
+        {/* Toolbar teacher */}
+        {isTeacher && !showForm && (
+          <div className="flex justify-end">
+            <button onClick={openCreate} className="btn-primary flex items-center gap-2">
+              {Icon.plus} Đăng thông báo
+            </button>
+          </div>
+        )}
+
+        {/* Form tạo/sửa */}
+        {showForm && (
+          <div className="card p-5">
+            <h3 className="section-title mb-4">{editing ? 'Sửa thông báo' : 'Thông báo mới'}</h3>
+            <form onSubmit={handleSave} className="space-y-3">
+              <div>
+                <label className="input-label">Tiêu đề</label>
+                <input className="input-field" required value={form.title}
+                  onChange={e => setForm({...form, title: e.target.value})} placeholder="Tiêu đề thông báo..." />
+              </div>
+              <div>
+                <label className="input-label">Nội dung</label>
+                <textarea className="input-field min-h-[100px]" required value={form.content}
+                  onChange={e => setForm({...form, content: e.target.value})} placeholder="Nội dung..."/>
+              </div>
+              <div className="flex gap-3">
+                <button type="submit" disabled={saving} className="btn-primary text-sm">
+                  {saving ? 'Đang lưu...' : editing ? 'Lưu thay đổi' : 'Đăng'}
+                </button>
+                <button type="button" onClick={() => setShowForm(false)} className="btn-secondary text-sm">Hủy</button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* List */}
+        {loading ? (
+          <div className="flex justify-center py-10">
+            <div className="w-6 h-6 rounded-full border-2 border-accent border-t-transparent animate-spin"/>
+          </div>
+        ) : list.length === 0 ? (
+          <div className="card text-center py-12">
+            <p className="text-[var(--text-2)] text-sm">Chưa có thông báo nào</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {list.map(a => (
+              <div key={a.id} className="card p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-[var(--text-1)]">{a.title}</h4>
+                    <p className="text-xs text-[var(--text-3)] mt-0.5">
+                      {a.authorName} · {timeAgo(a.createdAt)}
+                      {a.updatedAt && a.updatedAt !== a.createdAt && ' (đã sửa)'}
+                    </p>
+                  </div>
+                  {isTeacher && (
+                    <div className="flex gap-1 shrink-0">
+                      <button onClick={() => openEdit(a)}
+                        className="btn-ghost p-1.5 text-xs text-[var(--text-3)] hover:text-accent">✎</button>
+                      <button onClick={() => handleDelete(a.id)}
+                        className="btn-ghost p-1.5 text-xs text-[var(--text-3)] hover:text-danger">✕</button>
+                    </div>
+                  )}
+                </div>
+                <p className="text-sm text-[var(--text-2)] mt-3 whitespace-pre-wrap">{a.content}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
+  )
+}
+
 const TEACHER_TABS = [
-  { key: 'students', label: 'Sinh viên'  },
-  { key: 'lectures', label: 'Bài giảng'  },
-  { key: 'exams',    label: 'Đề thi'     },
+  { key: 'students',      label: 'Sinh viên'  },
+  { key: 'announcements', label: 'Thông báo'  },
+  { key: 'lectures',      label: 'Bài giảng'  },
+  { key: 'exams',         label: 'Đề thi'     },
 ]
 
 const STUDENT_TABS = [
-  { key: 'lectures', label: 'Bài giảng' },
-  { key: 'exams',    label: 'Đề thi'    },
+  { key: 'announcements', label: 'Thông báo'  },
+  { key: 'lectures',      label: 'Bài giảng'  },
+  { key: 'exams',         label: 'Đề thi'     },
 ]
 
 export default function CourseDetailPage() {
@@ -606,7 +738,7 @@ export default function CourseDetailPage() {
 
   const [course, setCourse] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState(isTeacher ? 'students' : 'lectures')
+  const [tab, setTab] = useState(isTeacher ? 'students' : 'announcements')
   const TABS = isTeacher ? TEACHER_TABS : STUDENT_TABS
 
   const loadCourse = useCallback(() => {
@@ -681,6 +813,7 @@ export default function CourseDetailPage() {
 
       {/* Tab Content */}
       <div className="animate-fade-in">
+        {tab === 'announcements' && <TabAnnouncements course={course} isTeacher={isTeacher} />}
         {tab === 'students' && <TabStudents course={course} isTeacher={isTeacher} isAdmin={isAdmin} onRefresh={loadCourse} />}
         {tab === 'lectures' && <TabLectures course={course} isTeacher={isTeacher} />}
         {tab === 'exams'    && <TabExams    course={course} isTeacher={isTeacher} />}

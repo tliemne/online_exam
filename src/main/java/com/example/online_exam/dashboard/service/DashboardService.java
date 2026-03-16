@@ -115,14 +115,22 @@ public class DashboardService {
                     .filter(e -> e.getCourse() != null && e.getCourse().getId().equals(c.getId()))
                     .collect(Collectors.toList());
             List<Long> cExamIds = cExams.stream().map(Exam::getId).collect(Collectors.toList());
-            int attempts = (int) myAttempts.stream()
-                    .filter(a -> cExamIds.contains(a.getExam().getId())).count();
+            List<Attempt> cAttempts = myAttempts.stream()
+                    .filter(a -> cExamIds.contains(a.getExam().getId()))
+                    .collect(Collectors.toList());
+            List<Attempt> cGraded = cAttempts.stream()
+                    .filter(a -> a.getStatus() != null && a.getStatus().name().equals("GRADED"))
+                    .collect(Collectors.toList());
+            Integer cPassRate = cGraded.isEmpty() ? null
+                    : (int) Math.round((double) cGraded.stream().filter(a -> Boolean.TRUE.equals(a.getPassed())).count()
+                    / cGraded.size() * 100);
             return DashboardResponse.CourseStats.builder()
                     .courseId(c.getId())
                     .courseName(c.getName())
                     .studentCount(c.getStudents() != null ? c.getStudents().size() : 0)
                     .examCount(cExams.size())
-                    .attemptCount(attempts)
+                    .attemptCount(cAttempts.size())
+                    .passRate(cPassRate)
                     .build();
         }).collect(Collectors.toList());
 

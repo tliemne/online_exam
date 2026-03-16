@@ -4,14 +4,14 @@ import { useAuth } from '../../context/AuthContext'
 import ChangePasswordModal from '../../components/common/ChangePasswordModal'
 
 const ROLE_META = {
-  ADMIN:   { label: 'Quản trị viên', color: '#dc2626', bg: 'rgba(220,38,38,0.1)'  },
-  TEACHER: { label: 'Giảng viên',    color: '#0891b2', bg: 'rgba(8,145,178,0.1)'  },
-  STUDENT: { label: 'Sinh viên',     color: '#16a34a', bg: 'rgba(22,163,74,0.1)'  },
+  ADMIN:   { label: 'Quản trị viên', color: 'var(--danger)', bg: 'var(--danger-subtle)'  },
+  TEACHER: { label: 'Giảng viên',    color: 'var(--cyan)', bg: 'var(--cyan-subtle)'  },
+  STUDENT: { label: 'Sinh viên',     color: 'var(--success)', bg: 'var(--success-subtle)'  },
 }
 
 const AVATAR_COLORS = [
   '#6366f1','#8b5cf6','#ec4899','#f43f5e',
-  '#f97316','#eab308','#22c55e','#14b8a6','#3b82f6','#0891b2',
+  '#f97316','#eab308','#22c55e','#14b8a6','#3b82f6','var(--cyan)',
 ]
 
 function Avatar({ name, color, avatarUrl, size = 'w-20 h-20 text-2xl' }) {

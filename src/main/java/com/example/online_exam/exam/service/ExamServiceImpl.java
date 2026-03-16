@@ -29,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Collectors;
@@ -49,6 +50,7 @@ public class ExamServiceImpl implements ExamService {
     private final AttemptRepository      attemptRepo;
     private final EmailService           emailService;
     private final ActivityLogService     activityLogService;
+    private final ExamCacheService       examCacheService;
 
     // ── Create ────────────────────────────────────────────
     @Override
@@ -105,6 +107,7 @@ public class ExamServiceImpl implements ExamService {
 
         mapRequest(req, exam);
         ExamResponse resp = toResponse(examRepo.save(exam), true, false);
+        examCacheService.evict(id);
         activityLogService.logUser(caller, ActivityLogAction.UPDATE_EXAM,
                 "EXAM", id, "Cập nhật đề thi: " + exam.getTitle());
         return resp;
@@ -126,6 +129,7 @@ public class ExamServiceImpl implements ExamService {
 
         String title = exam.getTitle();
         examRepo.delete(exam);
+        examCacheService.evict(id);
         activityLogService.logUser(caller, ActivityLogAction.DELETE_EXAM,
                 "EXAM", id, "Xóa đề thi: " + title);
     }
@@ -134,10 +138,19 @@ public class ExamServiceImpl implements ExamService {
     @Override
     @Transactional(readOnly = true)
     public ExamResponse getById(Long id, boolean includeQuestions, boolean hideCorrect) {
+        // Cache chỉ khi cần questions (student lấy đề thi để làm bài)
+        if (includeQuestions && hideCorrect) {
+            Optional<ExamResponse> cached = examCacheService.get(id);
+            if (cached.isPresent()) return cached.get();
+        }
         Exam exam = findExam(id);
         User caller = currentUser();
         if (isTeacher(caller)) checkOwnership(exam, caller);
-        return toResponse(exam, includeQuestions, hideCorrect);
+        ExamResponse response = toResponse(exam, includeQuestions, hideCorrect);
+        if (includeQuestions && hideCorrect) {
+            examCacheService.put(id, response);
+        }
+        return response;
     }
 
     @Override
@@ -189,6 +202,7 @@ public class ExamServiceImpl implements ExamService {
         User caller = currentUser();
         if (isTeacher(caller)) checkOwnership(exam, caller);
         addQuestionsToExam(exam, items);
+        examCacheService.evict(examId);
         return toResponse(examRepo.findById(examId).orElseThrow(), true, false);
     }
 
@@ -198,6 +212,7 @@ public class ExamServiceImpl implements ExamService {
         User caller = currentUser();
         if (isTeacher(caller)) checkOwnership(exam, caller);
         examQRepo.deleteByExamIdAndQuestionId(examId, questionId);
+        examCacheService.evict(examId);
         return toResponse(findExam(examId), true, false);
     }
 
@@ -217,6 +232,7 @@ public class ExamServiceImpl implements ExamService {
                     });
         }
         examQRepo.saveAll(eqs);
+        examCacheService.evict(examId);
         return toResponse(findExam(examId), true, false);
     }
 

@@ -374,24 +374,6 @@ export default function TakeExamModal({ exam, onClose, onSubmitted }) {
                 <span className="w-9 h-9 rounded-xl bg-accent/15 border border-accent/25 flex items-center justify-center text-accent font-bold font-mono text-sm shrink-0">
                   {current + 1}
                 </span>
-                <div className="flex items-center gap-2">
-                  <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                    q.type === 'MULTIPLE_CHOICE' ? 'bg-blue-500/15 text-blue-400 border border-blue-500/25'
-                    : q.type === 'TRUE_FALSE'    ? 'bg-success/15 text-success border border-success/25'
-                    : 'bg-orange-400/15 text-orange-400 border border-orange-400/25'
-                  }`}>
-                    {q.type === 'MULTIPLE_CHOICE' ? 'Trắc nghiệm'
-                     : q.type === 'TRUE_FALSE' ? 'Đúng/Sai'
-                     : 'Tự luận'}
-                  </span>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    q.difficulty === 'EASY'   ? 'bg-success/10 text-success'
-                    : q.difficulty === 'HARD' ? 'bg-danger/10 text-danger'
-                    : 'bg-yellow-400/10 text-warning'
-                  }`}>
-                    {q.difficulty === 'EASY' ? 'Dễ' : q.difficulty === 'HARD' ? 'Khó' : 'TB'}
-                  </span>
-                </div>
               </div>
 
               {/* Question content */}
@@ -489,19 +471,19 @@ export default function TakeExamModal({ exam, onClose, onSubmitted }) {
               Bạn đã rời khỏi trang thi.
             </p>
             <p className="text-sm mb-4" style={{ color: 'var(--text-2)' }}>
-              Lần vi phạm: <b style={{ color: tabWarning >= MAX_WARNINGS ? '#dc2626' : '#f59e0b' }}>
+              Lần vi phạm: <b style={{ color: tabWarning >= MAX_WARNINGS ? 'var(--danger)' : '#f59e0b' }}>
                 {tabWarning} / {MAX_WARNINGS}
               </b>
             </p>
             {tabWarning >= MAX_WARNINGS ? (
               <div>
-                <p className="text-sm mb-4 font-medium" style={{ color: '#dc2626' }}>
+                <p className="text-sm mb-4 font-medium" style={{ color: 'var(--danger)' }}>
                   Bạn đã vi phạm quá số lần cho phép. Bài thi sẽ được nộp ngay!
                 </p>
                 <button
                   onClick={() => { setShowTabAlert(false); handleSubmit(true) }}
                   className="w-full py-2 rounded-xl text-sm font-medium text-white"
-                  style={{ background: '#dc2626' }}>
+                  style={{ background: 'var(--danger)' }}>
                   Nộp bài ngay
                 </button>
               </div>

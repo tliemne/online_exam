@@ -42,6 +42,7 @@ public class DashboardResponse {
         private int    studentCount;
         private int    examCount;
         private int    attemptCount;
+        private Integer passRate;   // % bài đạt, null nếu chưa có attempt
     }
 
     // ── Student ──────────────────────────────────────────
