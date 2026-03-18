@@ -352,13 +352,16 @@ function AiGenerateModal({ courses, defaultCourseId, tags = [], onClose, onSaved
     try {
       let list = []
       if (form.difficulty === 'ALL') {
-        // Chia đều: mỗi mức 1/3 số câu (ít nhất 1)
-        const perLevel = Math.max(1, Math.floor(form.count / 3))
+        // Chia đều: tổng = form.count, dư thêm vào EASY
+        const base = Math.floor(form.count / 3)
+        const rem  = form.count % 3
+        const counts = [base + (rem > 0 ? 1 : 0), base + (rem > 1 ? 1 : 0), base]
         const levels = ['EASY', 'MEDIUM', 'HARD']
-        const results = await Promise.all(levels.map(diff =>
+        const results = await Promise.all(levels.map((diff, i) =>
+          counts[i] === 0 ? Promise.resolve([]) :
           api.post('/questions/ai-generate', {
             topic: form.topic, type: form.type,
-            difficulty: diff, count: perLevel,
+            difficulty: diff, count: counts[i],
             courseId: form.courseId, tags: form.tags || null,
           }).then(r => r.data.data || []).catch(() => [])
         ))
@@ -373,7 +376,7 @@ function AiGenerateModal({ courses, defaultCourseId, tags = [], onClose, onSaved
       }
       if (!list.length) setError('AI không tạo được câu hỏi. Thử lại.')
       setGenerated(list)
-    } catch { setError('Lỗi kết nối AI. Thử lại.') }
+    } catch (e) { setError(e?.response?.data?.message?.includes('Quota') || e?.response?.status === 429 ? 'Quota AI hết cho hôm nay. Đổi API key hoặc thử lại ngày mai.' : 'Lỗi kết nối AI. Thử lại.') }
     finally { setLoading(false) }
   }
 
@@ -547,6 +550,44 @@ function AiGenerateModal({ courses, defaultCourseId, tags = [], onClose, onSaved
                   {generated.length} câu hỏi được tạo
                 </p>
                 <div className="flex items-center gap-2">
+                <button onClick={() => {
+                    setGenerated([]); setSaved(new Set()); setSaving(new Set())
+                    // gọi lại với nocache
+                    setLoading(true); setError('')
+                    const doGenerate = async () => {
+                      try {
+                        let list = []
+                        if (form.difficulty === 'ALL') {
+                          const base = Math.floor(form.count / 3), rem = form.count % 3
+                          const counts = [base+(rem>0?1:0), base+(rem>1?1:0), base]
+                          const results = await Promise.all(['EASY','MEDIUM','HARD'].map((diff, i) =>
+                            counts[i] === 0 ? Promise.resolve([]) :
+                            api.post('/questions/ai-generate', {
+                              topic: form.topic, type: form.type, difficulty: diff,
+                              count: counts[i], courseId: form.courseId, tags: form.tags || null,
+                              _nocache: Date.now(),
+                            }).then(r => r.data.data || []).catch(() => [])
+                          ))
+                          list = results.flat()
+                        } else {
+                          const r = await api.post('/questions/ai-generate', {
+                            topic: form.topic, type: form.type, difficulty: form.difficulty,
+                            count: form.count, courseId: form.courseId, tags: form.tags || null,
+                            _nocache: Date.now(),
+                          })
+                          list = r.data.data || []
+                        }
+                        if (!list.length) setError('AI không tạo được câu hỏi. Thử lại.')
+                        setGenerated(list)
+                      } catch (e) { setError(e?.response?.data?.message?.includes('Quota') || e?.response?.status === 429 ? 'Quota AI hết cho hôm nay. Đổi API key hoặc thử lại ngày mai.' : 'Lỗi kết nối AI. Thử lại.') }
+                      finally { setLoading(false) }
+                    }
+                    doGenerate()
+                  }}
+                  disabled={loading}
+                  className="btn-secondary text-xs py-1.5 px-3">
+                  ↻ Tạo lại
+                </button>
                 <button onClick={exportToExcel}
                   className="btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5">
                   ↓ Xuất Excel

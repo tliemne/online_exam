@@ -182,12 +182,18 @@ public class ExamController {
                 List<String> difficulties = diff.equals("ALL")
                         ? List.of("EASY", "MEDIUM", "HARD") : List.of(diff);
 
-                int perDiff = diff.equals("ALL")
-                        ? Math.max(1, tc.getCount() / 3) : tc.getCount();
+                // Chia đều: mức đầu lấy phần dư
+                int basePerDiff = tc.getCount() / 3;
+                int remainder   = tc.getCount() % 3;
 
+                int diffIdx = 0;
                 for (String d : difficulties) {
+                    int thisCount = basePerDiff + (diffIdx < remainder ? 1 : 0);
+                    diffIdx++;
+                    if (thisCount == 0) continue;
                     var genReq = new AiQuestionService.GenerateRequest(
-                            tc.getTopic(), type, d, perDiff, req.getCourseId(), tc.getTopic(), null);
+                            tc.getTopic(), type, d, thisCount, req.getCourseId(), tc.getTopic(),
+                            System.currentTimeMillis()); // luôn tạo mới, không cache
                     var generated = aiQuestionService.generate(genReq);
                     totalGenerated += generated.size();
 

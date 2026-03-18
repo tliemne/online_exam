@@ -33,7 +33,7 @@ public class AiQuestionService {
     @Value("${gemini.api.key:}")
     private String geminiApiKey;
 
-    @Value("${gemini.model:}")
+    @Value("${gemini.model:gemini-2.5-flash-preview-04-17}")
     private String geminiModel;
 
     private String getGeminiUrl() {
@@ -116,6 +116,15 @@ public class AiQuestionService {
 
             return result;
 
+        } catch (org.springframework.web.client.HttpClientErrorException e) {
+            String body = e.getResponseBodyAsString();
+            if (e.getStatusCode().value() == 429) {
+                log.warn("[AiQuestion] quota exceeded (429)");
+                throw new com.example.online_exam.exception.AppException(
+                        com.example.online_exam.exception.ErrorCode.AI_QUOTA_EXCEEDED);
+            }
+            log.error("[AiQuestion] generate failed: {}", e.getMessage());
+            return List.of();
         } catch (Exception e) {
             log.error("[AiQuestion] generate failed: {}", e.getMessage());
             return List.of();
@@ -180,10 +189,11 @@ public class AiQuestionService {
             ]
             
             Yêu cầu:
+            - Phải tạo ĐÚNG %d câu hỏi, không ít hơn
             - Câu hỏi rõ ràng, không mơ hồ
             %s
             - Không lặp lại câu hỏi
-            """, count, typeDesc, topic, diffDesc,
+            """, count, typeDesc, topic, diffDesc, count,
                 isEssay ? "[]" : """
                     [
                       {"content": "<đáp án>", "correct": true},
@@ -200,21 +210,27 @@ public class AiQuestionService {
             String text = root.path("candidates").get(0)
                     .path("content").path("parts").get(0).path("text").asText();
             text = text.replaceAll("(?s)```json|```", "").trim();
+            log.debug("[AiQuestion] raw ({}): {}", type, text.length() > 300 ? text.substring(0, 300) : text);
 
-            JsonNode arr = objectMapper.readTree(text);
+            // AI đôi khi wrap trong object {"questions":[...]} thay vì array
+            JsonNode parsed = objectMapper.readTree(text);
+            JsonNode arr = parsed.isArray() ? parsed : parsed.path("questions");
+
             List<GeneratedQuestion> result = new ArrayList<>();
             for (JsonNode node : arr) {
+                String content = node.path("content").asText("").trim();
+                if (content.isBlank()) continue;
                 List<GeneratedAnswer> answers = new ArrayList<>();
                 for (JsonNode a : node.path("answers")) {
-                    answers.add(new GeneratedAnswer(
-                            a.path("content").asText(),
-                            a.path("correct").asBoolean()));
+                    String ac = a.path("content").asText("").trim();
+                    if (!ac.isBlank())
+                        answers.add(new GeneratedAnswer(ac, a.path("correct").asBoolean()));
                 }
                 result.add(new GeneratedQuestion(
-                        node.path("content").asText(),
-                        type, difficulty, answers,
+                        content, type, difficulty, answers,
                         node.path("explanation").asText("")));
             }
+            log.info("[AiQuestion] parsed {}/{} (type={})", result.size(), arr.size(), type);
             return result;
         } catch (Exception e) {
             log.error("[AiQuestion] parse failed: {}", e.getMessage());

@@ -387,7 +387,7 @@ export default function ExamsPage() {
         <AiExamModal
           courses={courses}
           onClose={() => setShowAiExam(false)}
-          onCreated={(exam) => { setShowAiExam(false); load(); navigate(`/teacher/exams/${exam.id}`) }}
+          onCreated={() => { setShowAiExam(false); load(); }}
         />
       )}
 
@@ -417,9 +417,7 @@ function AiExamModal({ courses, onClose, onCreated }) {
   const removeTopic = (i) => setTopics(p => p.filter((_, idx) => idx !== i))
   const updateTopic = (i, key, val) => setTopics(p => p.map((t, idx) => idx === i ? {...t, [key]: val} : t))
 
-  const totalQuestions = topics.reduce((s, t) => {
-    return s + (t.difficulty === 'ALL' ? Math.floor(t.count / 3) * 3 : t.count)
-  }, 0)
+  const totalQuestions = topics.reduce((s, t) => s + +t.count, 0)
 
   const handleGenerate = async () => {
     if (!form.courseId) return setError('Chọn lớp học')
@@ -489,7 +487,7 @@ function AiExamModal({ courses, onClose, onCreated }) {
               )}
               <div className="flex gap-3">
                 <button onClick={() => onCreated(result.exam)} className="btn-primary flex-1">
-                  Xem đề thi →
+                  Xem danh sách đề →
                 </button>
                 <button onClick={onClose} className="btn-secondary">Đóng</button>
               </div>
