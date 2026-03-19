@@ -61,5 +61,5 @@ app:
     cleanup-cron: "0 5 3 * * *"
 gemini:
   api:
-    key: AIzaSyAT3QqgM2EMrYrH7zDKquZPrjV25xLvP-E
+    key: AIzaSyBv_fw9nSh_SLdzpluXKiUzgy_WSZhQa40
   model: gemini-2.5-flash

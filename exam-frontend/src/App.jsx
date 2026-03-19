@@ -33,6 +33,7 @@ import StudentRankingsPage from './pages/student/StudentRankingsPage'
 import TeacherStatsPage from './pages/teacher/TeacherStatsPage'
 import TagsPage from './pages/teacher/TagsPage'
 import QuestionStatPage from './pages/teacher/QuestionStatPage'
+import CourseLeaderboardPage from './pages/shared/CourseLeaderboardPage'
 
 import {
   UnauthorizedPage,
@@ -76,6 +77,9 @@ export default function App() {
           <Route path="/teacher/exams" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><ExamsPage /></WithLayout></ProtectedRoute>} />
           <Route path="/teacher/exams/:examId/stats" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><ExamStatsPage /></WithLayout></ProtectedRoute>} />
           <Route path="/admin/exams/:examId/stats" element={<ProtectedRoute roles={['ADMIN']}><WithLayout><ExamStatsPage /></WithLayout></ProtectedRoute>} />
+          <Route path="/teacher/courses/:courseId/leaderboard" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><CourseLeaderboardPage /></WithLayout></ProtectedRoute>} />
+          <Route path="/admin/courses/:courseId/leaderboard" element={<ProtectedRoute roles={['ADMIN']}><WithLayout><CourseLeaderboardPage /></WithLayout></ProtectedRoute>} />
+          <Route path="/student/courses/:courseId/leaderboard" element={<ProtectedRoute roles={['STUDENT']}><WithLayout><CourseLeaderboardPage /></WithLayout></ProtectedRoute>} />
 
           {/* Student */}
           <Route path="/teacher/stats" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><TeacherStatsPage /></WithLayout></ProtectedRoute>} />

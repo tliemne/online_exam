@@ -88,8 +88,8 @@ function PracticeModal({ topic, difficulty, onClose }) {
   const [score, setScore]           = useState(null)
   const [error, setError]           = useState('')
   const [count, setCount]           = useState(5)
-  const [diff, setDiff]             = useState(difficulty)
-  const [qtype, setQtype]           = useState('MULTIPLE_CHOICE')
+  const [diff, setDiff]             = useState('ALL')
+  const [qtype, setQtype]           = useState('ALL')
   const [started, setStarted]       = useState(false)
 
   const handleStart = () => {
@@ -99,7 +99,7 @@ function PracticeModal({ topic, difficulty, onClose }) {
     api.post('/questions/ai-generate', {
       topic, type: qtype, difficulty: diff, count,
       courseId: null, tags: null,
-      _nocache: Date.now(), // bust cache key
+      bustCache: true, // skip Redis cache khi luyện tập
     })
       .then(r => setQuestions(r.data.data || []))
       .catch(() => setError('Không tải được bài luyện. Thử lại.'))
@@ -107,20 +107,25 @@ function PracticeModal({ topic, difficulty, onClose }) {
   }
 
   const handleSubmit = () => {
-    if (qtype === 'ESSAY') {
+    const hasEssay = questions.some(q => q.type === 'ESSAY')
+    const allEssay = questions.every(q => q.type === 'ESSAY')
+    if (allEssay) {
       setScore({ essay: true, total: questions.length })
     } else {
       let correct = 0
       questions.forEach((q, i) => {
+        if (q.type === 'ESSAY') return // bỏ qua essay trong mix
         const chosen = answers[i]
         if (chosen != null && q.answers[chosen]?.correct) correct++
       })
-      setScore({ correct, total: questions.length })
+      const nonEssayCount = questions.filter(q => q.type !== 'ESSAY').length
+      setScore({ correct, total: nonEssayCount, hasEssay })
     }
     setSubmitted(true)
   }
 
-  const DIFF_LABEL = { EASY: 'Dễ', MEDIUM: 'Trung bình', HARD: 'Khó' }
+  const DIFF_LABEL = { EASY: 'Dễ', MEDIUM: 'Trung bình', HARD: 'Khó', ALL: 'Ngẫu nhiên' }
+  const TYPE_LABEL = { MULTIPLE_CHOICE: 'Trắc nghiệm', TRUE_FALSE: 'Đúng/Sai', ESSAY: 'Tự luận', ALL: 'Hỗn hợp' }
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4"
@@ -135,7 +140,7 @@ function PracticeModal({ topic, difficulty, onClose }) {
           <div>
             <h3 className="font-semibold" style={{ color: 'var(--text-1)' }}>Luyện tập: {topic}</h3>
             <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>
-              {started ? `${DIFF_LABEL[diff]} · ${count} câu · AI tạo` : 'Cấu hình bài luyện'}
+              {started ? `${TYPE_LABEL[qtype]} · ${DIFF_LABEL[diff]} · ${count} câu · AI tạo` : 'Cấu hình bài luyện'}
             </p>
           </div>
           <button onClick={onClose} className="btn-ghost p-1.5">✕</button>
@@ -149,6 +154,7 @@ function PracticeModal({ topic, difficulty, onClose }) {
                 <div>
                   <label className="input-label">Loại câu</label>
                   <select className="input-field" value={qtype} onChange={e => setQtype(e.target.value)}>
+                    <option value="ALL">Tất cả</option>
                     <option value="MULTIPLE_CHOICE">Trắc nghiệm</option>
                     <option value="TRUE_FALSE">Đúng/Sai</option>
                     <option value="ESSAY">Tự luận</option>
@@ -157,6 +163,7 @@ function PracticeModal({ topic, difficulty, onClose }) {
                 <div>
                   <label className="input-label">Độ khó</label>
                   <select className="input-field" value={diff} onChange={e => setDiff(e.target.value)}>
+                    <option value="ALL">Tất cả</option>
                     <option value="EASY">Dễ</option>
                     <option value="MEDIUM">Trung bình</option>
                     <option value="HARD">Khó</option>
@@ -205,6 +212,11 @@ function PracticeModal({ topic, difficulty, onClose }) {
                     : score.correct / score.total >= 0.6 ? 'Khá tốt! Tiếp tục luyện tập nhé.'
                     : 'Cần ôn lại thêm chủ đề này.'}
                 </p>
+                {score.hasEssay && (
+                  <p className="text-xs mt-2" style={{ color: 'var(--text-3)' }}>
+                    * Câu tự luận không tính điểm tự động — xem gợi ý bên dưới để tự đánh giá
+                  </p>
+                )}
               </div>
             )
           )}
@@ -218,7 +230,7 @@ function PracticeModal({ topic, difficulty, onClose }) {
                   <span className="text-xs mr-2" style={{ color: 'var(--text-3)' }}>{qi + 1}.</span>
                   {q.content}
                 </p>
-                {qtype === 'ESSAY' ? (
+                {q.type === 'ESSAY' ? (
                   <div className="space-y-2">
                     <textarea
                       disabled={submitted}
@@ -268,13 +280,9 @@ function PracticeModal({ topic, difficulty, onClose }) {
           {/* Actions */}
           {!loading && !submitted && questions.length > 0 && (
             <button onClick={handleSubmit}
-              disabled={qtype === 'ESSAY'
-                ? Object.keys(answers).length < questions.length
-                : Object.keys(answers).length < questions.length}
+              disabled={Object.keys(answers).length < questions.length}
               className="btn-primary w-full">
-              {qtype === 'ESSAY'
-                ? `Nộp bài (${Object.values(answers).filter(Boolean).length}/${count} câu)`
-                : `Nộp bài (${Object.keys(answers).length}/${count} câu)`}
+              Nộp bài ({Object.keys(answers).length}/{questions.length} câu)
             </button>
           )}
           {submitted && (

@@ -920,6 +920,17 @@ export default function CourseDetailPage() {
               </div>
             </div>
           </div>
+          {/* Leaderboard button */}
+          <button
+            onClick={() => navigate(`${isTeacher ? (isAdmin ? `/admin` : `/teacher`) : `/student`}/courses/${course.id}/leaderboard`)}
+            className="btn-secondary flex items-center gap-2 text-sm shrink-0"
+            title="Bảng xếp hạng lớp"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 21V9m4 12V3m4 18v-6" />
+            </svg>
+            BXH lớp
+          </button>
         </div>
       </div>
 

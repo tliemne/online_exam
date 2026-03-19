@@ -99,6 +99,16 @@ public class NotificationService {
         notifRepo.markAllReadByUser(currentUserService.requireCurrentUser().getId());
     }
 
+    @Transactional
+    public void deleteOne(Long id) {
+        notifRepo.deleteByIdAndUserId(id, currentUserService.requireCurrentUser().getId());
+    }
+
+    @Transactional
+    public void deleteAll() {
+        notifRepo.deleteAllByUser(currentUserService.requireCurrentUser().getId());
+    }
+
     private NotificationResponse toResponse(Notification n) {
         return NotificationResponse.builder()
                 .id(n.getId()).type(n.getType()).title(n.getTitle())

@@ -193,7 +193,7 @@ public class ExamController {
                     if (thisCount == 0) continue;
                     var genReq = new AiQuestionService.GenerateRequest(
                             tc.getTopic(), type, d, thisCount, req.getCourseId(), tc.getTopic(),
-                            System.currentTimeMillis()); // luôn tạo mới, không cache
+                            Boolean.TRUE); // luôn tạo mới, không cache
                     var generated = aiQuestionService.generate(genReq);
                     totalGenerated += generated.size();
 

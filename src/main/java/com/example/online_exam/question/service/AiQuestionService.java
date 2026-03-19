@@ -44,15 +44,18 @@ public class AiQuestionService {
     private static final String   CACHE_PREFIX = "ai:gen:";
 
     // ── Request DTO ───────────────────────────────────────
-    public record GenerateRequest(
-            String topic,
-            String type,
-            String difficulty,
-            int    count,
-            Long   courseId,
-            String tags,
-            Long   _nocache  // optional, bust Redis cache key khi student luyện tập
-    ) {}
+    @lombok.Data
+    @lombok.NoArgsConstructor
+    @lombok.AllArgsConstructor
+    public static class GenerateRequest {
+        private String  topic;
+        private String  type;
+        private String  difficulty;
+        private int     count;
+        private Long    courseId;
+        private String  tags;
+        private Boolean bustCache; // true = skip Redis cache (student luyện tập)
+    }
 
     // ── Response DTO ─────────────────────────────────────
     public record GeneratedQuestion(
@@ -67,14 +70,19 @@ public class AiQuestionService {
 
     // ── Main method ───────────────────────────────────────
     public List<GeneratedQuestion> generate(GenerateRequest req) {
-        int count = Math.min(Math.max(req.count(), 1), 20); // clamp 1-20
+        log.info("[AiQuestion] generate() called type={} diff={} bustCache={}", req.getType(), req.getDifficulty(), req.getBustCache());
+        int count = Math.min(Math.max(req.getCount(), 1), 20); // clamp 1-20
 
-        // Cache key theo topic + type + difficulty + count + tags
-        String cacheKey = CACHE_PREFIX + req.topic().toLowerCase().replaceAll("\\s+", "_")
-                + ":" + req.type() + ":" + req.difficulty() + ":" + count
-                + (req.tags() != null && !req.tags().isBlank() ? ":" + req.tags().toLowerCase().replaceAll("\\s+","") : "");
+        // Giữ nguyên ALL — buildPrompt xử lý mix type trong 1 lần gọi Gemini
+        String resolvedType = req.getType()  != null ? req.getType()       : "MULTIPLE_CHOICE";
+        String resolvedDiff = req.getDifficulty() != null ? req.getDifficulty() : "MEDIUM";
 
-        boolean useCache = req._nocache() == null; // skip cache khi student luyện tập
+        // Cache key
+        String cacheKey = CACHE_PREFIX + req.getTopic().toLowerCase().replaceAll("\\s+", "_")
+                + ":" + resolvedType + ":" + resolvedDiff + ":" + count
+                + (req.getTags() != null && !req.getTags().isBlank() ? ":" + req.getTags().toLowerCase().replaceAll("\\s+","") : "");
+
+        boolean useCache = !Boolean.TRUE.equals(req.getBustCache()); // false khi student luyện tập
 
         // Check cache
         if (useCache) {
@@ -95,7 +103,7 @@ public class AiQuestionService {
         }
 
         try {
-            String prompt = buildPrompt(req.topic(), req.type(), req.difficulty(), count);
+            String prompt = buildPrompt(req.getTopic(), resolvedType, resolvedDiff, count);
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             Map<String, Object> body = Map.of(
@@ -105,9 +113,9 @@ public class AiQuestionService {
             ResponseEntity<String> resp = restTemplate.postForEntity(
                     url, new HttpEntity<>(body, headers), String.class);
 
-            List<GeneratedQuestion> result = parseResponse(resp.getBody(), req.type(), req.difficulty());
+            List<GeneratedQuestion> result = parseResponse(resp.getBody(), resolvedType, resolvedDiff);
 
-            // Cache kết quả (chỉ khi không có _nocache flag)
+            // Cache kết quả (chỉ khi không set bustCache)
             if (useCache) {
                 try {
                     redis.opsForValue().set(cacheKey, objectMapper.writeValueAsString(result), CACHE_TTL);
@@ -123,10 +131,10 @@ public class AiQuestionService {
                 throw new com.example.online_exam.exception.AppException(
                         com.example.online_exam.exception.ErrorCode.AI_QUOTA_EXCEEDED);
             }
-            log.error("[AiQuestion] generate failed: {}", e.getMessage());
+            log.error("[AiQuestion] generate failed [{}]: {}", e.getClass().getName(), e.getMessage(), e);
             return List.of();
         } catch (Exception e) {
-            log.error("[AiQuestion] generate failed: {}", e.getMessage());
+            log.error("[AiQuestion] generate failed [{}]: {}", e.getClass().getName(), e.getMessage(), e);
             return List.of();
         }
     }
@@ -160,47 +168,63 @@ public class AiQuestionService {
 
     // ── Prompt builder ────────────────────────────────────
     private String buildPrompt(String topic, String type, String difficulty, int count) {
+        boolean mixType = "ALL".equals(type);
+        boolean mixDiff = "ALL".equals(difficulty);
+
+        String diffDesc = mixDiff ? "hỗn hợp (dễ, trung bình, khó)" : switch (difficulty) {
+            case "EASY"  -> "dễ, kiến thức cơ bản";
+            case "HARD"  -> "khó, cần suy luận sâu";
+            default      -> "trung bình";
+        };
+
+        if (mixType) {
+            // 1 lần gọi AI, yêu cầu mix 3 loại — AI tự gán type vào từng câu
+            return "Tạo " + count + " câu hỏi về chủ đề \"" + topic + "\", mức độ " + diffDesc + ".\n"
+                    + "Ngôn ngữ: tiếng Việt.\n"
+                    + "Phân bổ loại câu: khoảng 1/3 trắc nghiệm (MULTIPLE_CHOICE), 1/3 đúng/sai (TRUE_FALSE), 1/3 tự luận (ESSAY).\n"
+                    + "Return ONLY valid JSON array. No markdown, no explanation outside JSON.\n\n"
+                    + "JSON format (MỖI câu PHẢI có field \"type\"):\n"
+                    + "[\n"
+                    + "  { \"type\": \"MULTIPLE_CHOICE\", \"content\": \"...\", \"answers\": [{\"content\":\"...\",\"correct\":true},{\"content\":\"...\",\"correct\":false},{\"content\":\"...\",\"correct\":false},{\"content\":\"...\",\"correct\":false}], \"explanation\": \"...\" },\n"
+                    + "  { \"type\": \"TRUE_FALSE\",      \"content\": \"...\", \"answers\": [{\"content\":\"Đúng\",\"correct\":true},{\"content\":\"Sai\",\"correct\":false}], \"explanation\": \"...\" },\n"
+                    + "  { \"type\": \"ESSAY\",           \"content\": \"...\", \"answers\": [], \"explanation\": \"...\" }\n"
+                    + "]\n\n"
+                    + "Yêu cầu:\n"
+                    + "- Phải tạo ĐÚNG " + count + " câu hỏi\n"
+                    + "- Field \"type\" bắt buộc: MULTIPLE_CHOICE | TRUE_FALSE | ESSAY\n"
+                    + "- Câu MULTIPLE_CHOICE cần đúng 4 answers (1 đúng, 3 sai gây nhiễu tốt)\n"
+                    + "- Câu TRUE_FALSE cần đúng 2 answers (Đúng/Sai)\n"
+                    + "- Câu ESSAY để answers = []\n"
+                    + "- Không lặp lại câu hỏi";
+        }
+
+        // Single type
+        boolean isEssay = "ESSAY".equals(type);
         String typeDesc = switch (type) {
             case "MULTIPLE_CHOICE" -> "trắc nghiệm 4 đáp án (1 đúng, 3 sai)";
             case "TRUE_FALSE"      -> "đúng/sai (2 đáp án: Đúng và Sai, 1 cái đúng)";
-            case "ESSAY"           -> "tự luận (không có đáp án cố định, cần đánh giá mở)";
+            case "ESSAY"           -> "tự luận (không có đáp án cố định)";
             default                -> "trắc nghiệm 4 đáp án (1 đúng, 3 sai)";
         };
-        String diffDesc = switch (difficulty) {
-            case "EASY"   -> "dễ, kiến thức cơ bản";
-            case "HARD"   -> "khó, cần suy luận sâu";
-            default       -> "trung bình";
-        };
+        String answersFormat = isEssay
+                ? "[]"
+                : "[{\"content\": \"<đáp án>\", \"correct\": true}, {\"content\": \"<đáp án>\", \"correct\": false}]";
+        String requirement = isEssay
+                ? "- Câu hỏi yêu cầu trình bày/phân tích, không có đáp án đúng/sai cố định"
+                : "- Đáp án sai phải hợp lý (gây nhiễu tốt)";
 
-        boolean isEssay = type.equals("ESSAY");
-
-        return String.format("""
-            Tạo %d câu hỏi %s về chủ đề "%s", mức độ %s.
-            Ngôn ngữ: tiếng Việt.
-            Return ONLY valid JSON array. No markdown, no explanation outside JSON.
-            
-            JSON format:
-            [
-              {
-                "content": "<nội dung câu hỏi>",
-                "answers": %s,
-                "explanation": "<gợi ý đáp án / tiêu chí chấm, ≤50 từ>"
-              }
-            ]
-            
-            Yêu cầu:
-            - Phải tạo ĐÚNG %d câu hỏi, không ít hơn
-            - Câu hỏi rõ ràng, không mơ hồ
-            %s
-            - Không lặp lại câu hỏi
-            """, count, typeDesc, topic, diffDesc, count,
-                isEssay ? "[]" : """
-                    [
-                      {"content": "<đáp án>", "correct": true},
-                      {"content": "<đáp án>", "correct": false}
-                    ]""",
-                isEssay ? "- Câu hỏi yêu cầu trình bày/phân tích, không có đáp án đúng/sai cố định"
-                        : "- Đáp án sai phải hợp lý (gây nhiễu tốt)");
+        return "Tạo " + count + " câu hỏi " + typeDesc + " về chủ đề \"" + topic + "\", mức độ " + diffDesc + ".\n"
+                + "Ngôn ngữ: tiếng Việt.\n"
+                + "Return ONLY valid JSON array. No markdown, no explanation outside JSON.\n\n"
+                + "JSON format:\n"
+                + "[\n"
+                + "  { \"type\": \"" + type + "\", \"content\": \"<nội dung>\", \"answers\": " + answersFormat + ", \"explanation\": \"<gợi ý>\" }\n"
+                + "]\n\n"
+                + "Yêu cầu:\n"
+                + "- Phải tạo ĐÚNG " + count + " câu hỏi\n"
+                + "- Câu hỏi rõ ràng, không mơ hồ\n"
+                + requirement + "\n"
+                + "- Không lặp lại câu hỏi";
     }
 
     // ── Response parser ───────────────────────────────────
@@ -220,6 +244,20 @@ public class AiQuestionService {
             for (JsonNode node : arr) {
                 String content = node.path("content").asText("").trim();
                 if (content.isBlank()) continue;
+
+                // Dùng type từ AI response nếu có (khi gọi với type=ALL)
+                // Fallback về type param nếu AI không trả về
+                String resolvedType = node.path("type").isMissingNode() || node.path("type").asText("").isBlank()
+                        ? type : node.path("type").asText(type);
+
+                // Normalize type value
+                resolvedType = switch (resolvedType.toUpperCase()) {
+                    case "MULTIPLE_CHOICE", "MC" -> "MULTIPLE_CHOICE";
+                    case "TRUE_FALSE", "TF"      -> "TRUE_FALSE";
+                    case "ESSAY"                 -> "ESSAY";
+                    default                      -> "MULTIPLE_CHOICE";
+                };
+
                 List<GeneratedAnswer> answers = new ArrayList<>();
                 for (JsonNode a : node.path("answers")) {
                     String ac = a.path("content").asText("").trim();
@@ -227,14 +265,35 @@ public class AiQuestionService {
                         answers.add(new GeneratedAnswer(ac, a.path("correct").asBoolean()));
                 }
                 result.add(new GeneratedQuestion(
-                        content, type, difficulty, answers,
+                        content, resolvedType, difficulty, answers,
                         node.path("explanation").asText("")));
             }
-            log.info("[AiQuestion] parsed {}/{} (type={})", result.size(), arr.size(), type);
+            log.info("[AiQuestion] parsed {}/{} types={}", result.size(), arr.size(),
+                    result.stream().map(GeneratedQuestion::type).distinct().toList());
             return result;
         } catch (Exception e) {
             log.error("[AiQuestion] parse failed: {}", e.getMessage());
             return List.of();
         }
     }
+
+    // ── Helpers: resolve ALL → random cụ thể ─────────────
+    private static final java.util.Random RANDOM = new java.util.Random();
+
+    private String resolveType(String type) {
+        if (type == null || type.isBlank() || type.equals("ALL")) {
+            String[] types = {"MULTIPLE_CHOICE", "TRUE_FALSE", "ESSAY"};
+            return types[RANDOM.nextInt(types.length)];
+        }
+        return type;
+    }
+
+    private String resolveDifficulty(String difficulty) {
+        if (difficulty == null || difficulty.isBlank() || difficulty.equals("ALL")) {
+            String[] diffs = {"EASY", "MEDIUM", "HARD"};
+            return diffs[RANDOM.nextInt(diffs.length)];
+        }
+        return difficulty;
+    }
+
 }

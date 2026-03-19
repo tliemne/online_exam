@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
@@ -26,4 +27,14 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     @Modifying
     @Query("DELETE FROM Notification n WHERE n.recipient.id = :userId")
     void deleteAllByUser(@Param("userId") Long userId);
+
+    // Xóa 1 thông báo (user tự xóa)
+    @Modifying
+    @Query("DELETE FROM Notification n WHERE n.id = :id AND n.recipient.id = :userId")
+    void deleteByIdAndUserId(@Param("id") Long id, @Param("userId") Long userId);
+
+    // Xóa thông báo đã đọc cũ hơn N ngày — dùng cho scheduled cleanup
+    @Modifying
+    @Query("DELETE FROM Notification n WHERE n.isRead = true AND n.createdAt < :cutoff")
+    int deleteReadOlderThan(@Param("cutoff") LocalDateTime cutoff);
 }

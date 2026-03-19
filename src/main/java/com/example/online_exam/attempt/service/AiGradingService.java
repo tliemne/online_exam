@@ -428,7 +428,7 @@ public class AiGradingService {
 
         WeaknessAnalysis result = new WeaknessAnalysis(topics, advice, suggestions, roadmap);
         try {
-            redis.opsForValue().set(cacheKey, objectMapper.writeValueAsString(result), Duration.ofMinutes(30));
+            redis.opsForValue().set(cacheKey, objectMapper.writeValueAsString(result), Duration.ofHours(2));
         } catch (Exception ignored) {}
         return result;
     }

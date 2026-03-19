@@ -214,6 +214,20 @@ function NotificationBell() {
     if (notif.link) { navigate(notif.link); setOpen(false) }
   }
 
+  const handleDelete = async (e, id) => {
+    e.stopPropagation()
+    await notifApi.deleteOne(id).catch(() => {})
+    const removed = notifications.find(n => n.id === id)
+    setNotifs(prev => prev.filter(n => n.id !== id))
+    if (removed && !removed.isRead) setUnread(u => Math.max(0, u - 1))
+  }
+
+  const handleDeleteAll = async () => {
+    await notifApi.deleteAll().catch(() => {})
+    setNotifs([])
+    setUnread(0)
+  }
+
   const handleMarkAllRead = async () => {
     await notifApi.markAllRead().catch(() => {})
     setNotifs(prev => prev.map(n => ({ ...n, isRead: true })))
@@ -267,15 +281,23 @@ function NotificationBell() {
             <span className="text-sm font-semibold" style={{ color: 'var(--text-1)' }}>
               Thông báo {unread > 0 && <span className="ml-1 text-xs px-1.5 py-0.5 rounded-full text-white" style={{ background: '#ef4444' }}>{unread}</span>}
             </span>
-            {unread > 0 && (
-              <button onClick={handleMarkAllRead} className="text-xs" style={{ color: 'var(--accent)' }}>
-                Đọc tất cả
-              </button>
-            )}
+            <div className="flex items-center gap-2">
+              {unread > 0 && (
+                <button onClick={handleMarkAllRead} className="text-xs" style={{ color: 'var(--accent)' }}>
+                  Đọc tất cả
+                </button>
+              )}
+              {notifications.length > 0 && (
+                <button onClick={handleDeleteAll} className="text-xs" style={{ color: 'var(--text-3)' }}
+                  title="Xóa tất cả">
+                  Xóa tất cả
+                </button>
+              )}
+            </div>
           </div>
 
           {/* List */}
-          <div className="max-h-80 overflow-y-auto">
+          <div className="max-h-80 overflow-y-auto divide-y" style={{ borderColor: 'var(--border-base)' }}>
             {loading ? (
               <div className="flex justify-center py-8">
                 <div className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: 'var(--accent)' }}/>
@@ -283,25 +305,59 @@ function NotificationBell() {
             ) : notifications.length === 0 ? (
               <p className="text-center py-8 text-sm" style={{ color: 'var(--text-3)' }}>Chưa có thông báo</p>
             ) : (
-              notifications.map(n => (
-                <div key={n.id} onClick={() => handleMarkRead(n)}
-                  className="flex gap-3 px-4 py-3 cursor-pointer transition-colors border-b last:border-0"
-                  style={{
-                    borderColor: 'var(--border-base)',
-                    background: n.isRead ? 'transparent' : 'var(--accent-subtle)',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)' }}
-                  onMouseLeave={e => { e.currentTarget.style.background = n.isRead ? 'transparent' : 'var(--accent-subtle)' }}>
-                  {/* Dot */}
-                  <div className="w-2 h-2 rounded-full mt-1.5 shrink-0"
-                    style={{ background: n.isRead ? 'var(--border-base)' : (TYPE_COLOR[n.type] || '#6b7280') }}/>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium leading-tight" style={{ color: 'var(--text-1)' }}>{n.title}</p>
-                    <p className="text-xs mt-0.5 line-clamp-2" style={{ color: 'var(--text-3)' }}>{n.message}</p>
-                    <p className="text-[10px] mt-1" style={{ color: 'var(--text-3)' }}>{timeAgo(n.createdAt)}</p>
+              notifications.map(n => {
+                const dotColor = TYPE_COLOR[n.type] || '#6b7280'
+                return (
+                  <div key={n.id} onClick={() => handleMarkRead(n)}
+                    className="flex gap-3 px-4 py-3 cursor-pointer transition-all group"
+                    style={{
+                      background: n.isRead
+                        ? 'transparent'
+                        : `color-mix(in srgb, ${dotColor} 10%, var(--bg-surface))`,
+                      borderLeft: n.isRead ? '3px solid transparent' : `3px solid ${dotColor}`,
+                    }}>
+                    {/* Dot — chỉ hiện khi chưa đọc */}
+                    {!n.isRead && (
+                      <div className="w-2 h-2 rounded-full mt-1.5 shrink-0 animate-pulse"
+                        style={{ background: dotColor }}/>
+                    )}
+                    {n.isRead && (
+                      <div className="w-2 h-2 rounded-full mt-1.5 shrink-0 opacity-20"
+                        style={{ background: 'var(--text-3)' }}/>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm leading-tight"
+                        style={{
+                          color: 'var(--text-1)',
+                          fontWeight: n.isRead ? 400 : 600,
+                          opacity: n.isRead ? 0.7 : 1,
+                        }}>
+                        {n.title}
+                      </p>
+                      <p className="text-xs mt-0.5 line-clamp-2" style={{ color: 'var(--text-3)' }}>{n.message}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <p className="text-[10px]" style={{ color: 'var(--text-3)' }}>{timeAgo(n.createdAt)}</p>
+                        {!n.isRead && (
+                          <span className="text-[9px] font-semibold px-1 rounded"
+                            style={{ background: dotColor, color: '#fff', opacity: 0.9 }}>
+                            MỚI
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    {/* Nút xóa — hiện khi hover */}
+                    <button
+                      onClick={e => handleDelete(e, n.id)}
+                      className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded"
+                      style={{ color: 'var(--text-3)' }}
+                      title="Xóa thông báo">
+                      <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5">
+                        <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z"/>
+                      </svg>
+                    </button>
                   </div>
-                </div>
-              ))
+                )
+              })
             )}
           </div>
         </div>

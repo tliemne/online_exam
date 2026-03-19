@@ -42,6 +42,7 @@ export const courseApi = {
   addStudent: (id, studentId) => api.post(`/courses/${id}/students/${studentId}`),
   addStudents: (id, studentIds) => api.post(`/courses/${id}/students`, studentIds),
   removeStudent: (id, studentId) => api.delete(`/courses/${id}/students/${studentId}`),
+  getLeaderboard: (id) => api.get(`/courses/${id}/leaderboard`),
 }
 
 // ── QUESTIONS ────────────────────────────────────────────
@@ -78,7 +79,6 @@ export const examApi = {
   delete: (id) => api.delete(`/exams/${id}`),
   publish: (id) => api.post(`/exams/${id}/publish`),
   close: (id) => api.post(`/exams/${id}/close`),
-  // Quản lý câu hỏi trong đề
   addQuestions: (examId, items) => api.post(`/exams/${examId}/questions`, items),
   removeQuestion: (examId, questionId) => api.delete(`/exams/${examId}/questions/${questionId}`),
   randomQuestions: (examId, data) => api.post(`/exams/${examId}/random-questions`, data),
@@ -103,6 +103,7 @@ export const lectureApi = {
   update:      (courseId, id, data)   => api.put(`/courses/${courseId}/lectures/${id}`, data),
   delete:      (courseId, id)         => api.delete(`/courses/${courseId}/lectures/${id}`),
 }
+
 // ── TAGS ──────────────────────────────────────────────────
 export const tagApi = {
   getAll:            ()                    => api.get('/tags'),
@@ -111,22 +112,33 @@ export const tagApi = {
   delete:            (id)                  => api.delete(`/tags/${id}`),
   setOnQuestion:     (questionId, tagIds)  => api.put(`/tags/questions/${questionId}`, tagIds),
 }
+
 // ── ADMIN LOGS ────────────────────────────────────────────
 export const adminApi = {
   getLogs: (params) => api.get('/admin/logs', { params }),
 }
+
 // ── NOTIFICATIONS ─────────────────────────────────────────
 export const notifApi = {
   getAll:       (page = 0, size = 20) => api.get('/notifications', { params: { page, size } }),
   getUnread:    ()                    => api.get('/notifications/unread-count'),
   markRead:     (id)                  => api.patch(`/notifications/${id}/read`),
   markAllRead:  ()                    => api.patch('/notifications/read-all'),
+  deleteOne:    (id)                  => api.delete(`/notifications/${id}`),
+  deleteAll:    ()                    => api.delete('/notifications'),
 }
 
 // ── ANNOUNCEMENTS ─────────────────────────────────────────
 export const announcementApi = {
-  getAll:  (courseId)          => api.get(`/courses/${courseId}/announcements`),
-  create:  (courseId, data)    => api.post(`/courses/${courseId}/announcements`, data),
-  update:  (courseId, id, data)=> api.put(`/courses/${courseId}/announcements/${id}`, data),
-  delete:  (courseId, id)      => api.delete(`/courses/${courseId}/announcements/${id}`),
+  getAll:  (courseId)           => api.get(`/courses/${courseId}/announcements`),
+  create:  (courseId, data)     => api.post(`/courses/${courseId}/announcements`, data),
+  update:  (courseId, id, data) => api.put(`/courses/${courseId}/announcements/${id}`, data),
+  delete:  (courseId, id)       => api.delete(`/courses/${courseId}/announcements/${id}`),
+}
+
+// ── EXAM STATS & LEADERBOARD ──────────────────────────────
+export const statsApi = {
+  getExamStats:       (examId)   => api.get(`/exam-stats/${examId}`),
+  getExamLeaderboard: (examId)   => api.get(`/exam-stats/${examId}/leaderboard`),
+  getCourseLeaderboard: (courseId) => api.get(`/courses/${courseId}/leaderboard`),
 }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../../api/client'
+import { useToast } from '../../context/ToastContext'
 
 // ── Mini chart components (thuần SVG, không cần recharts) ──────────────────
 
@@ -112,8 +113,10 @@ function BarChart({ data }) {
 export default function ExamStatsPage() {
   const { examId } = useParams()
   const navigate   = useNavigate()
+  const toast      = useToast()
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [exporting, setExporting] = useState(false)
   const [tab, setTab] = useState('overview') // overview | leaderboard | questions
 
   useEffect(() => {
@@ -122,6 +125,24 @@ export default function ExamStatsPage() {
       .catch(console.error)
       .finally(() => setLoading(false))
   }, [examId])
+
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      const resp = await api.get(`/attempts/exams/${examId}/export`, { responseType: 'blob' })
+      const url  = URL.createObjectURL(new Blob([resp.data]))
+      const link = document.createElement('a')
+      link.href     = url
+      link.download = `ket-qua-${stats?.examTitle?.replace(/\s+/g, '-') ?? examId}.xlsx`
+      link.click()
+      URL.revokeObjectURL(url)
+      toast.success('Xuất Excel thành công')
+    } catch {
+      toast.error('Xuất Excel thất bại. Vui lòng thử lại.')
+    } finally {
+      setExporting(false)
+    }
+  }
 
   if (loading) return (
     <div className="flex items-center justify-center h-64">
@@ -147,11 +168,29 @@ export default function ExamStatsPage() {
           <h1 className="text-2xl font-bold text-[var(--text-1)]">Thống kê đề thi</h1>
           <p className="text-[var(--text-3)] mt-1">{stats.examTitle}</p>
         </div>
-        {stats.totalAttempts === 0 && (
-          <div className="px-4 py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-sm">
-            Chưa có sinh viên nộp bài
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {stats.totalAttempts === 0 && (
+            <div className="px-4 py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-sm">
+              Chưa có sinh viên nộp bài
+            </div>
+          )}
+          {stats.totalAttempts > 0 && (
+            <button
+              onClick={handleExport}
+              disabled={exporting}
+              className="btn-secondary flex items-center gap-2 text-sm"
+            >
+              {exporting ? (
+                <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+              )}
+              {exporting ? 'Đang xuất...' : 'Xuất Excel'}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Stat cards */}

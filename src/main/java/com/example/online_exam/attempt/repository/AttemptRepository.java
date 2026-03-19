@@ -61,6 +61,21 @@ public interface AttemptRepository extends JpaRepository<Attempt, Long> {
     """)
     List<Attempt> findGradedWithAnswersByCourse(@Param("courseId") Long courseId);
 
+    /**
+     * Dùng cho Course Leaderboard — fetch student + studentProfile + exam.
+     * Không fetch answers (không cần cho BXH).
+     */
+    @Query("""
+        SELECT DISTINCT a FROM Attempt a
+        LEFT JOIN FETCH a.student s
+        LEFT JOIN FETCH s.studentProfile
+        LEFT JOIN FETCH a.exam e
+        WHERE e.course.id = :courseId
+          AND a.status = 'GRADED'
+          AND a.score IS NOT NULL
+    """)
+    List<Attempt> findForCourseLeaderboard(@Param("courseId") Long courseId);
+
     // Query 1: fetch exam + examQuestions
     @Query("SELECT a FROM Attempt a " +
             "LEFT JOIN FETCH a.exam e " +

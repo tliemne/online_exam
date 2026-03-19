@@ -137,6 +137,32 @@ public class AttemptController {
         return ResponseEntity.ok().headers(headers).body(data);
     }
 
+    // GET /attempts/courses/{courseId}/leaderboard/export — xuất BXH lớp
+    @GetMapping("/courses/{courseId}/leaderboard/export")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    public ResponseEntity<byte[]> exportCourseLeaderboard(@PathVariable Long courseId) {
+        byte[] data = exportService.exportCourseLeaderboard(courseId);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+        headers.setContentDispositionFormData("attachment",
+                "bxh-lop-" + courseId + ".xlsx");
+        return ResponseEntity.ok().headers(headers).body(data);
+    }
+
+    // GET /attempts/courses/{courseId}/report/export — xuất báo cáo tổng hợp lớp
+    @GetMapping("/courses/{courseId}/report/export")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    public ResponseEntity<byte[]> exportCourseReport(@PathVariable Long courseId) {
+        byte[] data = exportService.exportCourseReport(courseId);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+        headers.setContentDispositionFormData("attachment",
+                "bao-cao-lop-" + courseId + ".xlsx");
+        return ResponseEntity.ok().headers(headers).body(data);
+    }
+
     // GET /attempts/{id}/ai-suggest  — AI gợi ý chấm tự luận
     @GetMapping("/{id}/ai-suggest")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")

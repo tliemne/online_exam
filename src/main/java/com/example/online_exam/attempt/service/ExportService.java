@@ -1,8 +1,11 @@
 package com.example.online_exam.attempt.service;
 
+import com.example.online_exam.attempt.dto.CourseLeaderboardResponse;
 import com.example.online_exam.attempt.entity.Attempt;
 import com.example.online_exam.attempt.enums.AttemptStatus;
 import com.example.online_exam.attempt.repository.AttemptRepository;
+import com.example.online_exam.course.entity.Course;
+import com.example.online_exam.course.repository.CourseRepository;
 import com.example.online_exam.exam.entity.Exam;
 import com.example.online_exam.exam.repository.ExamRepository;
 import com.example.online_exam.exception.AppException;
@@ -29,16 +32,14 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class ExportService {
 
-    private final ExamRepository    examRepo;
-    private final AttemptRepository attemptRepo;
-    private final CurrentUserService currentUserService;
+    private final ExamRepository           examRepo;
+    private final AttemptRepository        attemptRepo;
+    private final CourseRepository         courseRepo;
+    private final CourseLeaderboardService leaderboardService;
+    private final CurrentUserService       currentUserService;
 
     private static final DateTimeFormatter DT = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
-    /**
-     * Xuất kết quả thi của 1 đề ra file Excel (.xlsx)
-     * Teacher chỉ xuất được đề của mình, Admin xuất được tất cả.
-     */
     public byte[] exportExamResults(Long examId) {
         Exam exam = examRepo.findById(examId)
                 .orElseThrow(() -> new AppException(ErrorCode.EXAM_NOT_FOUND));
@@ -259,4 +260,194 @@ public class ExportService {
     private boolean isOwner(Exam exam, User user) {
         return exam.getCreatedBy() != null && exam.getCreatedBy().getId().equals(user.getId());
     }
+    // ── Export BXH lớp ───────────────────────────────────────────────────
+    public byte[] exportCourseLeaderboard(Long courseId) {
+        User caller = currentUserService.requireCurrentUser();
+        if (!isTeacher(caller) && !isAdmin(caller)) throw new AppException(ErrorCode.FORBIDDEN);
+
+        CourseLeaderboardResponse data = leaderboardService.getLeaderboard(courseId);
+
+        try (XSSFWorkbook wb = new XSSFWorkbook()) {
+            XSSFSheet sheet = wb.createSheet("Bảng xếp hạng");
+            sheet.setDefaultColumnWidth(20);
+
+            CellStyle titleStyle  = makeTitleStyle(wb);
+            CellStyle headerStyle = makeHeaderStyle(wb);
+            CellStyle centerStyle = makeCenterStyle(wb);
+            CellStyle goldStyle   = makeRankStyle(wb, new byte[]{(byte)202,(byte)138,(byte)4});
+            CellStyle silverStyle = makeRankStyle(wb, new byte[]{(byte)100,(byte)116,(byte)139});
+            CellStyle bronzeStyle = makeRankStyle(wb, new byte[]{(byte)180,(byte)83,(byte)9});
+
+            Row title = sheet.createRow(0); title.setHeightInPoints(26);
+            Cell tc = title.createCell(0);
+            tc.setCellValue("BẢNG XẾP HẠNG LỚP: " + data.getCourseName().toUpperCase());
+            tc.setCellStyle(titleStyle);
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 6));
+
+            Row info = sheet.createRow(1);
+            info.createCell(0).setCellValue(
+                    "Tổng sinh viên đã thi: " + data.getTotalStudents()
+                            + "   |   Số đề thi: " + data.getTotalExams());
+            sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 6));
+            sheet.createRow(2);
+
+            String[] headers = {"Hạng", "Tên sinh viên", "Mã SV", "Bài đã thi", "Điểm TB (%)", "Đạt / Tổng", "Bài thi gần nhất"};
+            int[]    widths  = {8, 26, 14, 14, 14, 14, 28};
+            Row hrow = sheet.createRow(3); hrow.setHeightInPoints(18);
+            for (int i = 0; i < headers.length; i++) {
+                Cell c = hrow.createCell(i);
+                c.setCellValue(headers[i]);
+                c.setCellStyle(headerStyle);
+                sheet.setColumnWidth(i, widths[i] * 256);
+            }
+
+            int rowIdx = 4;
+            for (CourseLeaderboardResponse.StudentRankEntry e : data.getRanking()) {
+                Row row = sheet.createRow(rowIdx++);
+                row.setHeightInPoints(17);
+
+                CellStyle rankSt = e.getRank() == 1 ? goldStyle
+                        : e.getRank() == 2 ? silverStyle
+                        : e.getRank() == 3 ? bronzeStyle : centerStyle;
+
+                Cell rankCell = row.createCell(0);
+                rankCell.setCellValue("#" + e.getRank());
+                rankCell.setCellStyle(rankSt);
+                row.createCell(1).setCellValue(e.getStudentName() != null ? e.getStudentName() : "");
+                Cell codeCell = row.createCell(2); codeCell.setCellValue(e.getStudentCode() != null ? e.getStudentCode() : ""); codeCell.setCellStyle(centerStyle);
+                Cell takenCell = row.createCell(3); takenCell.setCellValue(e.getExamsTaken()); takenCell.setCellStyle(centerStyle);
+                Cell avgCell = row.createCell(4); avgCell.setCellValue(Math.round(e.getAvgScore() * 10.0) / 10.0 + "%"); avgCell.setCellStyle(centerStyle);
+                Cell passCell = row.createCell(5); passCell.setCellValue(e.getExamsPasssed() + " / " + e.getExamsTaken()); passCell.setCellStyle(centerStyle);
+                row.createCell(6).setCellValue(e.getLastExamTitle() != null ? e.getLastExamTitle() : "");
+            }
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            wb.write(out);
+            return out.toByteArray();
+        } catch (AppException e) { throw e; }
+        catch (Exception e) { throw new RuntimeException("Export BXH lớp thất bại: " + e.getMessage(), e); }
+    }
+
+    // ── Export báo cáo tổng hợp lớp ─────────────────────────────────────
+    public byte[] exportCourseReport(Long courseId) {
+        User caller = currentUserService.requireCurrentUser();
+        if (!isTeacher(caller) && !isAdmin(caller)) throw new AppException(ErrorCode.FORBIDDEN);
+
+        Course course = courseRepo.findById(courseId)
+                .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
+
+        java.util.List<Attempt> attempts = attemptRepo.findForCourseLeaderboard(courseId);
+        java.util.Map<Long, java.util.List<Attempt>> byExam = attempts.stream()
+                .collect(java.util.stream.Collectors.groupingBy(a -> a.getExam().getId()));
+
+        try (XSSFWorkbook wb = new XSSFWorkbook()) {
+            XSSFSheet sheet = wb.createSheet("Báo cáo tổng hợp");
+            sheet.setDefaultColumnWidth(18);
+
+            CellStyle titleStyle  = makeTitleStyle(wb);
+            CellStyle headerStyle = makeHeaderStyle(wb);
+            CellStyle centerStyle = makeCenterStyle(wb);
+            CellStyle greenStyle  = makeColorStyle(wb, new byte[]{(byte)21,(byte)128,(byte)61});
+            CellStyle redStyle    = makeColorStyle(wb, new byte[]{(byte)185,(byte)28,(byte)28});
+
+            Row title = sheet.createRow(0); title.setHeightInPoints(26);
+            Cell tc = title.createCell(0);
+            tc.setCellValue("BÁO CÁO TỔNG HỢP LỚP: " + course.getName().toUpperCase());
+            tc.setCellStyle(titleStyle);
+            sheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 7));
+
+            Row info = sheet.createRow(1);
+            info.createCell(0).setCellValue("Số đề thi: " + byExam.size() + "   |   Tổng lượt thi: " + attempts.size());
+            sheet.addMergedRegion(new CellRangeAddress(1, 1, 0, 7));
+            sheet.createRow(2);
+
+            String[] headers = {"Đề thi", "Lượt thi", "Điểm TB", "Cao nhất", "Thấp nhất", "Đạt", "Trượt", "Tỉ lệ đạt"};
+            int[]    widths  = {32, 10, 12, 12, 12, 10, 10, 12};
+            Row hrow = sheet.createRow(3); hrow.setHeightInPoints(18);
+            for (int i = 0; i < headers.length; i++) {
+                Cell c = hrow.createCell(i); c.setCellValue(headers[i]); c.setCellStyle(headerStyle);
+                sheet.setColumnWidth(i, widths[i] * 256);
+            }
+
+            int rowIdx = 4;
+            double grandTotal = 0; int grandCount = 0, grandPass = 0, grandFail = 0;
+
+            for (java.util.Map.Entry<Long, java.util.List<Attempt>> entry : byExam.entrySet()) {
+                java.util.List<Attempt> ea = entry.getValue();
+                Attempt any = ea.get(0);
+                double maxScore = any.getExam().getTotalScore() != null ? any.getExam().getTotalScore() : 10.0;
+
+                int pass = (int) ea.stream().filter(a -> Boolean.TRUE.equals(a.getPassed())).count();
+                int fail = ea.size() - pass;
+                double avg = ea.stream().mapToDouble(a -> a.getScore() != null ? a.getScore() / maxScore * 100 : 0).average().orElse(0);
+                double max = ea.stream().mapToDouble(a -> a.getScore() != null ? a.getScore() / maxScore * 100 : 0).max().orElse(0);
+                double min = ea.stream().mapToDouble(a -> a.getScore() != null ? a.getScore() / maxScore * 100 : 0).min().orElse(0);
+                double passRate = ea.isEmpty() ? 0 : Math.round((double) pass / ea.size() * 1000.0) / 10.0;
+                grandTotal += avg * ea.size(); grandCount += ea.size(); grandPass += pass; grandFail += fail;
+
+                Row row = sheet.createRow(rowIdx++); row.setHeightInPoints(17);
+                row.createCell(0).setCellValue(any.getExam().getTitle());
+                Cell c1 = row.createCell(1); c1.setCellValue(ea.size()); c1.setCellStyle(centerStyle);
+                Cell c2 = row.createCell(2); c2.setCellValue(Math.round(avg*10)/10.0+"%"); c2.setCellStyle(centerStyle);
+                Cell c3 = row.createCell(3); c3.setCellValue(Math.round(max*10)/10.0+"%"); c3.setCellStyle(centerStyle);
+                Cell c4 = row.createCell(4); c4.setCellValue(Math.round(min*10)/10.0+"%"); c4.setCellStyle(centerStyle);
+                Cell c5 = row.createCell(5); c5.setCellValue(pass); c5.setCellStyle(greenStyle);
+                Cell c6 = row.createCell(6); c6.setCellValue(fail); c6.setCellStyle(redStyle);
+                Cell c7 = row.createCell(7); c7.setCellValue(passRate+"%"); c7.setCellStyle(centerStyle);
+            }
+
+            sheet.createRow(rowIdx++);
+            Row sumRow = sheet.createRow(rowIdx); sumRow.setHeightInPoints(18);
+            sumRow.createCell(0).setCellValue("TỔNG KẾT");
+            Cell sc1 = sumRow.createCell(1); sc1.setCellValue(grandCount); sc1.setCellStyle(centerStyle);
+            double grandAvg = grandCount > 0 ? grandTotal / grandCount : 0;
+            Cell sc2 = sumRow.createCell(2); sc2.setCellValue(Math.round(grandAvg*10)/10.0+"%"); sc2.setCellStyle(centerStyle);
+            Cell sc5 = sumRow.createCell(5); sc5.setCellValue(grandPass); sc5.setCellStyle(greenStyle);
+            Cell sc6 = sumRow.createCell(6); sc6.setCellValue(grandFail); sc6.setCellStyle(redStyle);
+            double grandRate = grandCount > 0 ? Math.round((double) grandPass / grandCount * 1000.0) / 10.0 : 0;
+            Cell sc7 = sumRow.createCell(7); sc7.setCellValue(grandRate+"%"); sc7.setCellStyle(centerStyle);
+
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            wb.write(out);
+            return out.toByteArray();
+        } catch (AppException e) { throw e; }
+        catch (Exception e) { throw new RuntimeException("Export báo cáo lớp thất bại: " + e.getMessage(), e); }
+    }
+
+    // ── Style helpers ─────────────────────────────────────────────────────
+    private CellStyle makeTitleStyle(XSSFWorkbook wb) {
+        CellStyle s = wb.createCellStyle();
+        XSSFFont f = wb.createFont(); f.setBold(true); f.setFontHeightInPoints((short) 14);
+        s.setFont(f); s.setAlignment(HorizontalAlignment.CENTER); return s;
+    }
+
+    private CellStyle makeHeaderStyle(XSSFWorkbook wb) {
+        CellStyle s = wb.createCellStyle();
+        XSSFFont f = wb.createFont(); f.setBold(true); f.setColor(IndexedColors.WHITE.getIndex());
+        s.setFont(f);
+        ((XSSFCellStyle) s).setFillForegroundColor(new XSSFColor(new byte[]{(byte)79,(byte)70,(byte)229}, null));
+        s.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        s.setAlignment(HorizontalAlignment.CENTER); return s;
+    }
+
+    private CellStyle makeCenterStyle(XSSFWorkbook wb) {
+        CellStyle s = wb.createCellStyle(); s.setAlignment(HorizontalAlignment.CENTER); return s;
+    }
+
+    private CellStyle makeRankStyle(XSSFWorkbook wb, byte[] rgb) {
+        CellStyle s = wb.createCellStyle();
+        XSSFFont f = wb.createFont(); f.setBold(true); f.setColor(new XSSFColor(rgb, null));
+        s.setFont(f); s.setAlignment(HorizontalAlignment.CENTER); return s;
+    }
+
+    private CellStyle makeColorStyle(XSSFWorkbook wb, byte[] rgb) {
+        CellStyle s = wb.createCellStyle();
+        XSSFFont f = wb.createFont(); f.setBold(true); f.setColor(new XSSFColor(rgb, null));
+        s.setFont(f); s.setAlignment(HorizontalAlignment.CENTER); return s;
+    }
+
+    private boolean isAdmin(User user) {
+        return user.getRoles().stream().anyMatch(r -> r.getName() == RoleName.ADMIN);
+    }
+
 }

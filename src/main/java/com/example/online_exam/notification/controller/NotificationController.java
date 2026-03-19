@@ -46,6 +46,26 @@ public class NotificationController {
     @PreAuthorize("isAuthenticated()")
     public BaseResponse<Void> markAllRead() {
         notifService.markAllRead();
+        return ok();
+    }
+
+    /** Xóa 1 thông báo */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public BaseResponse<Void> deleteOne(@PathVariable Long id) {
+        notifService.deleteOne(id);
+        return ok();
+    }
+
+    /** Xóa tất cả thông báo của user */
+    @DeleteMapping
+    @PreAuthorize("isAuthenticated()")
+    public BaseResponse<Void> deleteAll() {
+        notifService.deleteAll();
+        return ok();
+    }
+
+    private BaseResponse<Void> ok() {
         return BaseResponse.<Void>builder()
                 .status(200).message("ok").timestamp(LocalDateTime.now()).build();
     }
