@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../../api/client'
 import { useAuth } from '../../context/AuthContext'
+import { Trophy } from "lucide-react";
 
 function PieChart({ passCount, failCount }) {
   const total = passCount + failCount
@@ -127,9 +128,21 @@ export default function ExamLeaderboardPage() {
                     ${entry.studentId === user?.id ? 'bg-[var(--accent)]/10 font-semibold' : ''}
                     ${i < 3 ? 'bg-yellow-500/5' : ''}
                   `}>
-                  <td className="px-4 py-3 font-bold text-[var(--text-3)]">
-                    {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : entry.rank}
-                  </td>
+                  <td className="px-4 py-3 font-bold">
+                      <span
+                        className={`px-2 py-1 rounded text-sm ${
+                          i === 0
+                            ? "bg-yellow-100 text-yellow-700"
+                            : i === 1
+                            ? "bg-gray-100 text-gray-600"
+                            : i === 2
+                            ? "bg-orange-100 text-orange-600"
+                            : "text-[var(--text-3)]"
+                        }`}
+                      >
+                        {entry.rank}
+                      </span>
+                    </td>
                   <td className="px-4 py-3 text-[var(--text-1)]">
                     {entry.studentName}
                     {entry.studentId === user?.id && <span className="ml-2 text-xs text-[var(--accent)]">(bạn)</span>}
