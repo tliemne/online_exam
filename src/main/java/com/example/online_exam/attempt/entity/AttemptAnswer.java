@@ -7,7 +7,11 @@ import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Table(name = "attempt_answers")
+@Table(name = "attempt_answers", indexes = {
+        @Index(name = "idx_ans_attempt",   columnList = "attempt_id"),
+        @Index(name = "idx_ans_question",  columnList = "question_id"),
+        @Index(name = "idx_ans_correct",   columnList = "attempt_id, is_correct"),
+})
 @Getter @Setter
 public class AttemptAnswer {
 

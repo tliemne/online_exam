@@ -196,6 +196,14 @@ public class AttemptController {
         return ok("Cache đã được xóa");
     }
 
+    // POST /attempts/ai-grade-essay  — AI chấm essay practice (không lưu DB)
+    @PostMapping("/ai-grade-essay")
+    @PreAuthorize("isAuthenticated()")
+    public BaseResponse<AiGradingService.EssayGradeResult> aiGradeEssay(
+            @RequestBody AiGradingService.EssayGradeRequest req) {
+        return ok(aiGradingService.gradePracticeEssay(req));
+    }
+
     // GET /attempts/ai-class/{courseId}  — AI phân tích lớp học (Teacher)
     @GetMapping("/ai-class/{courseId}")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")

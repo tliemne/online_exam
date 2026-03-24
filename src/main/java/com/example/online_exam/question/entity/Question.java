@@ -13,7 +13,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "questions")
+@Table(name = "questions", indexes = {
+        @Index(name = "idx_question_course",     columnList = "course_id"),
+        @Index(name = "idx_question_type",       columnList = "type"),
+        @Index(name = "idx_question_difficulty", columnList = "difficulty"),
+        @Index(name = "idx_question_course_type",columnList = "course_id, type"),
+})
 @Getter @Setter
 @NoArgsConstructor @AllArgsConstructor
 public class Question extends BaseEntity {

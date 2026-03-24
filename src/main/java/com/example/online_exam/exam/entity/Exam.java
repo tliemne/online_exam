@@ -12,7 +12,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "exams")
+@Table(name = "exams", indexes = {
+        @Index(name = "idx_exam_course",     columnList = "course_id"),
+        @Index(name = "idx_exam_status",     columnList = "status"),
+        @Index(name = "idx_exam_created_by", columnList = "created_by"),
+})
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor
 public class Exam extends BaseEntity {
 

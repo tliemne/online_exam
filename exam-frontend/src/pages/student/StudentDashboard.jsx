@@ -106,22 +106,39 @@ function PracticeModal({ topic, difficulty, onClose }) {
       .finally(() => setLoading(false))
   }
 
-  const handleSubmit = () => {
+  const [grading, setGrading]       = useState(false)
+  const [essayGrades, setEssayGrades] = useState({}) // qi → {score, feedback, level}
+
+  const handleSubmit = async () => {
+    // 1. Chấm MCQ/TF ngay
+    let correct = 0
     const hasEssay = questions.some(q => q.type === 'ESSAY')
-    const allEssay = questions.every(q => q.type === 'ESSAY')
-    if (allEssay) {
-      setScore({ essay: true, total: questions.length })
-    } else {
-      let correct = 0
-      questions.forEach((q, i) => {
-        if (q.type === 'ESSAY') return // bỏ qua essay trong mix
-        const chosen = answers[i]
-        if (chosen != null && q.answers[chosen]?.correct) correct++
-      })
-      const nonEssayCount = questions.filter(q => q.type !== 'ESSAY').length
-      setScore({ correct, total: nonEssayCount, hasEssay })
-    }
+    const nonEssayCount = questions.filter(q => q.type !== 'ESSAY').length
+    questions.forEach((q, i) => {
+      if (q.type === 'ESSAY') return
+      const chosen = answers[i]
+      if (chosen != null && q.answers[chosen]?.correct) correct++
+    })
+    setScore({ correct, total: nonEssayCount, hasEssay })
     setSubmitted(true)
+
+    // 2. Gọi AI chấm essay song song
+    const essayIdxs = questions.map((q, i) => q.type === 'ESSAY' ? i : -1).filter(i => i >= 0)
+    if (essayIdxs.length > 0) {
+      setGrading(true)
+      try {
+        const results = await Promise.all(essayIdxs.map(qi =>
+          api.post('/attempts/ai-grade-essay', {
+            question: questions[qi].content,
+            studentAnswer: answers[qi] || '',
+            suggestedAnswer: questions[qi].explanation || '',
+          }).then(r => ({ qi, data: r.data.data })).catch(() => ({ qi, data: null }))
+        ))
+        const grades = {}
+        results.forEach(({ qi, data }) => { if (data) grades[qi] = data })
+        setEssayGrades(grades)
+      } finally { setGrading(false) }
+    }
   }
 
   const DIFF_LABEL = { EASY: 'Dễ', MEDIUM: 'Trung bình', HARD: 'Khó', ALL: 'Ngẫu nhiên' }
@@ -192,33 +209,36 @@ function PracticeModal({ topic, difficulty, onClose }) {
 
           {/* Score result */}
           {submitted && score && (
-            score.essay ? (
-              <div className="px-4 py-4 rounded-lg text-center"
-                style={{ background: 'var(--accent-subtle)' }}>
-                <p className="font-semibold" style={{ color: 'var(--accent)' }}>Đã nộp {score.total} câu tự luận</p>
-                <p className="text-sm mt-1" style={{ color: 'var(--text-3)' }}>
-                  Xem gợi ý đáp án bên dưới để tự đánh giá
-                </p>
-              </div>
-            ) : (
-              <div className="px-4 py-4 rounded-lg text-center"
-                style={{ background: score.correct / score.total >= 0.6 ? 'var(--success-subtle)' : 'var(--warning-subtle)' }}>
-                <p className="text-2xl font-bold"
-                  style={{ color: score.correct / score.total >= 0.6 ? 'var(--success)' : 'var(--warning)' }}>
-                  {score.correct}/{score.total}
-                </p>
-                <p className="text-sm mt-1" style={{ color: 'var(--text-2)' }}>
-                  {score.correct / score.total >= 0.8 ? 'Xuất sắc! Bạn đã nắm vững chủ đề này.'
-                    : score.correct / score.total >= 0.6 ? 'Khá tốt! Tiếp tục luyện tập nhé.'
-                    : 'Cần ôn lại thêm chủ đề này.'}
-                </p>
-                {score.hasEssay && (
-                  <p className="text-xs mt-2" style={{ color: 'var(--text-3)' }}>
-                    * Câu tự luận không tính điểm tự động — xem gợi ý bên dưới để tự đánh giá
+            <div>
+              {/* MCQ score */}
+              {score.total > 0 && (
+                <div className="px-4 py-4 rounded-lg text-center mb-3"
+                  style={{ background: score.correct / score.total >= 0.6 ? 'var(--success-subtle)' : 'var(--warning-subtle)' }}>
+                  <p className="text-2xl font-bold"
+                    style={{ color: score.correct / score.total >= 0.6 ? 'var(--success)' : 'var(--warning)' }}>
+                    {score.correct}/{score.total}
                   </p>
-                )}
-              </div>
-            )
+                  <p className="text-sm mt-1" style={{ color: 'var(--text-2)' }}>
+                    {score.correct / score.total >= 0.8 ? 'Xuất sắc! Bạn đã nắm vững chủ đề này.'
+                      : score.correct / score.total >= 0.6 ? 'Khá tốt! Tiếp tục luyện tập nhé.'
+                      : 'Cần ôn lại thêm chủ đề này.'}
+                  </p>
+                </div>
+              )}
+              {/* Essay AI grading status */}
+              {score.hasEssay && (
+                <div className="px-4 py-3 rounded-lg flex items-center gap-3"
+                  style={{ background: 'var(--bg-elevated)' }}>
+                  {grading
+                    ? <><span className="w-4 h-4 border-2 border-t-transparent rounded-full animate-spin shrink-0"
+                        style={{ borderColor: 'var(--purple)' }}/>
+                       <span className="text-sm" style={{ color: 'var(--text-2)' }}>AI đang chấm câu tự luận...</span></>
+                    : <span className="text-sm" style={{ color: 'var(--text-2)' }}>
+                        AI đã chấm {Object.keys(essayGrades).length} câu tự luận — xem kết quả bên dưới
+                      </span>}
+                </div>
+              )}
+            </div>
           )}
 
           {/* Questions */}
@@ -244,6 +264,32 @@ function PracticeModal({ topic, difficulty, onClose }) {
                         style={{ background: 'var(--accent-subtle)' }}>
                         <p className="font-medium" style={{ color: 'var(--accent)' }}>Gợi ý / Tiêu chí chấm:</p>
                         <p style={{ color: 'var(--text-2)' }}>{q.explanation}</p>
+                      </div>
+                    )}
+                    {/* AI essay grade result */}
+                    {submitted && essayGrades[qi] && (() => {
+                      const g = essayGrades[qi]
+                      const lvlClr = g.level === 'EXCELLENT' ? 'var(--success)'
+                        : g.level === 'GOOD' ? 'var(--accent)'
+                        : g.level === 'AVERAGE' ? 'var(--warning)' : 'var(--danger)'
+                      const lvlLabel = { EXCELLENT: 'Xuất sắc', GOOD: 'Khá', AVERAGE: 'Trung bình', POOR: 'Yếu', UNKNOWN: '—' }
+                      return (
+                        <div className="px-3 py-2.5 rounded-lg space-y-1.5 border"
+                          style={{ borderColor: lvlClr + '40', background: lvlClr + '0d' }}>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-semibold" style={{ color: lvlClr }}>
+                              AI chấm: {g.score}/10 — {lvlLabel[g.level] || g.level}
+                            </span>
+                          </div>
+                          {g.feedback && <p className="text-xs" style={{ color: 'var(--text-2)' }}>{g.feedback}</p>}
+                        </div>
+                      )
+                    })()}
+                    {submitted && grading && !essayGrades[qi] && (
+                      <div className="flex items-center gap-2 px-3 py-2" style={{ color: 'var(--text-3)' }}>
+                        <span className="w-3 h-3 border border-t-transparent rounded-full animate-spin"
+                          style={{ borderColor: 'var(--purple)' }}/>
+                        <span className="text-xs">AI đang chấm...</span>
                       </div>
                     )}
                   </div>

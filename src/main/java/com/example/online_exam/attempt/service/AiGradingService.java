@@ -509,4 +509,52 @@ public class AiGradingService {
             String action,     // việc cần làm cụ thể
             List<String> keywords  // từ khóa cần học
     ) {}
+
+    // ── Grade essay cho practice quiz (không lưu DB) ──────
+    public record EssayGradeRequest(String question, String studentAnswer, String suggestedAnswer) {}
+    public record EssayGradeResult(int score, int maxScore, String feedback, String level) {}
+
+    public EssayGradeResult gradePracticeEssay(EssayGradeRequest req) {
+        if (geminiApiKey == null || geminiApiKey.isBlank())
+            return new EssayGradeResult(0, 10, "AI chưa được cấu hình.", "UNKNOWN");
+
+        try {
+            String prompt = String.format("""
+                Chấm câu trả lời tự luận sau. Cho điểm từ 0-10.
+                Câu hỏi: %s
+                Gợi ý đáp án: %s
+                Câu trả lời của sinh viên: %s
+                
+                Return ONLY valid JSON (no markdown):
+                {
+                  "score": <số nguyên 0-10>,
+                  "feedback": "<nhận xét ngắn ≤40 từ, tiếng Việt>",
+                  "level": "EXCELLENT|GOOD|AVERAGE|POOR"
+                }
+                """, req.question(), req.suggestedAnswer(), req.studentAnswer());
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            Map<String, Object> body = Map.of(
+                    "contents", List.of(Map.of("parts", List.of(Map.of("text", prompt)))));
+            ResponseEntity<String> resp = restTemplate.postForEntity(
+                    getGeminiUrl() + "?key=" + geminiApiKey,
+                    new HttpEntity<>(body, headers), String.class);
+
+            JsonNode root = objectMapper.readTree(resp.getBody());
+            String text = root.path("candidates").get(0)
+                    .path("content").path("parts").get(0).path("text").asText();
+            text = text.replaceAll("(?s)```json|```", "").trim();
+            JsonNode json = objectMapper.readTree(text);
+
+            return new EssayGradeResult(
+                    Math.min(10, Math.max(0, json.path("score").asInt(0))),
+                    10,
+                    json.path("feedback").asText(""),
+                    json.path("level").asText("AVERAGE"));
+        } catch (Exception e) {
+            log.warn("[AiGrade] essay grade failed: {}", e.getMessage());
+            return new EssayGradeResult(0, 10, "AI không thể chấm. Tự đánh giá theo gợi ý.", "UNKNOWN");
+        }
+    }
 }
