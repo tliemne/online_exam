@@ -23,6 +23,10 @@ public interface UserMapper {
                 .map(role -> role.getName().name())
                 .collect(Collectors.toSet()));
 
+        // phone, dateOfBirth từ users trực tiếp
+        response.setPhone(user.getPhone());
+        response.setDateOfBirth(user.getDateOfBirth());
+
         // Auto-gen adminCode nếu là ADMIN
         boolean isAdmin = user.getRoles().stream()
                 .anyMatch(r -> r.getName().name().equals("ADMIN"));
@@ -36,19 +40,20 @@ public interface UserMapper {
             response.setStatus(user.getStatus());
         }
 
-        // ── Map student profile ──
+        // ── Map student profile — chỉ còn studentCode + className ──
         if (user.getStudentProfile() != null) {
             UserResponse.StudentProfileData sp = new UserResponse.StudentProfileData();
             sp.setStudentCode(user.getStudentProfile().getStudentCode());
-            sp.setPhone(user.getStudentProfile().getPhone());
+            sp.setClassName(user.getStudentProfile().getClassName());
             response.setStudentProfile(sp);
         }
 
-        // ── Map teacher profile ──
+        // ── Map teacher profile — chỉ còn teacherCode + dept + spec ──
         if (user.getTeacherProfile() != null) {
             UserResponse.TeacherProfileData tp = new UserResponse.TeacherProfileData();
             tp.setTeacherCode(user.getTeacherProfile().getTeacherCode());
-            tp.setPhone(user.getTeacherProfile().getPhone());
+            tp.setDepartment(user.getTeacherProfile().getDepartment());
+            tp.setSpecialization(user.getTeacherProfile().getSpecialization());
             response.setTeacherProfile(tp);
         }
 

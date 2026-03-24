@@ -1,16 +1,11 @@
 package com.example.online_exam.user.dto;
 
-import com.example.online_exam.user.entity.Role;
 import com.example.online_exam.user.enums.UserStatus;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-
+import java.time.LocalDate;
 import java.util.Set;
 
 @Data
-
 public class UserResponse {
 
     private Long id;
@@ -18,6 +13,8 @@ public class UserResponse {
     private String email;
     private String fullName;
     private String avatarUrl;
+    private String phone;           // từ users.phone
+    private LocalDate dateOfBirth;  // từ users.date_of_birth
     private String adminCode;
     private UserStatus status;
     private Set<String> roles;
@@ -27,12 +24,15 @@ public class UserResponse {
     @Data
     public static class StudentProfileData {
         private String studentCode;
-        private String phone;
+        private String className;
+        // phone và dateOfBirth đã lên UserResponse gốc
     }
 
     @Data
     public static class TeacherProfileData {
         private String teacherCode;
-        private String phone;
+        private String department;
+        private String specialization;
+        // phone đã lên UserResponse gốc
     }
 }

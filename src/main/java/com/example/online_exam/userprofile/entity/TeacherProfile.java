@@ -2,15 +2,8 @@ package com.example.online_exam.userprofile.entity;
 
 import com.example.online_exam.common.entity.BaseEntity;
 import com.example.online_exam.user.entity.User;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToOne;
-import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.persistence.*;
+import lombok.*;
 
 @Entity
 @Table(name = "teacher_profiles")
@@ -27,8 +20,8 @@ public class TeacherProfile extends BaseEntity {
     @Column(name = "teacher_code", unique = true, length = 50)
     private String teacherCode;
 
-    @Column(name = "phone", length = 20)
-    private String phone;
+    // phone đã chuyển lên bảng users — xem User.java
+    // Chỉ giữ lại fields đặc thù của TEACHER
 
     @Column(name = "department", length = 100)
     private String department;

@@ -4,8 +4,10 @@ import lombok.Data;
 
 @Data
 public class TeacherProfileResponse {
-    private String teacherCode;
+    // Từ users
     private String phone;
+    // Từ teacher_profiles
+    private String teacherCode;
     private String department;
     private String specialization;
 }

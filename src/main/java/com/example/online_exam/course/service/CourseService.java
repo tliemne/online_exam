@@ -172,10 +172,11 @@ public class CourseService {
             res.setUsername(s.getUsername());
             res.setFullName(s.getFullName());
             res.setEmail(s.getEmail());
+            // phone, dateOfBirth từ users trực tiếp
+            res.setPhone(s.getPhone());
+            res.setDateOfBirth(s.getDateOfBirth());
             studentProfileRepository.findByUserId(s.getId()).ifPresent(p -> {
                 res.setStudentCode(p.getStudentCode());
-                res.setPhone(p.getPhone());
-                res.setDateOfBirth(p.getDateOfBirth());
                 res.setClassName(p.getClassName());
             });
             return res;

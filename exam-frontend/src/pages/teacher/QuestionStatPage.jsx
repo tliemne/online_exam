@@ -106,21 +106,34 @@ export default function QuestionStatPage() {
       )}
 
       {/* Filters */}
-      <div className="flex gap-3 flex-wrap">
-        <div className="flex gap-1 bg-[var(--bg-elevated)] border border-[var(--border-base)] rounded-lg p-1">
-          {[['ALL','Tất cả'], ['OK','Bình thường'], ['TOO_HARD','Quá khó'], ['TOO_EASY','Quá dễ']].map(([v, l]) => (
-            <button key={v} onClick={() => setFlagFilter(v)}
-              className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
-                flagFilter === v ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-3)] hover:text-[var(--text-1)]'
-              }`}>{l}
-            </button>
-          ))}
+      <div className="flex items-center gap-3 flex-wrap justify-between">
+        <div className="flex gap-3 flex-wrap">
+          {/* Flag filter */}
+          <div className="flex gap-1 bg-[var(--bg-elevated)] border border-[var(--border-base)] rounded-lg p-1">
+            {[['ALL','Tất cả'], ['OK','Bình thường'], ['TOO_HARD','Quá khó'], ['TOO_EASY','Quá dễ']].map(([v, l]) => (
+              <button key={v} onClick={() => setFlagFilter(v)}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                  flagFilter === v ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-3)] hover:text-[var(--text-1)]'
+                }`}>{l}
+              </button>
+            ))}
+          </div>
+          {/* Sort — rõ ràng hơn dropdown */}
+          <div className="flex gap-1 bg-[var(--bg-elevated)] border border-[var(--border-base)] rounded-lg p-1">
+            <span className="px-2 py-1 text-xs text-[var(--text-3)] self-center">Sắp xếp:</span>
+            {[
+              ['rate_asc',  'Khó nhất trước'],
+              ['rate_desc', 'Dễ nhất trước'],
+              ['attempts',  'Nhiều lần làm'],
+            ].map(([v, l]) => (
+              <button key={v} onClick={() => setSortBy(v)}
+                className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
+                  sortBy === v ? 'bg-[var(--bg-surface)] text-[var(--text-1)] shadow-sm' : 'text-[var(--text-3)] hover:text-[var(--text-1)]'
+                }`}>{l}
+              </button>
+            ))}
+          </div>
         </div>
-        <select className="input-field w-44 text-sm" value={sortBy} onChange={e => setSortBy(e.target.value)}>
-          <option value="rate_asc">Tỷ lệ đúng ↑</option>
-          <option value="rate_desc">Tỷ lệ đúng ↓</option>
-          <option value="attempts">Nhiều lần nhất</option>
-        </select>
       </div>
 
       {/* Table */}

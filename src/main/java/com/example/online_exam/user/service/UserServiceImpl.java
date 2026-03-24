@@ -171,9 +171,10 @@ public class UserServiceImpl implements UserService {
                 .ifPresent(profile -> {
                     StudentProfileResponse studentProfileResponse = new StudentProfileResponse();
                     studentProfileResponse.setStudentCode(profile.getStudentCode());
-                    studentProfileResponse.setPhone(profile.getPhone());
-                    studentProfileResponse.setDateOfBirth(profile.getDateOfBirth());
                     studentProfileResponse.setClassName(profile.getClassName());
+                    // phone, dateOfBirth đã chuyển lên users
+                    studentProfileResponse.setPhone(user.getPhone());
+                    studentProfileResponse.setDateOfBirth(user.getDateOfBirth());
                     response.setStudentProfile(studentProfileResponse);
                 });
 
@@ -181,9 +182,10 @@ public class UserServiceImpl implements UserService {
                 .ifPresent(profile -> {
                     TeacherProfileResponse teacherProfileResponse = new TeacherProfileResponse();
                     teacherProfileResponse.setTeacherCode(profile.getTeacherCode());
-                    teacherProfileResponse.setPhone(profile.getPhone());
                     teacherProfileResponse.setDepartment(profile.getDepartment());
                     teacherProfileResponse.setSpecialization(profile.getSpecialization());
+                    // phone đã chuyển lên users
+                    teacherProfileResponse.setPhone(user.getPhone());
                     response.setTeacherProfile(teacherProfileResponse);
                 });
 
@@ -250,15 +252,19 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         // studentCode không cho phép tự sửa
-        profile.setPhone(request.getPhone());
-        profile.setDateOfBirth(request.getDateOfBirth());
+        // phone, dateOfBirth lưu vào users (đã chuyển từ student_profiles)
+        if (request.getPhone() != null)       currentUser.setPhone(request.getPhone());
+        if (request.getDateOfBirth() != null) currentUser.setDateOfBirth(request.getDateOfBirth());
+        userRepository.save(currentUser);
+
         profile.setClassName(request.getClassName());
         studentProfileRepository.save(profile);
 
         StudentProfileResponse response = new StudentProfileResponse();
-        response.setPhone(profile.getPhone());
-        response.setDateOfBirth(profile.getDateOfBirth());
+        response.setStudentCode(profile.getStudentCode());
         response.setClassName(profile.getClassName());
+        response.setPhone(currentUser.getPhone());
+        response.setDateOfBirth(currentUser.getDateOfBirth());
         return response;
     }
     @Override
@@ -281,15 +287,19 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         // teacherCode không cho phép tự sửa
-        profile.setPhone(request.getPhone());
+        // phone lưu vào users (đã chuyển từ teacher_profiles)
+        if (request.getPhone() != null) currentUser.setPhone(request.getPhone());
+        userRepository.save(currentUser);
+
         profile.setDepartment(request.getDepartment());
         profile.setSpecialization(request.getSpecialization());
         teacherProfileRepository.save(profile);
 
         TeacherProfileResponse response = new TeacherProfileResponse();
-        response.setPhone(profile.getPhone());
+        response.setTeacherCode(profile.getTeacherCode());
         response.setDepartment(profile.getDepartment());
         response.setSpecialization(profile.getSpecialization());
+        response.setPhone(currentUser.getPhone());
         return response;
     }
     @Override

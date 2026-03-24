@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import api from '../../api/client'
 import { courseApi } from '../../api/services'
 import { useAuth } from '../../context/AuthContext'
-import { useToast } from '../../context/ToastContext'
 
 // ── Icons ─────────────────────────────────────────────────
 const Icon = {
@@ -13,7 +11,6 @@ const Icon = {
   trophy: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0"/></svg>,
   chart: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"/></svg>,
   search:   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 15.803 7.5 7.5 0 0015.803 15.803z"/></svg>,
-  download: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>,
 }
 
 function RankBadge({ rank }) {
@@ -85,33 +82,9 @@ export default function CourseLeaderboardPage() {
   const { courseId } = useParams()
   const navigate     = useNavigate()
   const { user }     = useAuth()
-  const [data, setData]         = useState(null)
-  const [loading, setLoading]   = useState(true)
-  const [search, setSearch]     = useState('')
-  const [exporting, setExporting] = useState('')   // '' | 'leaderboard' | 'report'
-  const toast = useToast()
-
-  const handleExport = async (type) => {
-    setExporting(type)
-    try {
-      const url = type === 'leaderboard'
-        ? `/attempts/courses/${courseId}/leaderboard/export`
-        : `/attempts/courses/${courseId}/report/export`
-      const resp = await api.get(url, { responseType: 'blob' })
-      const link = document.createElement('a')
-      link.href = URL.createObjectURL(new Blob([resp.data]))
-      link.download = type === 'leaderboard'
-        ? `bxh-lop-${data?.courseName?.replace(/\s+/g,'-') ?? courseId}.xlsx`
-        : `bao-cao-lop-${data?.courseName?.replace(/\s+/g,'-') ?? courseId}.xlsx`
-      link.click()
-      URL.revokeObjectURL(link.href)
-      toast.success('Xuất Excel thành công')
-    } catch {
-      toast.error('Xuất Excel thất bại')
-    } finally {
-      setExporting('')
-    }
-  }
+  const [data, setData]       = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch]   = useState('')
 
   useEffect(() => {
     courseApi.getLeaderboard(courseId)
@@ -141,30 +114,8 @@ export default function CourseLeaderboardPage() {
         <button onClick={() => navigate(-1)} className="flex items-center gap-1.5 text-sm text-[var(--text-3)] hover:text-[var(--text-1)] transition-colors mb-3">
           {Icon.back} Quay lại
         </button>
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="page-title">Bảng xếp hạng lớp</h1>
-            <p className="text-[var(--text-3)] text-sm mt-1">{data.courseName}</p>
-          </div>
-          {data.ranking?.length > 0 && (
-            <div className="flex items-center gap-2 shrink-0">
-              <button onClick={() => handleExport('leaderboard')} disabled={!!exporting}
-                className="btn-secondary flex items-center gap-1.5 text-sm">
-                {exporting === 'leaderboard'
-                  ? <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"/>
-                  : Icon.download}
-                BXH
-              </button>
-              <button onClick={() => handleExport('report')} disabled={!!exporting}
-                className="btn-secondary flex items-center gap-1.5 text-sm">
-                {exporting === 'report'
-                  ? <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"/>
-                  : Icon.download}
-                Báo cáo
-              </button>
-            </div>
-          )}
-        </div>
+        <h1 className="page-title">Bảng xếp hạng lớp</h1>
+        <p className="text-[var(--text-3)] text-sm mt-1">{data.courseName}</p>
       </div>
 
       {/* Stats */}

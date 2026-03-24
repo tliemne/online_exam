@@ -78,9 +78,15 @@ export default function ProfilePage() {
       setProfile(p)
       // Gộp account + profile vào 1 form
       setForm({
-        fullName: p.account?.fullName || '',
-        email:    p.account?.email    || '',
-        ...(p.studentProfile || p.teacherProfile || {}),
+        fullName:    p.account?.fullName    || '',
+        email:       p.account?.email       || '',
+        phone:       p.account?.phone       || '',        // từ users
+        dateOfBirth: p.account?.dateOfBirth || '',        // từ users
+        // student-specific
+        className:   p.studentProfile?.className || '',
+        // teacher-specific
+        department:     p.teacherProfile?.department     || '',
+        specialization: p.teacherProfile?.specialization || '',
       })
     })
 
@@ -174,13 +180,13 @@ export default function ProfilePage() {
             {isStudent && <>
               <Field label="Mã sinh viên" value={profile?.studentProfile?.studentCode} mono />
               <Field label="Lớp"          value={profile?.studentProfile?.className} />
-              <Field label="Điện thoại"   value={profile?.studentProfile?.phone} />
-              <Field label="Ngày sinh"    value={profile?.studentProfile?.dateOfBirth} />
+              <Field label="Điện thoại"   value={profile?.account?.phone} />
+              <Field label="Ngày sinh"    value={profile?.account?.dateOfBirth} />
             </>}
             {isTeacher && <>
               <Field label="Mã giảng viên" value={profile?.teacherProfile?.teacherCode} mono />
               <Field label="Khoa"          value={profile?.teacherProfile?.department} />
-              <Field label="Điện thoại"    value={profile?.teacherProfile?.phone} />
+              <Field label="Điện thoại"    value={profile?.account?.phone} />
               <Field label="Chuyên ngành"  value={profile?.teacherProfile?.specialization} />
             </>}
           </div>

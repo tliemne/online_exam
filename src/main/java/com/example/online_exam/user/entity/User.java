@@ -9,6 +9,7 @@ import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -36,11 +37,19 @@ public class User extends BaseEntity {
     @Column(length = 500)
     private String avatarUrl;
 
+    // Chuyển từ StudentProfile/TeacherProfile lên đây — chung cho mọi role
+    @Column(length = 20)
+    private String phone;
+
+    @Column(name = "date_of_birth")
+    private LocalDate dateOfBirth;   // chủ yếu dùng cho STUDENT, role khác để null
+
     @Enumerated(EnumType.STRING)
     private UserStatus status = UserStatus.ACTIVE;
 
     @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
     private StudentProfile studentProfile;
+
     @OneToOne(mappedBy = "user", fetch = FetchType.LAZY)
     private TeacherProfile teacherProfile;
 
@@ -50,8 +59,8 @@ public class User extends BaseEntity {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
-
     private Set<Role> roles = new HashSet<>();
+
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return roles.stream()
                 .map(role -> new SimpleGrantedAuthority("ROLE_" + role.getName().name()))
