@@ -214,7 +214,7 @@ public class AttemptServiceImpl implements AttemptService {
                     attempt.getScore(), attempt.getTotalScore(), attempt.getPassed());
         }
 
-        // Thông báo kết quả cho student
+       
         if (autoGraded) {
             notificationService.attemptGraded(student, exam.getTitle(),
                     attempt.getScore(), attempt.getTotalScore());
