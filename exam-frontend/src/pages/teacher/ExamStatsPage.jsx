@@ -213,7 +213,7 @@ export default function ExamStatsPage() {
       <div className="flex gap-1 bg-[var(--bg-1)] p-1 rounded-lg w-fit">
         {tabs.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${
+            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
               tab === t.id
                 ? 'bg-[var(--accent)] text-white'
                 : 'text-[var(--text-3)] hover:text-[var(--text-1)]'

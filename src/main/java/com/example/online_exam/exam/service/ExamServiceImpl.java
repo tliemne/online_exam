@@ -28,6 +28,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -158,7 +159,18 @@ public class ExamServiceImpl implements ExamService {
     public List<ExamResponse> getAll() {
         User caller = currentUser();
         if (isTeacher(caller)) {
-            return examRepo.findByCreatedById(caller.getId()).stream()
+            // GV thấy: đề mình tạo + đề trong lớp mình phụ trách
+            Set<Long> seen = new HashSet<>();
+            List<Exam> result = new ArrayList<>();
+            // Đề mình tạo
+            examRepo.findByCreatedById(caller.getId()).forEach(e -> {
+                if (seen.add(e.getId())) result.add(e);
+            });
+            // Đề trong lớp mình phụ trách (admin có thể tạo)
+            examRepo.findByCourseTeacherId(caller.getId()).forEach(e -> {
+                if (seen.add(e.getId())) result.add(e);
+            });
+            return result.stream()
                     .map(e -> toResponse(e, false, false)).collect(Collectors.toList());
         }
         return examRepo.findAll().stream()
@@ -170,8 +182,19 @@ public class ExamServiceImpl implements ExamService {
     public List<ExamResponse> getByCourse(Long courseId) {
         User caller = currentUser();
         if (isTeacher(caller)) {
+            // GV thấy đề trong lớp mình phụ trách (kể cả đề do admin tạo)
+            Course course = courseRepo.findById(courseId).orElse(null);
+            boolean isCourseTeacher = course != null
+                    && course.getTeacher() != null
+                    && course.getTeacher().getId().equals(caller.getId());
+            if (!isCourseTeacher) {
+                // GV không phụ trách lớp này → chỉ thấy đề mình tạo
+                return examRepo.findByCourseId(courseId).stream()
+                        .filter(e -> e.getCreatedBy() != null && e.getCreatedBy().getId().equals(caller.getId()))
+                        .map(e -> toResponse(e, false, false)).collect(Collectors.toList());
+            }
+            // GV phụ trách lớp → thấy tất cả đề của lớp
             return examRepo.findByCourseId(courseId).stream()
-                    .filter(e -> e.getCreatedBy() != null && e.getCreatedBy().getId().equals(caller.getId()))
                     .map(e -> toResponse(e, false, false)).collect(Collectors.toList());
         }
         return examRepo.findByCourseId(courseId).stream()
@@ -285,7 +308,13 @@ public class ExamServiceImpl implements ExamService {
 
     // ── Helpers ───────────────────────────────────────────
     private void checkOwnership(Exam exam, User caller) {
-        if (exam.getCreatedBy() == null || !exam.getCreatedBy().getId().equals(caller.getId()))
+        // Cho phép: người tạo đề HOẶC giáo viên phụ trách lớp chứa đề
+        boolean isCreator = exam.getCreatedBy() != null
+                && exam.getCreatedBy().getId().equals(caller.getId());
+        boolean isCourseTeacher = exam.getCourse() != null
+                && exam.getCourse().getTeacher() != null
+                && exam.getCourse().getTeacher().getId().equals(caller.getId());
+        if (!isCreator && !isCourseTeacher)
             throw new AppException(ErrorCode.FORBIDDEN);
     }
 

@@ -430,7 +430,7 @@ export default function StudentResultsPage() {
 
       <div>
         <h1 className="page-title">Kết quả thi</h1>
-        <p className="text-sm mt-1" style={{ color: 'var(--text-3)' }}>Lịch sử và điểm số các bài thi</p>
+        <p className="page-subtitle">Lịch sử và điểm số các bài thi</p>
       </div>
 
       {/* Stats */}

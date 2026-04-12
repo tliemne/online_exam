@@ -5,81 +5,77 @@ import { attemptApi } from '../../api/services'
 import api from '../../api/client'
 
 // ── Wave score chart ───────────────────────────────────────
-function ScoreWave({ attempts, height = 90 }) {
-  if (!attempts?.length) return null
-  const data = [...attempts].reverse().slice(0, 8) // oldest → newest
-  const w = 280, h = height, pad = 14
-  const maxScore = Math.max(...data.map(d => d.totalScore ?? 10), 10)
-  const pts = data.map((d, i) => {
-    const x = pad + (i / Math.max(data.length - 1, 1)) * (w - pad * 2)
-    const y = d.score != null
-      ? h - pad - (d.score / maxScore) * (h - pad * 2)
-      : h - pad
-    return [x, y, d]
-  })
+import ReactApexChart from 'react-apexcharts'
 
-  const pathD = pts.reduce((acc, pt, i) => {
-    if (i === 0) return `M ${pt[0]},${pt[1]}`
-    const prev = pts[i - 1]
-    const cpx = (prev[0] + pt[0]) / 2
-    return acc + ` C ${cpx},${prev[1]} ${cpx},${pt[1]} ${pt[0]},${pt[1]}`
-  }, '')
-  const areaD = pathD + ` L ${pts[pts.length-1][0]},${h-pad} L ${pts[0][0]},${h-pad} Z`
+// ── SVG Icons ─────────────────────────────────────────────
+const IcoCourses  = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg>
+const IcoExams    = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25z"/></svg>
+const IcoResults  = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+const IcoPassed   = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0"/></svg>
+const IcoScore    = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z"/></svg>
+const IcoSchedule = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>
+const IcoRanking  = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0"/></svg>
 
-  return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="w-full" style={{ height }}>
-      <defs>
-        <linearGradient id="scoreGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="var(--accent)" stopOpacity="0.3"/>
-          <stop offset="100%" stopColor="var(--accent)" stopOpacity="0"/>
-        </linearGradient>
-      </defs>
-      {/* Pass threshold line */}
-      {(() => {
-        const passY = h - pad - (5 / maxScore) * (h - pad * 2)
-        return <line x1={pad} y1={passY} x2={w - pad} y2={passY}
-          stroke="var(--border-strong)" strokeWidth="1" strokeDasharray="3,3"/>
-      })()}
-      <path d={areaD} fill="url(#scoreGrad)"/>
-      <path d={pathD} fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round"/>
-      {pts.map((pt, i) => {
-        const d = pt[2]
-        const clr = d.score == null ? 'var(--text-3)'
-          : d.passed ? 'var(--success)' : 'var(--danger)'
-        return (
-          <g key={i}>
-            <circle cx={pt[0]} cy={pt[1]} r="4" fill={clr} stroke="var(--bg-surface)" strokeWidth="1.5"/>
-            {d.score != null && (
-              <text x={pt[0]} y={pt[1] - 7} textAnchor="middle" fontSize="8" fontWeight="600" fill={clr}>
-                {d.score.toFixed(1)}
-              </text>
-            )}
-          </g>
-        )
-      })}
-      <text x={w - pad} y={h - pad - (5 / maxScore) * (h - pad * 2) - 3}
-        textAnchor="end" fontSize="7" fill="var(--text-3)">ngưỡng đạt</text>
-    </svg>
-  )
+// ── Skeleton ──────────────────────────────────────────────
+function Sk({ h='h-8', w='w-full' }) {
+  return <div className={`${w} ${h} rounded-2xl animate-pulse`} style={{ background:'var(--bg-elevated)' }}/>
 }
 
-// ── Stat pill ──────────────────────────────────────────────
-function StatPill({ label, value, color }) {
+// ── Stat Card ─────────────────────────────────────────────
+function StatCard({ label, value, icon, color, loading }) {
   return (
-    <div className="flex flex-col items-center gap-0.5 min-w-0">
-      <span className="text-xl font-bold" style={{ color }}>{value ?? '—'}</span>
-      <span className="text-[10px] text-center leading-tight" style={{ color: 'var(--text-3)' }}>{label}</span>
+    <div className="card p-5 flex flex-col gap-3 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+      <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ background: color+'20', color }}>
+        {icon}
+      </div>
+      {loading ? <Sk h="h-8" w="w-20"/> :
+        <p className="font-bold text-3xl tracking-tight" style={{ color:'var(--text-1)' }}>{value ?? 0}</p>
+      }
+      <p className="text-sm font-semibold" style={{ color:'var(--text-2)' }}>{label}</p>
     </div>
   )
 }
 
-function Skeleton({ w = 'w-12', h = 'h-7' }) {
-  return <span className={`inline-block rounded animate-pulse ${w} ${h}`}
-    style={{ background: 'var(--bg-elevated)' }}/>
+// ── ApexCharts helpers ────────────────────────────────────
+const getTheme = () => document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark'
+const LC = '#A3AED0'
+
+const lineOpts = (labels) => ({
+  chart: { toolbar:{show:false}, background:'transparent', fontFamily:'DM Sans, sans-serif' },
+  theme: { mode: getTheme() },
+  stroke: { curve:'smooth', width:3 },
+  fill: { type:'gradient', gradient:{ type:'vertical', opacityFrom:0.2, opacityTo:0 } },
+  markers: { size:0, hover:{ size:6 } },
+  xaxis: {
+    categories: labels,
+    labels: { style:{ colors:LC, fontSize:'11px' }, formatter: v => v?.length>12 ? v.slice(0,12)+'…':v },
+    axisBorder:{show:false}, axisTicks:{show:false}, tooltip:{enabled:false},
+  },
+  yaxis: { labels:{ style:{ colors:LC, fontSize:'11px' } } },
+  grid: { borderColor:'rgba(163,174,208,0.12)', strokeDashArray:4, xaxis:{ lines:{show:false} } },
+  tooltip: { theme:getTheme(), style:{ fontSize:'13px', fontFamily:'DM Sans, sans-serif' }, x:{show:true} },
+  colors: ['#7551FF'], dataLabels:{enabled:false},
+})
+
+const donutOpts = (pct) => {
+  const clr = pct>=70?'#01B574':pct>=50?'#FFB547':'#EE5D50'
+  const dark = getTheme()==='dark'
+  return {
+    chart: { background:'transparent', fontFamily:'DM Sans, sans-serif' },
+    theme: { mode:getTheme() },
+    colors: [clr, dark?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.06)'],
+    labels: ['Đạt','Chưa đạt'],
+    plotOptions: { pie: { donut: { size:'72%', labels: {
+      show:true,
+      name: { show:true, fontSize:'12px', color:LC, offsetY:-4 },
+      value: { show:true, fontSize:'24px', fontWeight:700, color:clr, offsetY:4, formatter:v=>`${Math.round(+v)}%` },
+      total: { show:true, label:'Tỉ lệ đạt', fontSize:'12px', color:LC, formatter:()=>`${Math.round(pct)}%` },
+    } } } },
+    legend:{show:false}, dataLabels:{enabled:false}, stroke:{width:0},
+    tooltip: { theme:getTheme(), style:{ fontSize:'13px' } },
+  }
 }
 
-// ── Weakness Widget ────────────────────────────────────────
-// ── Practice Modal ─────────────────────────────────────────
 function PracticeModal({ topic, difficulty, onClose }) {
   const [questions, setQuestions]   = useState([])
   const [loading, setLoading]       = useState(false)
@@ -586,6 +582,7 @@ function WeaknessWidget() {
   )
 }
 
+// ── Main ──────────────────────────────────────────────────
 export default function StudentDashboard() {
   const { user }              = useAuth()
   const navigate              = useNavigate()
@@ -600,126 +597,160 @@ export default function StudentDashboard() {
       .finally(() => setLoading(false))
   }, [])
 
+  const passRate = stats?.completedAttempts > 0
+    ? Math.round((stats.passedAttempts / stats.completedAttempts) * 100)
+    : 0
+
   const avgColor = stats?.avgScore >= 8 ? 'var(--success)'
     : stats?.avgScore >= 5 ? 'var(--warning)' : 'var(--danger)'
 
+  // Line chart data from recent attempts
+  const recentLabels = stats?.recentAttempts?.map(a => a.examTitle?.slice(0,10) || '') ?? []
+  const recentScores = stats?.recentAttempts?.map(a => +(a.score?.toFixed(1) ?? 0)) ?? []
+
   return (
-    <div className="max-w-4xl mx-auto space-y-5">
+    <div className="max-w-5xl mx-auto space-y-6">
 
       {/* Header */}
       <div>
         <h1 className="page-title">Tổng quan</h1>
-        <p className="text-sm mt-0.5" style={{ color: 'var(--text-3)' }}>
-          Xin chào, <span className="font-medium" style={{ color: 'var(--text-1)' }}>{user?.fullName || user?.username}</span>
-        </p>
+        <p className="page-subtitle">Xin chào, <span className="font-bold" style={{ color:'var(--text-2)' }}>{user?.fullName || user?.username}</span></p>
       </div>
 
-      {error && (
-        <div className="rounded-lg px-4 py-3 text-sm" style={{ background: 'var(--danger-subtle)', color: 'var(--danger)' }}>
-          {error}
+      {error && <div className="px-5 py-4 rounded-2xl text-sm" style={{ background:'var(--danger-subtle)', color:'var(--danger)', border:'1px solid var(--danger-border)' }}>{error}</div>}
+
+      {/* Stat Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label:'Lớp đang học',   value:stats?.enrolledCourses,   icon:<IcoCourses/>,  color:'var(--accent)'  },
+          { label:'Đề có thể thi',  value:stats?.availableExams,    icon:<IcoExams/>,    color:'var(--purple)'  },
+          { label:'Bài đã làm',     value:stats?.completedAttempts, icon:<IcoResults/>,  color:'var(--cyan)'    },
+          { label:'Bài đạt',        value:stats?.passedAttempts,    icon:<IcoPassed/>,   color:'var(--success)' },
+        ].map(s => <StatCard key={s.label} {...s} loading={loading}/>)}
+      </div>
+
+      {/* Score line + Donut */}
+      {!loading && stats && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Score line chart */}
+          <div className="card lg:col-span-2">
+            <p className="font-bold" style={{ color:'var(--text-1)' }}>Điểm số gần đây</p>
+            <p className="text-xs mt-0.5 mb-4" style={{ color:'var(--text-3)' }}>Lịch sử các bài thi</p>
+            {recentScores.length > 0 ? (
+              <ReactApexChart type="area" height={180}
+                series={[{ name:'Điểm số', data:recentScores }]}
+                options={lineOpts(recentLabels)}/>
+            ) : (
+              <div className="flex items-center justify-center h-44 text-sm" style={{ color:'var(--text-3)' }}>
+                Chưa có bài thi nào
+              </div>
+            )}
+          </div>
+
+          {/* Pass rate donut */}
+          <div className="card flex flex-col">
+            <p className="font-bold" style={{ color:'var(--text-1)' }}>Tỉ lệ đạt</p>
+            <p className="text-xs mt-0.5 mb-2" style={{ color:'var(--text-3)' }}>Trong tất cả bài thi</p>
+            <div className="flex-1 flex items-center justify-center">
+              <ReactApexChart type="donut" height={200} width="100%"
+                series={[passRate, 100-passRate]}
+                options={donutOpts(passRate)}/>
+            </div>
+            <div className="flex justify-center gap-6 mt-2">
+              {[['var(--success)','Đạt',passRate],['var(--danger)','Chưa',100-passRate]].map(([c,l,v])=>(
+                <div key={l} className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full shrink-0" style={{background:c}}/>
+                  <span className="text-xs" style={{color:'var(--text-2)'}}> {l}: <b>{v}%</b></span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
-      {/* Stats + wave chart in one card */}
-      <div className="card p-5">
-        {loading ? (
-          <div className="flex justify-center py-6"><Skeleton w="w-full" h="h-24"/></div>
-        ) : (
-          <>
-            {/* Stat row */}
-            <div className="flex items-center justify-around pb-4 mb-4 border-b" style={{ borderColor: 'var(--border-base)' }}>
-              <StatPill label="Lớp đang học"  value={stats?.enrolledCourses}  color="var(--accent)"/>
-              <div className="w-px h-8" style={{ background: 'var(--border-base)' }}/>
-              <StatPill label="Đề có thể thi" value={stats?.availableExams}   color="var(--purple)"/>
-              <div className="w-px h-8" style={{ background: 'var(--border-base)' }}/>
-              <StatPill label="Đã làm bài"    value={stats?.completedAttempts} color="var(--text-2)"/>
-              <div className="w-px h-8" style={{ background: 'var(--border-base)' }}/>
-              <StatPill label="Bài đạt"       value={stats?.passedAttempts}   color="var(--success)"/>
-              <div className="w-px h-8" style={{ background: 'var(--border-base)' }}/>
-              <StatPill label="Điểm TB"
-                value={stats?.avgScore != null ? stats.avgScore.toFixed(1) : '—'}
-                color={stats?.avgScore != null ? avgColor : 'var(--text-3)'}/>
-            </div>
-
-            {/* Wave chart */}
-            {stats?.recentAttempts?.length > 0 ? (
-              <>
-                <p className="text-xs mb-2" style={{ color: 'var(--text-3)' }}>Điểm các bài thi gần đây</p>
-                <ScoreWave attempts={stats.recentAttempts}/>
-              </>
-            ) : (
-              <p className="text-center text-sm py-4" style={{ color: 'var(--text-3)' }}>
-                Chưa có bài thi nào
-              </p>
-            )}
-          </>
-        )}
-      </div>
-
-      {/* Quick actions */}
-      <div className="grid grid-cols-2 gap-3">
-        <Link to="/student/exams"
-          className="card p-4 hover:border-[var(--border-strong)] transition-all">
-          <p className="text-sm font-medium" style={{ color: 'var(--text-1)' }}>Bài kiểm tra</p>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>Xem và làm bài thi</p>
-        </Link>
-        <Link to="/student/results"
-          className="card p-4 hover:border-[var(--border-strong)] transition-all">
-          <p className="text-sm font-medium" style={{ color: 'var(--text-1)' }}>Kết quả của tôi</p>
-          <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>Xem điểm và lịch sử thi</p>
-        </Link>
-        <div className="col-span-2">
-          <WeaknessWidget/>
-        </div>
-      </div>
-
-      {/* Recent table */}
-      {!loading && stats?.recentAttempts?.length > 0 && (
-        <div className="card-bare">
-          <div className="flex items-center justify-between px-5 py-3.5 border-b"
-            style={{ borderColor: 'var(--border-base)' }}>
-            <span className="text-sm font-medium" style={{ color: 'var(--text-1)' }}>Bài làm gần đây</span>
-            <Link to="/student/results" className="text-xs" style={{ color: 'var(--accent)' }}>Xem tất cả →</Link>
+      {/* Average score card */}
+      {!loading && stats?.avgScore != null && (
+        <div className="card p-5 flex items-center gap-5">
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0"
+            style={{ background: avgColor+'20', color: avgColor }}>
+            <IcoScore/>
           </div>
-          <table className="w-full">
-            <thead>
-              <tr style={{ background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border-base)' }}>
-                {['Đề thi', 'Lớp', 'Điểm', 'Kết quả', 'Nộp lúc'].map(h => (
-                  <th key={h} className="th py-2.5">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {stats.recentAttempts.map(a => {
-                const pct = a.score != null && a.totalScore ? (a.score / a.totalScore) * 100 : 0
-                const barClr = pct >= 70 ? 'var(--success)' : pct >= 50 ? 'var(--warning)' : 'var(--danger)'
-                return (
-                  <tr key={a.attemptId} className="table-row">
-                    <td className="td font-medium py-3" style={{ color: 'var(--text-1)' }}>{a.examTitle}</td>
-                    <td className="td py-3" style={{ color: 'var(--text-3)' }}>{a.courseName}</td>
-                    <td className="td py-3">
-                      {a.score != null ? (
-                        <div className="flex items-center gap-2">
-                          <div className="h-1.5 rounded-full overflow-hidden" style={{ width: 48, background: 'var(--border-base)' }}>
-                            <div className="h-full rounded-full" style={{ width: `${pct}%`, background: barClr }}/>
+          <div className="flex-1">
+            <p className="text-sm font-semibold" style={{ color:'var(--text-2)' }}>Điểm trung bình</p>
+            <p className="font-bold text-4xl tracking-tight mt-0.5" style={{ color: avgColor }}>
+              {stats.avgScore.toFixed(1)}
+              <span className="text-lg font-medium ml-1" style={{ color:'var(--text-3)' }}>/ 10</span>
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Quick links */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          {to:'/student/exams',    label:'Bài kiểm tra', icon:<IcoExams/>,    color:'var(--accent)' },
+          {to:'/student/results',  label:'Kết quả',      icon:<IcoResults/>,  color:'var(--success)'},
+          {to:'/student/schedule', label:'Lịch thi',     icon:<IcoSchedule/>, color:'var(--purple)' },
+          {to:'/student/rankings', label:'Xếp hạng',     icon:<IcoRanking/>,  color:'var(--warning)'},
+        ].map(l=>(
+          <Link key={l.to} to={l.to} className="card p-4 flex items-center gap-3 no-underline hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+            <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0" style={{background:l.color+'18',color:l.color}}>{l.icon}</div>
+            <span className="text-sm font-bold" style={{color:'var(--text-1)'}}> {l.label}</span>
+          </Link>
+        ))}
+      </div>
+
+      {/* AI Weakness Widget */}
+      <div>
+        <WeaknessWidget/>
+      </div>
+
+      {/* Recent attempts table */}
+      {!loading && stats?.recentAttempts?.length > 0 && (
+        <div className="card-bare overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom:'1px solid var(--border-base)' }}>
+            <p className="font-bold" style={{ color:'var(--text-1)' }}>Bài làm gần đây</p>
+            <Link to="/student/results" className="text-sm font-semibold transition-colors" style={{ color:'var(--accent)' }}>Xem tất cả →</Link>
+          </div>
+          <div className="overflow-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr>
+                  {['Đề thi','Lớp','Điểm','Kết quả','Nộp lúc'].map(h=>(
+                    <th key={h} className="th">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {stats.recentAttempts.map(a => {
+                  const pct = a.score!=null && a.totalScore ? (a.score/a.totalScore)*100 : 0
+                  const clr = pct>=70?'var(--success)':pct>=50?'var(--warning)':'var(--danger)'
+                  return (
+                    <tr key={a.attemptId} className="table-row">
+                      <td className="td font-semibold" style={{color:'var(--text-1)'}}> {a.examTitle}</td>
+                      <td className="td" style={{color:'var(--text-3)'}}> {a.courseName}</td>
+                      <td className="td">
+                        {a.score!=null ? (
+                          <div className="flex items-center gap-2">
+                            <div className="h-1.5 rounded-full overflow-hidden" style={{width:48,background:'var(--bg-elevated)'}}>
+                              <div className="h-full rounded-full" style={{width:`${Math.round(pct)}%`,background:clr}}/>
+                            </div>
+                            <span className="text-xs font-mono" style={{color:clr}}>{a.score.toFixed(1)}/{a.totalScore}</span>
                           </div>
-                          <span className="text-xs font-mono" style={{ color: barClr }}>
-                            {a.score.toFixed(1)}/{a.totalScore}
-                          </span>
-                        </div>
-                      ) : <span className="text-xs" style={{ color: 'var(--text-3)' }}>—</span>}
-                    </td>
-                    <td className="td py-3">
-                      {a.status === 'GRADED'
-                        ? <span className={a.passed ? 'badge-green' : 'badge-red'}>{a.passed ? 'Đạt' : 'Chưa đạt'}</span>
-                        : <span className="badge-amber">Chờ chấm</span>}
-                    </td>
-                    <td className="td py-3 text-xs" style={{ color: 'var(--text-3)' }}>{a.submittedAt || '—'}</td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+                        ) : <span style={{color:'var(--text-3)'}}> —</span>}
+                      </td>
+                      <td className="td">
+                        {a.status==='GRADED'
+                          ? <span className={a.passed?'badge-green':'badge-red'}>{a.passed?'Đạt':'Chưa đạt'}</span>
+                          : <span className="badge-amber">Chờ chấm</span>}
+                      </td>
+                      <td className="td text-xs" style={{color:'var(--text-3)'}}> {a.submittedAt||'—'}</td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

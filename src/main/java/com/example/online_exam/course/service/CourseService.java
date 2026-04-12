@@ -2,6 +2,8 @@ package com.example.online_exam.course.service;
 
 import com.example.online_exam.activitylog.entity.ActivityLogAction;
 import com.example.online_exam.activitylog.service.ActivityLogService;
+import com.example.online_exam.attempt.repository.AttemptAnswerRepository;
+import com.example.online_exam.attempt.repository.AttemptRepository;
 import com.example.online_exam.course.dto.CourseRequest;
 import com.example.online_exam.course.dto.CourseResponse;
 import com.example.online_exam.course.dto.CourseUpdateRequest;
@@ -9,8 +11,12 @@ import com.example.online_exam.course.dto.StudentWithProfileResponse;
 import com.example.online_exam.course.entity.Course;
 import com.example.online_exam.course.mapper.CourseMapper;
 import com.example.online_exam.course.repository.CourseRepository;
+import com.example.online_exam.exam.repository.ExamQuestionRepository;
+import com.example.online_exam.exam.repository.ExamRepository;
 import com.example.online_exam.exception.AppException;
 import com.example.online_exam.exception.ErrorCode;
+import com.example.online_exam.question.repository.QuestionRepository;
+import com.example.online_exam.question.repository.QuestionStatRepository;
 import com.example.online_exam.secutity.service.CurrentUserService;
 import com.example.online_exam.user.dto.UserResponse;
 import com.example.online_exam.user.entity.User;
@@ -29,13 +35,20 @@ import java.util.List;
 @Transactional
 public class CourseService {
 
-    private final CourseRepository courseRepository;
-    private final UserRepository userRepository;
-    private final CourseMapper courseMapper;
-    private final CurrentUserService currentUserService;
-    private final UserMapper userMapper;
+    private final CourseRepository       courseRepository;
+    private final UserRepository         userRepository;
+    private final CourseMapper           courseMapper;
+    private final CurrentUserService     currentUserService;
+    private final UserMapper             userMapper;
     private final StudentProfileRepository studentProfileRepository;
-    private final ActivityLogService activityLogService;
+    private final ActivityLogService     activityLogService;
+    // Dùng để xóa cascade khi xóa course
+    private final QuestionRepository     questionRepository;
+    private final QuestionStatRepository questionStatRepository;
+    private final ExamRepository         examRepository;
+    private final ExamQuestionRepository examQuestionRepository;
+    private final AttemptRepository      attemptRepository;
+    private final AttemptAnswerRepository attemptAnswerRepository;
 
     public CourseResponse create(CourseRequest request) {
         User currentUser = currentUserService.requireCurrentUser();
@@ -101,6 +114,36 @@ public class CourseService {
     public void delete(Long id) {
         Course course = findCourseByManageScope(id);
         String name = course.getName();
+
+        // ── Xóa đúng thứ tự để không vi phạm FK ──────────────────────────
+        // 1. Lấy danh sách exam trong course
+        java.util.List<Long> examIds = examRepository.findByCourseId(id)
+                .stream().map(e -> e.getId()).collect(java.util.stream.Collectors.toList());
+
+        // 2. Lấy danh sách question trong course
+        java.util.List<Long> questionIds = questionRepository.findByCourseId(id)
+                .stream().map(q -> q.getId()).collect(java.util.stream.Collectors.toList());
+
+        // 3. Xóa attempt_answers TRƯỚC (bulk JPQL không trigger JPA cascade)
+        //    sau đó xóa attempts
+        for (Long examId : examIds) {
+            attemptAnswerRepository.deleteByAttemptExamId(examId);
+            attemptRepository.deleteByExamId(examId);
+        }
+
+        // 4. Xóa exam_questions → exams
+        for (Long examId : examIds) {
+            examQuestionRepository.deleteByExamId(examId);
+        }
+        examRepository.deleteAll(examRepository.findByCourseId(id));
+
+        // 5. Xóa question_statistics → attempt_answers by question (đã xóa ở trên)
+        //    question_statistics: ON DELETE CASCADE theo question_id → tự xóa khi xóa question
+        //    question_tags: ON DELETE CASCADE → tự xóa
+        //    answers: ON DELETE CASCADE → tự xóa
+        questionRepository.deleteAll(questionRepository.findByCourseId(id));
+
+        // 6. Xóa course (cascade: course_students, lectures, announcements)
         courseRepository.delete(course);
 
         User caller = currentUserService.requireCurrentUser();

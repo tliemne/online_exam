@@ -150,7 +150,7 @@ export default function QuestionFormModal({ question, courses, onClose, onSaved 
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="modal-overlay">
       <div className="bg-[var(--bg-surface)] border border-[var(--border-base)] rounded-2xl w-full max-w-2xl shadow-md max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-base)] shrink-0">

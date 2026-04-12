@@ -21,8 +21,8 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--bg-page)] flex items-center justify-center p-4">
-      <div className="w-full max-w-sm animate-fade-in">
+    <div className="min-h-screen flex items-center justify-center p-6" style={{ background: "var(--bg-page)" }}>
+      <div className="w-full max-w-md animate-slide-up">
 
         {/* Logo */}
         <div className="text-center mb-8">
@@ -36,7 +36,7 @@ export default function RegisterPage() {
           <p className="text-[var(--text-3)] text-sm mt-1">Tạo tài khoản mới</p>
         </div>
 
-        <div className="card p-6">
+        <div className="card p-8">
           <h2 className="font-display font-semibold text-base text-[var(--text-1)] mb-5">Đăng ký</h2>
 
           {error && (

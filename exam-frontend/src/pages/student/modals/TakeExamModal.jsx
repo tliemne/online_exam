@@ -388,7 +388,7 @@ export default function TakeExamModal({ exam, onClose, onSubmitted }) {
                       <button key={a.id} onClick={() => handleAnswer(q.questionId, a.id)}
                         className={`w-full flex items-center gap-4 p-4 rounded-xl border text-left transition-all ${
                           isSelected
-                            ? 'border-accent bg-accent/10 text-[var(--text-1)]'
+                            ? 'border-[var(--accent)] bg-[var(--accent-subtle)] shadow-sm text-[var(--text-1)]'
                             : 'border-[var(--border-base)] bg-[var(--bg-elevated)]/50 hover:border-[var(--border-strong)] text-[var(--text-2)]'
                         }`}>
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold shrink-0 ${
@@ -409,7 +409,7 @@ export default function TakeExamModal({ exam, onClose, onSubmitted }) {
                     <button key={opt.id} onClick={() => handleAnswer(q.questionId, opt.id)}
                       className={`flex-1 py-4 rounded-xl border text-sm font-medium transition-all ${
                         answers[q.questionId] === opt.id
-                          ? 'border-accent bg-accent/10 text-accent'
+                          ? 'border-[var(--accent)] bg-[var(--accent-subtle)] shadow-sm text-accent'
                           : 'border-[var(--border-base)] bg-[var(--bg-elevated)]/50 hover:border-[var(--border-strong)] text-[var(--text-2)]'
                       }`}>
                       {opt.label}

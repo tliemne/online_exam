@@ -86,14 +86,19 @@ function NavItem({ to, icon, label, end, collapsed, indent }) {
     : location.pathname === to || location.pathname.startsWith(to + '/')
   return (
     <NavLink to={to} end={end} title={collapsed ? label : undefined}
-      style={isActive ? { color: 'var(--accent)', background: 'var(--accent-subtle)' } : {}}
-      className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-150
+      style={isActive ? {
+        color: 'var(--accent)',
+        background: 'linear-gradient(135deg, var(--accent-subtle) 0%, transparent 100%)',
+        boxShadow: 'inset 0 0 0 1px var(--accent-border)',
+      } : {}}
+      className={`flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-all duration-200
+        rounded-xl
         ${collapsed ? 'justify-center' : ''}
-        ${indent && !collapsed ? 'pl-8' : ''}`}
+        ${indent && !collapsed ? 'pl-9' : ''}`}
       onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text-1)' }}}
       onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = ''; e.currentTarget.style.color = '' }}}>
-      <span style={isActive ? {} : { color: 'var(--text-3)' }}>{icon}</span>
-      {!collapsed && <span style={isActive ? { fontWeight: 500 } : { color: 'var(--text-2)' }}>{label}</span>}
+      <span style={isActive ? { color: 'var(--accent)' } : { color: 'var(--text-3)' }}>{icon}</span>
+      {!collapsed && <span style={isActive ? { fontWeight: 700, color: 'var(--accent)' } : { color: 'var(--text-2)' }}>{label}</span>}
     </NavLink>
   )
 }
@@ -122,12 +127,12 @@ function NavGroup({ item, collapsed }) {
       {/* Group header */}
       <button
         onClick={() => setOpen(p => !p)}
-        className="w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-150"
+        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200"
         style={{ color: isAnyChildActive ? 'var(--accent)' : 'var(--text-2)' }}
         onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)' }}
         onMouseLeave={e => { e.currentTarget.style.background = '' }}>
         <span style={{ color: isAnyChildActive ? 'var(--accent)' : 'var(--text-3)' }}>{item.icon}</span>
-        <span className="flex-1 text-left" style={{ fontWeight: isAnyChildActive ? 500 : 400 }}>{item.label}</span>
+        <span className="flex-1 text-left" style={{ fontWeight: isAnyChildActive ? 700 : 500 }}>{item.label}</span>
         <span className={`transition-transform duration-200 ${open ? 'rotate-180' : ''}`} style={{ color: 'var(--text-3)' }}>
           {Icon.chevronDown}
         </span>
@@ -154,7 +159,7 @@ const roleConfig = {
 function SideBtn({ onClick, icon, label, collapsed, danger }) {
   return (
     <button onClick={onClick} title={collapsed ? label : undefined}
-      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm transition-all duration-150 ${collapsed ? 'justify-center' : ''}`}
+      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${collapsed ? 'justify-center' : ''}`}
       style={{ color: 'var(--text-3)' }}
       onMouseEnter={e => {
         e.currentTarget.style.background = danger ? 'var(--danger-subtle)' : 'var(--bg-hover)'
@@ -273,8 +278,8 @@ function NotificationBell() {
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 rounded-xl shadow-lg border overflow-hidden z-50"
-          style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-base)' }}>
+        <div className="absolute right-0 top-full mt-3 w-80 overflow-hidden z-50"
+          style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-base)', borderRadius: '20px', boxShadow: 'var(--shadow-lg)' }}>
 
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'var(--border-base)' }}>
@@ -383,28 +388,32 @@ export default function AppLayout({ children }) {
 
       {/* ── Sidebar ── */}
       <aside
-        className={`${collapsed ? 'w-14' : 'w-60'} shrink-0 flex flex-col transition-all duration-200 sticky top-0 h-screen`}
-        style={{ background: 'var(--bg-surface)', borderRight: '1px solid var(--border-base)' }}>
+        className={`${collapsed ? 'w-16' : 'w-64'} shrink-0 flex flex-col transition-all duration-300 sticky top-0 h-screen`}
+        style={{ background: 'var(--bg-surface)', boxShadow: 'var(--shadow-md)' }}>
 
         {/* Logo */}
-        <div
-          className={`flex items-center h-16 px-3 ${collapsed ? 'justify-center' : 'gap-2.5'}`}
-          style={{ borderBottom: '1px solid var(--border-base)' }}>
-          <div className="w-7 h-7 rounded-md flex items-center justify-center shrink-0"
-            style={{ background: 'var(--accent-subtle)', border: '1px solid var(--accent-border)' }}>
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-3.5 h-3.5" style={{ color: 'var(--accent)' }}>
+        <div className={`flex items-center px-5 ${collapsed ? 'justify-center h-16' : 'gap-3 h-20'}`}>
+          <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
+            style={{ background: 'linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%)' }}>
+            <svg viewBox="0 0 16 16" fill="none" stroke="white" strokeWidth="1.8" className="w-5 h-5">
               <path strokeLinecap="round" strokeLinejoin="round" d="M2 3h12M2 7h8M2 11h10M2 14h6"/>
             </svg>
           </div>
           {!collapsed && (
-            <span className="font-display font-semibold text-sm tracking-tight" style={{ color: 'var(--text-1)' }}>
-              ExamPortal
-            </span>
+            <div>
+              <span className="font-bold text-base tracking-tight block" style={{ color: 'var(--text-1)' }}>
+                ExamPortal
+              </span>
+              <span className="text-xs" style={{ color: 'var(--text-3)' }}>Hệ thống thi</span>
+            </div>
           )}
         </div>
 
+        {/* Divider */}
+        <div className="mx-4 mb-2" style={{ height: '1px', background: 'var(--border-subtle)' }}/>
+
         {/* Nav */}
-        <nav className="flex-1 p-2 space-y-0.5 overflow-y-auto">
+        <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto py-2">
           {navItems.map(item =>
             item.group
               ? <NavGroup key={item.label} item={item} collapsed={collapsed} />
@@ -413,7 +422,8 @@ export default function AppLayout({ children }) {
         </nav>
 
         {/* Bottom */}
-        <div className="p-2 space-y-0.5" style={{ borderTop: '1px solid var(--border-base)' }}>
+        <div className="px-3 py-3 space-y-0.5">
+          <div className="mb-2" style={{ height: '1px', background: 'var(--border-subtle)' }}/>
           <SideBtn
             onClick={toggleTheme}
             icon={theme === 'dark' ? Icon.sun : Icon.moon}
@@ -421,12 +431,12 @@ export default function AppLayout({ children }) {
             collapsed={collapsed}
           />
           <NavLink to="/profile"
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-150 ${collapsed ? 'justify-center' : ''}`}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ${collapsed ? 'justify-center' : ''}`}
             style={{ color: 'var(--text-2)' }}
             onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-hover)'; e.currentTarget.style.color = 'var(--text-1)' }}
             onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'var(--text-2)' }}>
-            <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-xs font-semibold overflow-hidden"
-              style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-base)', color: 'var(--text-1)' }}>
+            <div className="w-9 h-9 rounded-2xl flex items-center justify-center shrink-0 text-sm font-bold overflow-hidden"
+              style={{ background: 'linear-gradient(135deg, var(--accent-subtle) 0%, var(--bg-elevated) 100%)', border: '1px solid var(--accent-border)', color: 'var(--accent)' }}>
               {user?.avatarUrl
                 ? <img src={user.avatarUrl} alt="avatar" className="w-full h-full object-cover"/>
                 : (user?.fullName || user?.username || '?')[0].toUpperCase()}
@@ -454,12 +464,12 @@ export default function AppLayout({ children }) {
       </aside>
 
       {/* ── Main ── */}
-      <main className="flex-1 overflow-auto">
-        {/* Top bar với notification bell */}
-        <div className="flex justify-end px-8 pt-5 pb-0">
+      <main className="flex-1 overflow-auto" style={{ background: 'var(--bg-page)' }}>
+        {/* Top bar */}
+        <div className="flex justify-end px-8 pt-6 pb-0">
           <NotificationBell />
         </div>
-        <div className="min-h-screen px-8 py-4 animate-fade-in">
+        <div className="min-h-screen px-8 py-6 animate-fade-in">
           {children}
         </div>
       </main>

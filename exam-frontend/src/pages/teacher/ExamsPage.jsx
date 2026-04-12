@@ -470,7 +470,7 @@ function AiExamModal({ courses, onClose, onCreated }) {
 
           {/* Step 3: done */}
           {step === 3 && result && (
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div className="p-4 rounded-lg text-center"
                 style={{ background: 'var(--success-subtle)' }}>
                 <p className="font-semibold" style={{ color: 'var(--success)' }}>Tạo đề thành công!</p>

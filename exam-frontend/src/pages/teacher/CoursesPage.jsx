@@ -21,9 +21,9 @@ const Icon = {
 // ── Modal wrapper ────────────────────────────────────────
 function Modal({ title, onClose, children }) {
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-[var(--bg-surface)] border border-[var(--border-base)] rounded-xl w-full max-w-lg shadow-modal animate-slide-up">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-base)]">
+    <div className="modal-overlay">
+      <div className="modal-box max-w-lg">
+        <div className="modal-header">
           <h2 className="section-title">{title}</h2>
           <button onClick={onClose} className="btn-ghost p-1.5">{Icon.x}</button>
         </div>
@@ -69,8 +69,8 @@ function CourseFormModal({ course, onClose, onSaved, isAdmin, allUsers }) {
 
   return (
     <Modal title={course ? 'Sửa lớp học' : 'Tạo lớp học mới'} onClose={onClose}>
-      {error && <div className="mb-4 px-4 py-3 rounded-lg bg-danger/10 border border-danger/30 text-danger text-sm">{error}</div>}
-      <form onSubmit={handleSubmit} className="space-y-4">
+      {error && <div className="mb-4 px-4 py-3 rounded-2xl bg-danger/10 border border-danger/30 text-danger text-sm">{error}</div>}
+      <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <label className="label">Tên lớp học</label>
           <input className="input-field" placeholder="Lập trình Web 2024..." value={form.name}
@@ -140,8 +140,8 @@ function AddStudentsModal({ courseId, currentStudents, onClose, onSaved, allUser
 
   return (
     <Modal title="Thêm sinh viên vào lớp" onClose={onClose}>
-      {error && <div className="mb-4 px-4 py-3 rounded-lg bg-danger/10 border border-danger/30 text-danger text-sm">{error}</div>}
-      <div className="space-y-4">
+      {error && <div className="mb-4 px-4 py-3 rounded-2xl bg-danger/10 border border-danger/30 text-danger text-sm">{error}</div>}
+      <div className="space-y-5">
         <div className="relative">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-3)]">{Icon.search}</span>
           <input className="input-field pl-9" placeholder="Tìm sinh viên..." value={search}
@@ -154,12 +154,12 @@ function AddStudentsModal({ courseId, currentStudents, onClose, onSaved, allUser
             <label key={u.id}
               className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
                 selected.includes(u.id)
-                  ? 'border-accent bg-accent/10'
-                  : 'border-[var(--border-base)] bg-[var(--bg-elevated)] hover:border-[var(--border-strong)]'
+                  ? 'border-[var(--accent)] bg-[var(--accent-subtle)] shadow-sm'
+                  : 'border-[var(--border-base)] bg-[var(--bg-elevated)] hover:border-[var(--accent)] hover:shadow-sm'
               }`}>
               <input type="checkbox" className="hidden" checked={selected.includes(u.id)}
                 onChange={() => toggle(u.id)} />
-              <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+              <div className={`w-5 h-5 rounded-lg border-2 flex items-center justify-center shrink-0 transition-colors ${
                 selected.includes(u.id) ? 'bg-accent border-accent' : 'border-[var(--border-strong)]'
               }`}>
                 {selected.includes(u.id) && <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>}
@@ -224,7 +224,7 @@ function StudentsModal({ course, onClose, onUpdated, allUsers }) {
   return (
     <>
       <Modal title={`Danh sách sinh viên — ${course.name}`} onClose={onClose}>
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div className="flex gap-3">
             <div className="relative flex-1">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-3)]">{Icon.search}</span>

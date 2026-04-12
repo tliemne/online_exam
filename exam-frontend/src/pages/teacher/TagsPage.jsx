@@ -43,10 +43,10 @@ function TagFormModal({ tag, onClose, onSaved }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="modal-overlay">
       <div className="bg-[var(--bg-surface)] border border-[var(--border-base)] rounded-2xl w-full max-w-md shadow-md">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-base)]">
+        <div className="modal-header">
           <h2 className="section-title">{tag ? 'Sửa tag' : 'Tạo tag mới'}</h2>
           <button onClick={onClose} className="btn-ghost p-1.5">{Icon.x}</button>
         </div>
@@ -55,7 +55,7 @@ function TagFormModal({ tag, onClose, onSaved }) {
           {error && (
             <div className="mb-4 px-3 py-2 rounded-lg bg-danger/10 border border-danger/30 text-danger text-sm">{error}</div>
           )}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {/* Name + color preview */}
             <div>
               <label className="input-label">Tên tag *</label>

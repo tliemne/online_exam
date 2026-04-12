@@ -31,6 +31,11 @@ public interface AttemptAnswerRepository extends JpaRepository<AttemptAnswer, Lo
     @Query("DELETE FROM AttemptAnswer aa WHERE aa.attempt.student.id = :studentId")
     void deleteByAttemptStudentId(@Param("studentId") Long studentId);
 
+    // Xóa tất cả answers của các attempt thuộc 1 exam cụ thể
+    @Modifying
+    @Query("DELETE FROM AttemptAnswer aa WHERE aa.attempt.exam.id = :examId")
+    void deleteByAttemptExamId(@Param("examId") Long examId);
+
     // Xóa tất cả answers của các attempt thuộc exam do user này tạo
     @Modifying
     @Query("DELETE FROM AttemptAnswer aa WHERE aa.attempt.exam.createdBy.id = :userId")

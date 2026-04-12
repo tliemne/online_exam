@@ -39,7 +39,7 @@ export default function Pagination({ page, totalPages, totalElements, size, onPa
         <button
           disabled={page === 0}
           onClick={() => onPageChange(page - 1)}
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--text-3)] border border-[var(--border-base)] bg-[var(--bg-elevated)] hover:border-[var(--border-strong)] disabled:opacity-30 disabled:cursor-not-allowed transition-all text-sm">
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--text-3)] border border-[var(--border-base)] bg-[var(--bg-elevated)] hover:border-[var(--accent)] hover:shadow-sm disabled:opacity-30 disabled:cursor-not-allowed transition-all text-sm">
           ←
         </button>
 
@@ -53,8 +53,8 @@ export default function Pagination({ page, totalPages, totalElements, size, onPa
               onClick={() => onPageChange(p)}
               className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-mono font-medium transition-all ${
                 p === page
-                  ? 'bg-accent text-white border border-accent'
-                  : 'text-[var(--text-3)] border border-[var(--border-base)] bg-[var(--bg-elevated)] hover:border-[var(--border-strong)]'
+                  ? 'bg-[var(--accent)] text-white border-transparent font-bold rounded-xl'
+                  : 'text-[var(--text-3)] border border-[var(--border-base)] bg-[var(--bg-elevated)] hover:border-[var(--accent)] hover:shadow-sm'
               }`}>
               {p + 1}
             </button>
@@ -65,7 +65,7 @@ export default function Pagination({ page, totalPages, totalElements, size, onPa
         <button
           disabled={page >= totalPages - 1}
           onClick={() => onPageChange(page + 1)}
-          className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--text-3)] border border-[var(--border-base)] bg-[var(--bg-elevated)] hover:border-[var(--border-strong)] disabled:opacity-30 disabled:cursor-not-allowed transition-all text-sm">
+          className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--text-3)] border border-[var(--border-base)] bg-[var(--bg-elevated)] hover:border-[var(--accent)] hover:shadow-sm disabled:opacity-30 disabled:cursor-not-allowed transition-all text-sm">
           →
         </button>
       </div>

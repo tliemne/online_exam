@@ -56,7 +56,7 @@ export default function ExamCard({
   const isPublished = exam.status === 'PUBLISHED'
 
   return (
-    <div className="card flex flex-col gap-5 hover:border-[var(--border-strong)] transition-all duration-200">
+    <div className="card flex flex-col gap-5 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
 
       {/* Header */}
       <div className="flex items-start justify-between gap-3">

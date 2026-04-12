@@ -9,7 +9,7 @@ const Icon = {
 
 function Modal({ title, onClose, children, wide }) {
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="modal-overlay">
       <div className={`bg-[var(--bg-surface)] border border-[var(--border-base)] rounded-xl w-full shadow-modal animate-slide-up flex flex-col max-h-[90vh] ${wide ? 'max-w-2xl' : 'max-w-lg'}`}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-base)] shrink-0">
           <h2 className="section-title">{title}</h2>

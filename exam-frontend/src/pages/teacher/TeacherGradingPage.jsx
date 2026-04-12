@@ -411,7 +411,7 @@ export default function TeacherGradingPage() {
     <div className="max-w-5xl mx-auto space-y-6">
       <div>
         <h1 className="page-title">Chấm điểm</h1>
-        <p className="text-sm mt-1" style={{ color: 'var(--text-3)' }}>Xem danh sách bài nộp và chấm điểm tự luận</p>
+        <p className="page-subtitle">Xem danh sách bài nộp và chấm điểm tự luận</p>
       </div>
 
       {/* Exam selector */}

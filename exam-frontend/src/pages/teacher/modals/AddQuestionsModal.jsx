@@ -23,7 +23,7 @@ const Icon = {
 
 function Modal({ title, onClose, children, wide }) {
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="modal-overlay">
       <div className={`bg-[var(--bg-surface)] border border-[var(--border-base)] rounded-xl w-full shadow-modal animate-slide-up flex flex-col max-h-[90vh] ${wide ? 'max-w-2xl' : 'max-w-lg'}`}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-base)] shrink-0">
           <h2 className="section-title">{title}</h2>
@@ -192,7 +192,7 @@ export default function AddQuestionsModal({ exam, onClose, onSaved }) {
                 className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
                   selected.has(q.id)
                     ? 'border-accent bg-accent/8'
-                    : 'border-[var(--border-base)] bg-[var(--bg-elevated)] hover:border-[var(--border-strong)]'
+                    : 'border-[var(--border-base)] bg-[var(--bg-elevated)] hover:border-[var(--accent)] hover:shadow-sm'
                 }`}>
                 <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
                   selected.has(q.id) ? 'bg-accent border-accent' : 'border-[var(--border-strong)]'
@@ -280,9 +280,9 @@ function RandomQuestionsModal({ exam, tags, onClose, onSaved }) {
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
-      <div className="bg-[var(--bg-surface)] border border-[var(--border-base)] rounded-xl w-full max-w-lg shadow-modal animate-slide-up">
+      <div className="modal-box max-w-lg">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-base)]">
+        <div className="modal-header">
           <div>
             <h2 className="section-title">Random câu hỏi theo tag</h2>
             <p className="text-xs text-[var(--text-3)] mt-0.5">Hệ thống tự chọn ngẫu nhiên từ ngân hàng câu hỏi</p>

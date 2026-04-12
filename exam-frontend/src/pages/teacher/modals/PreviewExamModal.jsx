@@ -52,7 +52,7 @@ export default function PreviewExamModal({ exam, onClose }) {
       <div className="rounded-2xl shadow-2xl w-full max-w-3xl max-h-[92vh] flex flex-col" style={{ background:"var(--bg-surface,#18181b)", border:"1px solid var(--border-strong,#3f3f46)" }}>
 
         {/* HEADER */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-base)]">
+        <div className="modal-header">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-xs px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-500 border border-sky-500/30 font-medium">
@@ -193,7 +193,7 @@ export default function PreviewExamModal({ exam, onClose }) {
                         }
                         className={`w-full text-left flex items-center gap-3 px-4 py-3 rounded-xl border ${
                           selected
-                            ? 'border-accent bg-accent/10'
+                            ? 'border-[var(--accent)] bg-[var(--accent-subtle)] shadow-sm'
                             : 'border-[var(--border-base)]'
                         }`}
                       >

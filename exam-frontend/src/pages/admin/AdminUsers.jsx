@@ -67,7 +67,7 @@ function TabImportAdmin({ onClose, onImported }) {
         <p className="text-xs text-[var(--text-3)] mt-2 opacity-70">* bắt buộc · B,C để trống = tự sinh · E để trống = STUDENT</p>
       </div>
       <div onDragOver={e=>{e.preventDefault();setDragging(true)}} onDragLeave={()=>setDragging(false)} onDrop={e=>{e.preventDefault();setDragging(false);handleFile(e.dataTransfer.files[0])}} onClick={()=>inputRef.current?.click()}
-        className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${dragging?'border-accent bg-accent/10':'border-[var(--border-strong)] hover:border-accent/50 hover:bg-[var(--bg-elevated)]/30'}`}>
+        className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${dragging?'border-[var(--accent)] bg-[var(--accent-subtle)] shadow-sm':'border-[var(--border-strong)] hover:border-accent/50 hover:bg-[var(--bg-elevated)]/30'}`}>
         <input ref={inputRef} type="file" accept=".xlsx" className="hidden" onChange={e=>handleFile(e.target.files[0])}/>
         
         {file?<><p className="text-[var(--text-1)] font-medium text-sm">{file.name}</p><p className="text-[var(--text-3)] text-xs mt-1">{(file.size/1024).toFixed(1)} KB</p></>:<><p className="text-[var(--text-2)] text-sm">Kéo thả hoặc click để chọn</p><p className="text-[var(--text-3)] text-xs mt-1">chỉ .xlsx</p></>}
@@ -112,7 +112,7 @@ function CreateUserModal({ onClose, onCreated }) {
   const isTeacher = form.role === 'TEACHER'
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div className="modal-overlay">
       <div className="bg-[var(--bg-surface)] border border-[var(--border-base)] rounded-2xl w-full max-w-lg shadow-xl max-h-[90vh] flex flex-col">
 
         {/* Header */}

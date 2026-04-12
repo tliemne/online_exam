@@ -39,7 +39,7 @@ function TabCreate({ courseId, onClose, onCreated }) {
   }
 
   if (result) return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="text-center"><div className="text-4xl mb-2"></div><p className="text-[var(--text-1)] font-semibold">Tạo tài khoản thành công!</p>
         {result.enrolledCourseId && <p className="text-xs text-success mt-1">Đã gắn vào lớp học</p>}
         {result.email && !result.email.endsWith('@school.edu.vn')
@@ -62,7 +62,7 @@ function TabCreate({ courseId, onClose, onCreated }) {
   )
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div><label className="block text-sm text-[var(--text-2)] mb-1.5">Họ và tên <span className="text-danger">*</span></label><input value={form.fullName} onChange={e=>set('fullName',e.target.value)} onBlur={suggestUsername} className="input-field" placeholder="Nguyễn Văn A" autoFocus/></div>
       <div><label className="block text-sm text-[var(--text-2)] mb-1.5">Username <span className="text-danger">*</span></label>
         <div className="flex gap-2"><input value={form.username} onChange={e=>set('username',e.target.value)} className="input-field flex-1 font-mono" placeholder="vd: nguyenvana01"/><button type="button" onClick={suggestUsername} className="btn-ghost px-3 text-xs text-[var(--text-3)] border border-[var(--border-base)] rounded-lg hover:text-accent" title="Gợi ý">◎</button></div>
@@ -104,7 +104,7 @@ function TabImport({ courseId, onClose, onImported }) {
   }
 
   if (result) return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="text-center"><div className="text-4xl mb-2">{result.errorCount===0?'':''}</div><p className="text-[var(--text-1)] font-semibold">Import hoàn tất</p></div>
       <div className="grid grid-cols-3 gap-3">
         {[{label:'Thành công',value:result.successCount,color:'text-success'},{label:'Lỗi',value:result.errorCount,color:'text-danger'},{label:'Gửi email',value:result.emailSentCount,color:'text-accent'}].map(s=>(
@@ -118,7 +118,7 @@ function TabImport({ courseId, onClose, onImported }) {
   )
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div className="flex items-center justify-between bg-[var(--bg-elevated)] rounded-xl px-4 py-3">
         <div><p className="text-sm font-medium text-[var(--text-1)]">File mẫu Excel</p><p className="text-xs text-[var(--text-3)]">Tải về và điền theo đúng format</p></div>
         <a href="/template_import_sinhvien.xlsx" download className="btn-ghost text-xs px-3 py-1.5 text-accent border border-accent/30 rounded-lg hover:bg-accent/10">Tải mẫu</a>
@@ -133,7 +133,7 @@ function TabImport({ courseId, onClose, onImported }) {
         <p className="text-xs text-[var(--text-3)] mt-2 opacity-70">* bắt buộc · B,C để trống = tự sinh · D dùng gửi email</p>
       </div>
       <div onDragOver={e=>{e.preventDefault();setDragging(true)}} onDragLeave={()=>setDragging(false)} onDrop={e=>{e.preventDefault();setDragging(false);handleFile(e.dataTransfer.files[0])}} onClick={()=>inputRef.current?.click()}
-        className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${dragging?'border-accent bg-accent/10':'border-[var(--border-strong)] hover:border-accent/50 hover:bg-[var(--bg-elevated)]/30'}`}>
+        className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${dragging?'border-[var(--accent)] bg-[var(--accent-subtle)] shadow-sm':'border-[var(--border-strong)] hover:border-accent/50 hover:bg-[var(--bg-elevated)]/30'}`}>
         <input ref={inputRef} type="file" accept=".xlsx" className="hidden" onChange={e=>handleFile(e.target.files[0])}/>
         
         {file ? <><p className="text-[var(--text-1)] font-medium text-sm">{file.name}</p><p className="text-[var(--text-3)] text-xs mt-1">{(file.size/1024).toFixed(1)} KB</p></> : <><p className="text-[var(--text-2)] text-sm">Kéo thả hoặc click để chọn</p><p className="text-[var(--text-3)] text-xs mt-1">chỉ hỗ trợ .xlsx</p></>}

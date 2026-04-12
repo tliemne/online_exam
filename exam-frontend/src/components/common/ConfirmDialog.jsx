@@ -1,3 +1,4 @@
+// @refresh reset
 import { useEffect, useRef } from 'react'
 
 /**
@@ -77,42 +78,48 @@ function ConfirmDialog({ title, message, danger, confirmLabel, onConfirm, onCanc
   return (
     <div
       className="fixed inset-0 z-[9998] flex items-center justify-center p-4"
-      style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
+      style={{ background: 'rgba(11,20,55,0.75)', backdropFilter: 'blur(8px)' }}
       onClick={(e) => { if (e.target === e.currentTarget) onCancel() }}
     >
       <div
-        className="rounded-xl shadow-2xl w-full max-w-sm"
-        style={{ background: 'var(--bg-surface, #1e1e2e)', border: '1px solid var(--border-base, #333)' }}
+        className="w-full max-w-sm animate-scale-in"
+        style={{
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border-base)',
+          borderRadius: '24px',
+          boxShadow: 'var(--shadow-modal)',
+        }}
       >
         {/* Header */}
-        <div className="flex items-start gap-4 p-6 pb-4">
-          <div className="shrink-0 w-10 h-10 rounded-full flex items-center justify-center"
+        <div className="flex items-start gap-4 px-7 pt-7 pb-4">
+          <div className="shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center"
             style={{ background: `${iconColor}18`, color: iconColor }}>
             {icon}
           </div>
-          <div className="flex-1 pt-0.5">
-            <h3 className="font-semibold text-[var(--text-1)]" style={{ fontSize: 16 }}>{title}</h3>
+          <div className="flex-1 pt-1">
+            <h3 className="font-bold" style={{ fontSize: 16, color: 'var(--text-1)' }}>{title}</h3>
             {message && (
-              <p className="mt-1.5 text-sm" style={{ color: 'var(--text-3, #6b7280)' }}>{message}</p>
+              <p className="mt-1.5 text-sm leading-relaxed" style={{ color: 'var(--text-3)' }}>{message}</p>
             )}
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex gap-2.5 px-6 pb-5">
+        <div className="flex gap-3 px-7 pb-7 pt-2">
           <button
             onClick={onConfirm}
-            className="flex-1 py-2 px-4 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-90"
-            style={{ background: danger ? '#ef4444' : '#f59e0b' }}
+            className="flex-1 py-2.5 px-4 text-sm font-bold text-white transition-all hover:opacity-90 hover:-translate-y-0.5"
+            style={{ background: danger ? 'var(--danger)' : 'var(--warning)', borderRadius: '14px' }}
           >
             {confirmLabel || (danger ? 'Xóa' : 'Xác nhận')}
           </button>
           <button
             ref={btnRef}
             onClick={onCancel}
-            className="flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-colors"
+            className="flex-1 py-2.5 px-4 text-sm font-bold transition-all hover:opacity-80"
             style={{
-              background: 'var(--bg-elevated, #27272a)',
+              background: 'var(--bg-elevated)',
+              borderRadius: '14px',
               color: 'var(--text-2, #a1a1aa)',
               border: '1px solid var(--border-base, #333)'
             }}

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import api from '../../api/client'
+import ReactApexChart from 'react-apexcharts'
 
 const Icon = {
   users:    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/></svg>,
@@ -49,7 +50,7 @@ export default function AdminDashboard() {
       {/* Header */}
       <div>
         <h1 className="page-title">Tổng quan hệ thống</h1>
-        <p className="text-sm mt-1" style={{ color: 'var(--text-3)' }}>
+        <p className="page-subtitle">
           Xin chào, <span style={{ color: 'var(--text-2)' }}>{user?.fullName || user?.username}</span>
         </p>
       </div>
@@ -73,10 +74,15 @@ export default function AdminDashboard() {
             ))
           : statCards.map(s => {
               const content = (
-                <div className="card p-4 hover:border-[var(--border-strong)] transition-colors">
-                  <div className="mb-3" style={{ color: s.clr }}>{s.icon}</div>
-                  <div className="font-display font-semibold text-2xl" style={{ color: 'var(--text-1)' }}>{s.value}</div>
-                  <div className="text-xs mt-1" style={{ color: 'var(--text-3)' }}>{s.label}</div>
+                <div className="card p-5 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
+                      style={{ background: s.clr + '18' }}>
+                      <span style={{ color: s.clr }}>{s.icon}</span>
+                    </div>
+                  </div>
+                  <div className="font-bold text-2xl" style={{ color: 'var(--text-1)' }}>{s.value}</div>
+                  <div className="text-sm mt-1" style={{ color: 'var(--text-3)' }}>{s.label}</div>
                 </div>
               )
               return s.to
@@ -113,6 +119,54 @@ export default function AdminDashboard() {
                 {stats.passRate}%
                 <span className="text-sm font-normal ml-1.5" style={{ color: 'var(--text-3)' }}>trên {stats.totalAttempts} lượt</span>
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Charts */}
+      {stats && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="card lg:col-span-2">
+            <p className="font-bold mb-0.5" style={{ color: 'var(--text-1)' }}>Thống kê hệ thống</p>
+            <p className="text-xs mb-4" style={{ color: 'var(--text-3)' }}>Tổng quan toàn bộ</p>
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { label: 'Điểm TB',     value: stats.avgScore?.toFixed(1) ?? '—', color: 'var(--accent)',  bg: 'var(--accent-subtle)'  },
+                { label: 'Tỉ lệ đạt',  value: `${stats.passRate ?? 0}%`,          color: 'var(--success)', bg: 'var(--success-subtle)' },
+                { label: 'Đề thi',      value: stats.totalExams ?? 0,              color: 'var(--purple)',  bg: 'var(--purple-subtle)'  },
+              ].map(s => (
+                <div key={s.label} className="rounded-2xl p-4 text-center" style={{ background: s.bg }}>
+                  <p className="font-bold text-2xl" style={{ color: s.color }}>{s.value}</p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-3)' }}>{s.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="card flex flex-col items-center justify-center">
+            <p className="font-bold mb-0.5 self-start" style={{ color: 'var(--text-1)' }}>Người dùng</p>
+            <p className="text-xs mb-3 self-start" style={{ color: 'var(--text-3)' }}>Phân bổ vai trò</p>
+            <ReactApexChart type="donut" height={160} width={160}
+              series={[stats.totalStudents ?? 0, stats.totalTeachers ?? 0]}
+              options={{
+                chart: { background: 'transparent' },
+                theme: { mode: document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark' },
+                labels: ['Sinh viên', 'Giảng viên'],
+                colors: ['#7551FF', '#01B574'],
+                legend: { show: false },
+                dataLabels: { enabled: false },
+                stroke: { width: 0 },
+                plotOptions: { pie: { donut: { size: '68%' } } },
+                tooltip: { theme: 'dark' },
+              }}
+            />
+            <div className="flex gap-5 mt-3">
+              {[['#7551FF','SV',stats.totalStudents??0],['#01B574','GV',stats.totalTeachers??0]].map(([c,l,v])=>(
+                <div key={l} className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full" style={{background:c}}/>
+                  <span className="text-xs" style={{color:'var(--text-3)'}}>{l}: {v}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>

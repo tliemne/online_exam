@@ -226,8 +226,15 @@ public class AttemptServiceImpl implements AttemptService {
                     exam.getCreatedBy(), exam.getTitle(), student.getFullName());
         }
 
-        // Cập nhật QuestionStat async — không block response
-        questionStatService.updateStats(savedAnswers);
+        // Cập nhật QuestionStat async — extract data NGAY ĐÂY (session còn mở)
+        Map<Long, Boolean> statMap = savedAnswers.stream()
+                .filter(aa -> aa.getQuestion() != null && aa.getIsCorrect() != null)
+                .collect(java.util.stream.Collectors.toMap(
+                        aa -> aa.getQuestion().getId(),
+                        AttemptAnswer::getIsCorrect,
+                        (a, b) -> a
+                ));
+        questionStatService.updateStatsById(statMap);
 
         return toResponse(attempt, false);
     }
@@ -389,7 +396,13 @@ public class AttemptServiceImpl implements AttemptService {
 
     // ── Helpers ────────────────────────────────────────────────────────────
     private void checkExamOwnership(Exam exam, User caller) {
-        if (exam.getCreatedBy() == null || !exam.getCreatedBy().getId().equals(caller.getId()))
+        // Cho phép: người tạo đề HOẶC giáo viên phụ trách lớp chứa đề
+        boolean isCreator = exam.getCreatedBy() != null
+                && exam.getCreatedBy().getId().equals(caller.getId());
+        boolean isCourseTeacher = exam.getCourse() != null
+                && exam.getCourse().getTeacher() != null
+                && exam.getCourse().getTeacher().getId().equals(caller.getId());
+        if (!isCreator && !isCourseTeacher)
             throw new AppException(ErrorCode.FORBIDDEN);
     }
 

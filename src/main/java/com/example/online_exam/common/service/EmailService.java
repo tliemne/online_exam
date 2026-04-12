@@ -25,6 +25,9 @@ public class EmailService {
     @Value("${app.mail.from-name:ExamPortal}")
     private String fromName;
 
+    @Value("${app.base-url:http://localhost:3000}")
+    private String baseUrl;
+
     private static final DateTimeFormatter DT = DateTimeFormatter.ofPattern("HH:mm dd/MM/yyyy");
 
     // ─────────────────────────────────────────────────────
@@ -145,17 +148,17 @@ public class EmailService {
                 </div>
             </div>
             <div style="text-align:center;margin-bottom:24px">
-                <a href="http://localhost:3000/login"
+                <a href="%s/login"
                    style="background:#4f46e5;color:#fff;text-decoration:none;
                           padding:13px 28px;border-radius:8px;font-weight:bold;font-size:14px">
                    Đăng nhập hệ thống →</a>
             </div>
             <div style="background:#fff7ed;border:1px solid #fed7aa;padding:13px;border-radius:8px">
                 <p style="margin:0;font-size:13px;color:#9a3412">
-                    ⚠️ Hãy đổi mật khẩu sau khi đăng nhập lần đầu để đảm bảo bảo mật.
+                    Hãy đổi mật khẩu sau khi đăng nhập lần đầu để đảm bảo bảo mật.
                 </p>
             </div>
-        """.formatted(name, courseInfo, username, password) + footer();
+        """.formatted(baseUrl, name, courseInfo, username, password) + footer();
     }
 
     // ── Template 2: Password Reset ────────────────────────
@@ -172,17 +175,17 @@ public class EmailService {
                             color:#dc2626;letter-spacing:3px">%s</div>
             </div>
             <div style="text-align:center;margin-bottom:20px">
-                <a href="http://localhost:3000/login"
+                <a href="%s/login"
                    style="background:#dc2626;color:#fff;text-decoration:none;
                           padding:13px 28px;border-radius:8px;font-weight:bold;font-size:14px">
                    Đăng nhập ngay →</a>
             </div>
             <div style="background:#fff7ed;border:1px solid #fed7aa;padding:13px;border-radius:8px">
                 <p style="margin:0;font-size:13px;color:#9a3412">
-                    ⚠️ Hãy đổi mật khẩu ngay sau khi đăng nhập để đảm bảo an toàn.
+                    Hãy đổi mật khẩu ngay sau khi đăng nhập để đảm bảo an toàn.
                 </p>
             </div>
-        """.formatted(name, newPassword) + footer();
+        """.formatted(baseUrl, name, newPassword) + footer();
     }
 
     // ── Template 3: Exam Published ────────────────────────
@@ -205,7 +208,7 @@ public class EmailService {
                 <p style="margin:0 0 4px;font-size:12px;color:#0369a1;text-transform:uppercase;
                           letter-spacing:0.5px;font-weight:600">Bài thi</p>
                 <p style="margin:0 0 12px;font-size:17px;font-weight:bold;color:#0c4a6e">%s</p>
-                <p style="margin:0;font-size:13px;color:#0369a1">🏫 Lớp: <b>%s</b></p>
+                <p style="margin:0;font-size:13px;color:#0369a1">Lớp: <b>%s</b></p>
             </div>
 
             <!-- Time grid -->
@@ -213,31 +216,31 @@ public class EmailService {
                 <tr>
                     <td width="32%%" style="background:#f8fafc;border:1px solid #e5e7eb;
                         border-radius:8px;padding:14px;text-align:center">
-                        <div style="font-size:11px;color:#6b7280;margin-bottom:5px">⏰ Bắt đầu</div>
+                        <div style="font-size:11px;color:#6b7280;margin-bottom:5px">Bắt đầu</div>
                         <div style="font-size:13px;font-weight:bold;color:#111">%s</div>
                     </td>
                     <td width="4%%"></td>
                     <td width="32%%" style="background:#f8fafc;border:1px solid #e5e7eb;
                         border-radius:8px;padding:14px;text-align:center">
-                        <div style="font-size:11px;color:#6b7280;margin-bottom:5px">🔚 Kết thúc</div>
+                        <div style="font-size:11px;color:#6b7280;margin-bottom:5px">Kết thúc</div>
                         <div style="font-size:13px;font-weight:bold;color:#111">%s</div>
                     </td>
                     <td width="4%%"></td>
                     <td width="28%%" style="background:#f8fafc;border:1px solid #e5e7eb;
                         border-radius:8px;padding:14px;text-align:center">
-                        <div style="font-size:11px;color:#6b7280;margin-bottom:5px">⏱ Thời gian</div>
+                        <div style="font-size:11px;color:#6b7280;margin-bottom:5px">Thời gian</div>
                         <div style="font-size:13px;font-weight:bold;color:#111">%s</div>
                     </td>
                 </tr>
             </table>
 
             <div style="text-align:center;margin-bottom:20px">
-                <a href="http://localhost:3000/student/exams"
+                <a href="%s/student/exams"
                    style="background:#0891b2;color:#fff;text-decoration:none;
                           padding:13px 28px;border-radius:8px;font-weight:bold;font-size:14px">
                    Vào thi ngay →</a>
             </div>
-        """.formatted(name, examTitle, courseName, startStr, endStr, duration) + footer();
+        """.formatted(baseUrl, name, examTitle, courseName, startStr, endStr, duration) + footer();
     }
 
     // ── Template 4: Grade Result ──────────────────────────
@@ -250,7 +253,7 @@ public class EmailService {
         String scoreStr     = score     != null ? score.toString()     : "—";
         String totalStr     = totalScore != null ? totalScore.toString() : "10";
         String courseRow    = courseName != null
-                ? "<p style='margin:4px 0 0;font-size:13px;color:#6b7280'>🏫 " + courseName + "</p>" : "";
+                ? "<p style='margin:4px 0 0;font-size:13px;color:#6b7280'>" + courseName + "</p>" : "";
         String headerColor  = Boolean.TRUE.equals(passed) ? "#16a34a" : "#dc2626";
 
         return header(headerColor, "Kết quả bài thi", "Kết quả đã có") + """
@@ -282,13 +285,22 @@ public class EmailService {
                 </tr>
             </table>
             <div style="text-align:center;margin-bottom:20px">
-                <a href="http://localhost:3000/student/results"
+                <a href="%s/student/results"
                    style="background:#4f6ef7;color:#fff;text-decoration:none;
                           padding:13px 28px;border-radius:8px;font-weight:bold;font-size:14px">
                    Xem chi tiết bài làm →</a>
             </div>
-        """.formatted(name, examTitle, courseRow,
-                scoreStr, totalStr,
-                passedBg, passedBorder, passedColor, passedText) + footer();
+        """.formatted(
+                name,
+                examTitle,
+                courseRow,
+                scoreStr,
+                totalStr,
+                passedBg,
+                passedBorder,
+                passedColor,
+                passedText,
+                baseUrl
+        ) + footer();
     }
 }

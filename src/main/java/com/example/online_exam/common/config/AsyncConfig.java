@@ -40,4 +40,21 @@ public class AsyncConfig {
         executor.initialize();
         return executor;
     }
+
+    /**
+     * Thread pool riêng cho QuestionStat update.
+     * Tách khỏi emailExecutor để không tranh nhau thread.
+     */
+    @Bean(name = "statExecutor")
+    public Executor statExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(2);
+        executor.setMaxPoolSize(4);
+        executor.setQueueCapacity(200);
+        executor.setThreadNamePrefix("stat-");
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(15);
+        executor.initialize();
+        return executor;
+    }
 }

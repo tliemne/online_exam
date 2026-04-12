@@ -63,7 +63,7 @@ function AddStudentModal({ courseId, currentStudents, onClose, onAdded }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div className="modal-overlay">
       <div className="bg-[var(--bg-surface)] border border-[var(--border-base)] rounded-2xl w-full max-w-lg shadow-xl flex flex-col max-h-[85vh]">
 
         {/* Header */}
@@ -192,7 +192,7 @@ function AddLectureModal({ onClose, onSaved, lecture }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+    <div className="modal-overlay">
       <div className="bg-[var(--bg-surface)] border border-[var(--border-base)] rounded-2xl w-full max-w-xl shadow-xl max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-base)] shrink-0">
           <h2 className="section-title">{lecture ? 'Sửa bài giảng' : 'Thêm bài giảng'}</h2>
@@ -291,7 +291,7 @@ function TabStudents({ course, isTeacher, isAdmin, onRefresh }) {
   return (
     <>
     {ConfirmDialogUI}
-    <div className="space-y-4">
+    <div className="space-y-5">
       {showCreateStudent && (
         <CreateStudentModal
           courseId={course.id}
@@ -471,7 +471,7 @@ function TabLectures({ course, isTeacher }) {
   return (
     <>
     {ConfirmDialogUI}
-    <div className="space-y-4">
+    <div className="space-y-5">
       {(showAdd || editing) && (
         <AddLectureModal
           lecture={editing}
@@ -497,7 +497,7 @@ function TabLectures({ course, isTeacher }) {
           )}
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {sorted.map((l, idx) => {
             const embedUrl = getEmbedUrl(l.videoUrl)
             const isPlaying = playing === l.id
@@ -639,7 +639,7 @@ function TabAnnouncements({ course, isTeacher }) {
   return (
     <>
       {ConfirmDialogUI}
-      <div className="space-y-4">
+      <div className="space-y-5">
         {/* Toolbar teacher */}
         {isTeacher && !showForm && (
           <div className="flex justify-end">

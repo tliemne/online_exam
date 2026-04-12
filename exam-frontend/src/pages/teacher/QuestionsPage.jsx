@@ -283,7 +283,7 @@ export default function QuestionsPage() {
           )}
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-5">
           {questions.map((q, index) => (
             <QuestionCard
               key={q.id}
@@ -348,7 +348,7 @@ function AiGenerateModal({ courses, defaultCourseId, tags = [], onClose, onSaved
 
   const handleGenerate = async () => {
     if (!form.topic.trim()) return setError('Nhập chủ đề trước')
-    setLoading(true); setError(''); setGenerated([])
+    setLoading(true); setError(''); setGenerated([]); setSaved(new Set()); setSaving(new Set())
     try {
       let list = []
       if (form.difficulty === 'ALL') {
@@ -375,6 +375,7 @@ function AiGenerateModal({ courses, defaultCourseId, tags = [], onClose, onSaved
         list = r.data.data || []
       }
       if (!list.length) setError('AI không tạo được câu hỏi. Thử lại.')
+      else if (list.length < form.count) setError(`AI chỉ tạo được ${list.length}/${form.count} câu. Có thể do giới hạn token. Bạn có thể lưu số câu hiện có.`)
       setGenerated(list)
     } catch (e) { setError(e?.response?.data?.message?.includes('Quota') || e?.response?.status === 429 ? 'Quota AI hết cho hôm nay. Đổi API key hoặc thử lại ngày mai.' : 'Lỗi kết nối AI. Thử lại.') }
     finally { setLoading(false) }
@@ -593,9 +594,9 @@ function AiGenerateModal({ courses, defaultCourseId, tags = [], onClose, onSaved
                   ↓ Xuất Excel
                 </button>
                 <button onClick={handleSaveAll}
-                  disabled={saved.size === generated.length}
+                  disabled={saved.size >= generated.length}
                   className="btn-secondary text-xs py-1.5 px-3">
-                  {saved.size === generated.length ? '✓ Đã lưu tất cả' : `Lưu tất cả (${generated.length - saved.size} câu)`}
+                  {saved.size >= generated.length ? '✓ Đã lưu tất cả' : `Lưu tất cả (${Math.max(0, generated.length - saved.size)} câu)`}
                 </button>
               </div>
               </div>

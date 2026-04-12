@@ -65,7 +65,7 @@ export default function ImportStudentModal({ courseId, courseName, onClose, onIm
         <div className="p-6 space-y-4">
           {result ? (
             /* ── Kết quả ── */
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div className="text-center">
                 <div className="text-4xl mb-2">{result.errorCount === 0 ? '✅' : '⚠️'}</div>
                 <p className="text-[var(--text-1)] font-semibold">Import hoàn tất</p>
@@ -144,7 +144,7 @@ export default function ImportStudentModal({ courseId, courseName, onClose, onIm
                 onDrop={handleDrop}
                 onClick={() => inputRef.current?.click()}
                 className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all ${
-                  dragging ? 'border-accent bg-accent/10' : 'border-[var(--border-strong)] hover:border-accent/50 hover:bg-[var(--bg-elevated)]/30'
+                  dragging ? 'border-[var(--accent)] bg-[var(--accent-subtle)] shadow-sm' : 'border-[var(--border-strong)] hover:border-accent/50 hover:bg-[var(--bg-elevated)]/30'
                 }`}>
                 <input ref={inputRef} type="file" accept=".xlsx" className="hidden"
                   onChange={e => handleFile(e.target.files[0])} />

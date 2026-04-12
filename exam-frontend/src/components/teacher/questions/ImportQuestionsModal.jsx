@@ -60,7 +60,7 @@ export default function ImportQuestionsModal({ courseId, onClose, onImported }) 
   }
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div className="modal-overlay">
       <div className="bg-[var(--bg-surface)] border border-[var(--border-base)] rounded-2xl w-full max-w-2xl shadow-md max-h-[90vh] flex flex-col">
 
         {/* Header */}
@@ -171,7 +171,7 @@ export default function ImportQuestionsModal({ courseId, onClose, onImported }) 
 
           {/* Result */}
           {result && (
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div className="grid grid-cols-3 gap-3">
                 <div className="bg-[var(--bg-elevated)] border border-[var(--border-base)] rounded-xl p-4 text-center">
                   <div className="text-2xl font-bold font-mono">{result.totalRows}</div>
