@@ -24,12 +24,26 @@ public class Course extends BaseEntity {
 
     private String description;
 
-    // giáo viên phụ trách
-    @ManyToOne
+    // Người tạo lớp (admin hoặc teacher)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by")
+    private User createdBy;
+
+    // Giáo viên chính (giữ lại để backward compatible)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "teacher_id")
     private User teacher;
 
-    // danh sách học sinh
+    // Danh sách giáo viên quản lý lớp (có thể nhiều người)
+    @ManyToMany
+    @JoinTable(
+            name = "course_teachers",
+            joinColumns = @JoinColumn(name = "course_id"),
+            inverseJoinColumns = @JoinColumn(name = "teacher_id")
+    )
+    private Set<User> teachers = new HashSet<>();
+
+    // Danh sách học sinh
     @ManyToMany
     @JoinTable(
             name = "course_students",

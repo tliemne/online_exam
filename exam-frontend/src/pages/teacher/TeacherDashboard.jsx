@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useTranslation } from 'react-i18next'
 import api from '../../api/client'
 import ReactApexChart from 'react-apexcharts'
 
@@ -73,19 +74,19 @@ const barOpts = (cats) => ({
   colors: ['#422AFB'], fill: { type: 'gradient', gradient: { type: 'vertical', opacityFrom: 1, opacityTo: 0.75 } },
 })
 
-const donutOpts = (pct) => {
+const donutOpts = (pct, t) => {
   const clr = pct >= 70 ? '#01B574' : pct >= 50 ? '#FFB547' : '#EE5D50'
   const dark = getTheme() === 'dark'
   return {
     chart: { background: 'transparent', fontFamily: 'DM Sans, sans-serif' },
     theme: { mode: getTheme() },
     colors: [clr, dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'],
-    labels: ['Đạt', 'Chưa đạt'],
+    labels: [t('stats.passed'), t('stats.failed')],
     plotOptions: { pie: { donut: { size: '72%', labels: {
       show: true,
       name: { show: true, fontSize: '12px', color: LC, offsetY: -4 },
       value: { show: true, fontSize: '24px', fontWeight: 700, color: clr, offsetY: 4, formatter: v => `${Math.round(+v)}%` },
-      total: { show: true, label: 'Tỉ lệ đạt', fontSize: '12px', color: LC, formatter: () => `${Math.round(pct)}%` },
+      total: { show: true, label: t('stats.passRate'), fontSize: '12px', color: LC, formatter: () => `${Math.round(pct)}%` },
     }}}},
     legend: { show: false }, dataLabels: { enabled: false }, stroke: { width: 0 },
     tooltip: { theme: getTheme(), style: { fontSize: '13px' } },
@@ -94,6 +95,7 @@ const donutOpts = (pct) => {
 
 export default function TeacherDashboard() {
   const { user }              = useAuth()
+  const { t }                 = useTranslation()
   const navigate              = useNavigate()
   const [stats, setStats]     = useState(null)
   const [loading, setLoading] = useState(true)
@@ -101,29 +103,41 @@ export default function TeacherDashboard() {
 
   useEffect(() => {
     api.get('/dashboard/teacher')
-      .then(r => setStats(r.data.data))
-      .catch(e => setError(e?.response?.data?.message || 'Không tải được dữ liệu'))
+      .then(r => {
+        console.log('[Dashboard] Response:', r.data.data)
+        console.log('[Dashboard] courseStats:', r.data.data?.courseStats)
+        setStats(r.data.data)
+      })
+      .catch(e => setError(e?.response?.data?.message || t('messages.loadingFailed')))
       .finally(() => setLoading(false))
-  }, [])
+  }, [t])
 
   const courseNames   = stats?.courseStats?.map(c => c.courseName || '') ?? []
   const attemptCounts = stats?.courseStats?.map(c => c.attemptCount ?? 0) ?? []
   const studentCounts = stats?.courseStats?.map(c => c.studentCount ?? 0) ?? []
   const passRate      = stats?.passRate ?? 0
 
+  // Fallback: nếu courseStats trống, hiển thị thông báo
+  const hasCourseStats = courseNames.length > 0 && attemptCounts.some(c => c > 0)
+  
+  // Thống kê trạng thái bài thi
+  const gradedCount = stats?.totalAttempts ? Math.round(stats.totalAttempts * (stats.passRate / 100)) : 0
+  const pendingCount = stats?.pendingGrading ?? 0
+  const submittedCount = (stats?.totalAttempts ?? 0) - gradedCount
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
 
       <div className="flex items-end justify-between">
         <div>
-          <h1 className="page-title">Tổng quan</h1>
-          <p className="page-subtitle">Xin chào, <span className="font-bold" style={{ color: 'var(--text-2)' }}>{user?.fullName || user?.username}</span></p>
+          <h1 className="page-title">{t('nav.dashboard')}</h1>
+          <p className="page-subtitle">{t('common.hello')}, <span className="font-bold" style={{ color: 'var(--text-2)' }}>{user?.fullName || user?.username}</span></p>
         </div>
         {!loading && (stats?.pendingGrading ?? 0) > 0 && (
           <button onClick={() => navigate('/teacher/grading')}
             className="flex items-center gap-2 px-4 py-2.5 text-sm font-bold rounded-2xl transition-all hover:-translate-y-0.5"
             style={{ background: 'var(--warning-subtle)', color: 'var(--warning)', border: '1px solid var(--warning-border)' }}>
-            <IcoWarn/>{stats.pendingGrading} bài chờ chấm
+            <IcoWarn/>{stats.pendingGrading} {t('stats.pendingGrading').toLowerCase()}
           </button>
         )}
       </div>
@@ -133,29 +147,51 @@ export default function TeacherDashboard() {
       {/* Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label:'Lớp của tôi',  value:stats?.myCourses,     icon:<IcoCourses/>,   color:'var(--accent)'  },
-          { label:'Đề thi',       value:stats?.myExams,        icon:<IcoExams/>,     color:'var(--purple)',  sub:`${stats?.publishedExams??0} đang mở` },
-          { label:'Lượt thi',     value:stats?.totalAttempts,  icon:<IcoAttempts/>,  color:'var(--cyan)',    sub:stats?.avgScore!=null?`TB ${stats.avgScore.toFixed(1)} điểm`:null },
-          { label:'Chờ chấm',     value:stats?.pendingGrading, icon:<IcoPending/>,   color:'var(--warning)', sub:'câu tự luận', warn:true },
+          { label:t('stats.myCourses'),  value:stats?.myCourses,     icon:<IcoCourses/>,   color:'var(--accent)'  },
+          { label:t('stats.myExams'),       value:stats?.myExams,        icon:<IcoExams/>,     color:'var(--purple)',  sub:`${stats?.publishedExams??0} ${t('stats.open')}` },
+          { label:t('stats.attempts'),     value:stats?.totalAttempts,  icon:<IcoAttempts/>,  color:'var(--cyan)',    sub:stats?.avgScore!=null?`${t('stats.averageScore')} ${stats.avgScore.toFixed(1)}`:null },
+          { label:t('stats.pendingGrading'),     value:stats?.pendingGrading, icon:<IcoPending/>,   color:'var(--warning)', sub:t('stats.essayQuestions'), warn:true },
         ].map(s => <StatCard key={s.label} {...s} loading={loading}/>)}
       </div>
 
       {/* Charts row 1 */}
-      {!loading && courseNames.length > 0 && (
+      {!loading && courseNames.length > 0 && attemptCounts.some(c => c > 0) && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="card lg:col-span-2">
-            <p className="font-bold" style={{ color:'var(--text-1)' }}>Lượt thi theo lớp</p>
-            <p className="text-xs mt-0.5 mb-4" style={{ color:'var(--text-3)' }}>Số lần sinh viên làm bài</p>
-            <ReactApexChart type="area" height={180} series={[{name:'Lượt thi',data:attemptCounts}]} options={areaOpts(courseNames)}/>
+            <p className="font-bold" style={{ color:'var(--text-1)' }}>{t('stats.attemptsByCourse')}</p>
+            <p className="text-xs mt-0.5 mb-4" style={{ color:'var(--text-3)' }}>{t('stats.studentAttempts')}</p>
+            <ReactApexChart 
+              type="area" 
+              height={180} 
+              series={[{name:t('stats.attempts'),data:attemptCounts}]} 
+              options={{
+                ...areaOpts(courseNames),
+                tooltip: {
+                  enabled: true,
+                  theme: 'light',
+                  x: {
+                    show: true,
+                    formatter: function(value, { series, seriesIndex, dataPointIndex, w }) {
+                      return courseNames[dataPointIndex] || value
+                    }
+                  },
+                  y: {
+                    formatter: function(value) {
+                      return value + ' ' + t('stats.attempts').toLowerCase()
+                    }
+                  }
+                }
+              }}
+            />
           </div>
           <div className="card flex flex-col">
-            <p className="font-bold" style={{ color:'var(--text-1)' }}>Tỉ lệ đạt</p>
-            <p className="text-xs mt-0.5 mb-2" style={{ color:'var(--text-3)' }}>Tất cả bài thi</p>
+            <p className="font-bold" style={{ color:'var(--text-1)' }}>{t('stats.passRate')}</p>
+            <p className="text-xs mt-0.5 mb-2" style={{ color:'var(--text-3)' }}>{t('stats.graded')}</p>
             <div className="flex-1 flex items-center justify-center">
-              <ReactApexChart type="donut" height={200} width="100%" series={[passRate, 100-passRate]} options={donutOpts(passRate)}/>
+              <ReactApexChart type="donut" height={200} width="100%" series={[passRate, 100-passRate]} options={donutOpts(passRate, t)}/>
             </div>
             <div className="flex justify-center gap-6 mt-2">
-              {[['var(--success)','Đạt',Math.round(passRate)],['var(--danger)','Chưa đạt',Math.round(100-passRate)]].map(([c,l,v])=>(
+              {[['var(--success)',t('stats.passed'),Math.round(passRate)],['var(--danger)',t('stats.failed'),Math.round(100-passRate)]].map(([c,l,v])=>(
                 <div key={l} className="flex items-center gap-1.5">
                   <div className="w-2 h-2 rounded-full shrink-0" style={{background:c}}/>
                   <span className="text-xs" style={{color:'var(--text-2)'}}>{l}: <b>{v}%</b></span>
@@ -166,48 +202,60 @@ export default function TeacherDashboard() {
         </div>
       )}
 
+      {!loading && (courseNames.length === 0 || !attemptCounts.some(c => c > 0)) && (
+        <div className="card text-center py-12">
+          <p style={{ color:'var(--text-3)' }}>{t('stats.noData')}</p>
+        </div>
+      )}
+
       {/* Charts row 2 */}
-      {!loading && courseNames.length > 0 && (
+      {!loading && hasCourseStats && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="card">
-            <p className="font-bold" style={{ color:'var(--text-1)' }}>Sinh viên theo lớp</p>
-            <p className="text-xs mt-0.5 mb-3" style={{ color:'var(--text-3)' }}>Số học sinh đã đăng ký</p>
-            <ReactApexChart type="bar" height={180} series={[{name:'Sinh viên',data:studentCounts}]} options={barOpts(courseNames)}/>
+            <p className="font-bold" style={{ color:'var(--text-1)' }}>{t('stats.studentsByCourse')}</p>
+            <p className="text-xs mt-0.5 mb-3" style={{ color:'var(--text-3)' }}>{t('stats.registeredStudents')}</p>
+            <ReactApexChart type="bar" height={180} series={[{name:t('stats.students'),data:studentCounts}]} options={barOpts(courseNames)}/>
           </div>
           <div className="card-bare overflow-hidden">
             <div className="px-5 py-4" style={{borderBottom:'1px solid var(--border-base)'}}>
-              <p className="font-bold" style={{color:'var(--text-1)'}}>Chi tiết lớp học</p>
+              <p className="font-bold" style={{color:'var(--text-1)'}}>{t('stats.courseDetails')}</p>
             </div>
             <div className="overflow-auto" style={{maxHeight:230}}>
               <table className="w-full text-sm">
                 <thead>
                   <tr>
-                    <th className="th">Lớp</th>
-                    <th className="th text-center">SV</th>
-                    <th className="th text-center">Lượt</th>
-                    <th className="th">Tỉ lệ đạt</th>
+                    <th className="th">{t('course.title')}</th>
+                    <th className="th text-center">{t('stats.students')}</th>
+                    <th className="th text-center">{t('stats.attempts')}</th>
+                    <th className="th">{t('stats.passRate')}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {stats.courseStats.map((c,i) => (
-                    <tr key={i} className="table-row">
-                      <td className="td">
-                        <Link to={`/teacher/courses/${c.courseId}`} className="font-semibold hover:underline" style={{color:'var(--text-1)'}}>{c.courseName}</Link>
-                      </td>
-                      <td className="td text-center font-mono">{c.studentCount??0}</td>
-                      <td className="td text-center font-mono">{c.attemptCount??0}</td>
-                      <td className="td">
-                        {c.passRate!=null ? (
-                          <div className="flex items-center gap-2">
-                            <div className="flex-1 h-1.5 rounded-full" style={{background:'var(--bg-elevated)'}}>
-                              <div className="h-full rounded-full" style={{width:`${c.passRate}%`,background:c.passRate>=70?'var(--success)':c.passRate>=50?'var(--warning)':'var(--danger)'}}/>
+                  {stats?.courseStats && stats.courseStats.length > 0 ? (
+                    stats.courseStats.map((c,i) => (
+                      <tr key={i} className="table-row">
+                        <td className="td">
+                          <Link to={`/teacher/courses/${c.courseId}`} className="font-semibold hover:underline" style={{color:'var(--text-1)'}}>{c.courseName}</Link>
+                        </td>
+                        <td className="td text-center font-mono">{c.studentCount??0}</td>
+                        <td className="td text-center font-mono">{c.attemptCount??0}</td>
+                        <td className="td">
+                          {c.passRate!=null ? (
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 h-1.5 rounded-full" style={{background:'var(--bg-elevated)'}}>
+                                <div className="h-full rounded-full" style={{width:`${c.passRate}%`,background:c.passRate>=70?'var(--success)':c.passRate>=50?'var(--warning)':'var(--danger)'}}/>
+                              </div>
+                              <span className="text-xs font-mono w-9 text-right shrink-0" style={{color:'var(--text-2)'}}>{c.passRate}%</span>
                             </div>
-                            <span className="text-xs font-mono w-9 text-right shrink-0" style={{color:'var(--text-2)'}}>{c.passRate}%</span>
-                          </div>
-                        ) : <span style={{color:'var(--text-3)'}}>—</span>}
-                      </td>
+                          ) : <span style={{color:'var(--text-3)'}}>—</span>}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan="4" className="td text-center" style={{color:'var(--text-3)'}}>{t('stats.noData')}</td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
@@ -218,10 +266,10 @@ export default function TeacherDashboard() {
       {/* Quick links */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          {to:'/teacher/courses',   label:'Quản lý lớp',    icon:<IcoCourses/>,   color:'var(--accent)' },
-          {to:'/teacher/exams',     label:'Quản lý đề thi', icon:<IcoExams/>,     color:'var(--purple)' },
-          {to:'/teacher/grading',   label:'Chấm điểm',      icon:<IcoGrading/>,   color:'var(--success)'},
-          {to:'/teacher/questions', label:'Ngân hàng câu',  icon:<IcoQuestions/>, color:'var(--cyan)'  },
+          {to:'/teacher/courses',   label:t('course.title'),    icon:<IcoCourses/>,   color:'var(--accent)' },
+          {to:'/teacher/exams',     label:t('stats.manageExams'), icon:<IcoExams/>,     color:'var(--purple)' },
+          {to:'/teacher/grading',   label:t('stats.grading'),      icon:<IcoGrading/>,   color:'var(--success)'},
+          {to:'/teacher/questions', label:t('stats.questionBank'),  icon:<IcoQuestions/>, color:'var(--cyan)'  },
         ].map(l=>(
           <Link key={l.to} to={l.to} className="card p-4 flex items-center gap-3 no-underline hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
             <div className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0" style={{background:l.color+'18',color:l.color}}>{l.icon}</div>

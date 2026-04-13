@@ -221,6 +221,17 @@ public class UserController {
                 .build();
     }
 
+    @GetMapping("/teachers")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    public BaseResponse<List<UserResponse>> getAllTeachers() {
+        return BaseResponse.<List<UserResponse>>builder()
+                .status(200)
+                .message("get all teachers success")
+                .data(userService.getAllByRole(RoleName.TEACHER))
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
     // ── Password ──────────────────────────────────────────
 
     // User tự đổi mật khẩu của mình (cần nhập mật khẩu cũ)

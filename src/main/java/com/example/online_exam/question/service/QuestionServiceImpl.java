@@ -334,4 +334,9 @@ public class QuestionServiceImpl implements QuestionService {
 
         return r;
     }
+
+    @Override
+    public void clearCache() {
+        cache.evictAll();
+    }
 }

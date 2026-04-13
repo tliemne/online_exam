@@ -11,6 +11,7 @@ import com.example.online_exam.exception.AppException;
 import com.example.online_exam.exception.ErrorCode;
 import com.example.online_exam.question.entity.Answer;
 import com.example.online_exam.question.entity.Question;
+import com.example.online_exam.question.enums.QuestionType;
 import com.example.online_exam.question.repository.QuestionRepository;
 import com.example.online_exam.question.service.QuestionStatService;
 import com.example.online_exam.notification.service.NotificationService;
@@ -179,9 +180,11 @@ public class AttemptServiceImpl implements AttemptService {
                     aa.setIsCorrect(correct);
                     aa.setScore(correct ? qScore : 0.0);
                     if (correct) totalEarned += qScore;
+                    log.info("[Submit] Q={} answerId={} correct={}", item.getQuestionId(), item.getAnswerId(), correct);
                 } else {
                     aa.setIsCorrect(false);
                     aa.setScore(0.0);
+                    log.warn("[Submit] Q={} answerId={} NOT FOUND - set is_correct=false", item.getQuestionId(), item.getAnswerId());
                 }
             }
             savedAnswers.add(aa);
@@ -214,27 +217,50 @@ public class AttemptServiceImpl implements AttemptService {
                     attempt.getScore(), attempt.getTotalScore(), attempt.getPassed());
         }
 
-       
         if (autoGraded) {
             notificationService.attemptGraded(student, exam.getTitle(),
                     attempt.getScore(), attempt.getTotalScore());
         }
 
         // Thông báo cho teacher khi có bài tự luận cần chấm
-        if (hasEssay && exam.getCreatedBy() != null) {
-            notificationService.essayPendingGrade(
-                    exam.getCreatedBy(), exam.getTitle(), student.getFullName());
+        if (hasEssay) {
+            Set<User> notifyTeachers = new HashSet<>();
+            if (exam.getCreatedBy() != null) {
+                notifyTeachers.add(exam.getCreatedBy());
+            }
+            if (exam.getCourse() != null && exam.getCourse().getTeacher() != null) {
+                notifyTeachers.add(exam.getCourse().getTeacher());
+            }
+            for (User teacher : notifyTeachers) {
+                notificationService.essayPendingGrade(
+                        teacher, exam.getTitle(), student.getFullName());
+            }
         }
 
-        // Cập nhật QuestionStat async — extract data NGAY ĐÂY (session còn mở)
+        // ✅ Cập nhật stats ASYNC (sau khi transaction commit)
+        // Chỉ cập nhật stats cho câu TRẮC NGHIỆM khi nộp bài (vì tự luận chưa chấm)
         Map<Long, Boolean> statMap = savedAnswers.stream()
                 .filter(aa -> aa.getQuestion() != null && aa.getIsCorrect() != null)
+                .filter(aa -> aa.getQuestion().getType() != QuestionType.ESSAY) // Chỉ trắc nghiệm
                 .collect(java.util.stream.Collectors.toMap(
                         aa -> aa.getQuestion().getId(),
                         AttemptAnswer::getIsCorrect,
                         (a, b) -> a
                 ));
-        questionStatService.updateStatsById(statMap);
+        log.info("[Attempt] ===== SUBMIT STATS UPDATE =====");
+        log.info("[Attempt] Total answers saved: {}", savedAnswers.size());
+        for (AttemptAnswer aa : savedAnswers) {
+            log.info("[Attempt]   Q={} isCorrect={} type={}", 
+                aa.getQuestion().getId(), aa.getIsCorrect(), aa.getQuestion().getType());
+        }
+        log.info("[Attempt] Extracted {} questions for stat update (MULTIPLE_CHOICE/TRUE_FALSE only)", statMap.size());
+        if (!statMap.isEmpty()) {
+            log.info("[Attempt] Calling updateStatsById with map: {}", statMap);
+            questionStatService.updateStatsById(statMap);
+        } else {
+            log.warn("[Attempt] ❌ statMap is EMPTY - no stats to update (all questions are ESSAY)");
+        }
+        log.info("[Attempt] ===== END SUBMIT STATS UPDATE =====");
 
         return toResponse(attempt, false);
     }
@@ -330,7 +356,35 @@ public class AttemptServiceImpl implements AttemptService {
         attempt.setPassed(attempt.getExam().getPassScore() == null
                 || finalScore >= attempt.getExam().getPassScore());
         attempt.setStatus(AttemptStatus.GRADED);
-        return toResponse(attemptRepo.save(attempt), true);
+        
+        attemptRepo.save(attempt);
+        
+        // ✅ Cập nhật stats ASYNC khi teacher grade tự luận
+        // Chỉ cập nhật stats cho câu TỰ LUẬN (vì trắc nghiệm đã cập nhật khi nộp)
+        Map<Long, Boolean> statMap = attempt.getAnswers().stream()
+                .filter(aa -> aa.getQuestion() != null && aa.getIsCorrect() != null)
+                .filter(aa -> aa.getQuestion().getType() == QuestionType.ESSAY) // Chỉ tự luận
+                .collect(java.util.stream.Collectors.toMap(
+                        aa -> aa.getQuestion().getId(),
+                        AttemptAnswer::getIsCorrect,
+                        (a, b) -> a
+                ));
+        log.info("[Grade] ===== GRADE STATS UPDATE =====");
+        log.info("[Grade] Total answers: {}", attempt.getAnswers().size());
+        for (AttemptAnswer aa : attempt.getAnswers()) {
+            log.info("[Grade]   Q={} isCorrect={} score={} type={}", 
+                aa.getQuestion().getId(), aa.getIsCorrect(), aa.getScore(), aa.getQuestion().getType());
+        }
+        log.info("[Grade] Extracted {} questions for stat update (ESSAY only)", statMap.size());
+        if (!statMap.isEmpty()) {
+            log.info("[Grade] Calling updateStatsById with map: {}", statMap);
+            questionStatService.updateStatsById(statMap);
+        } else {
+            log.warn("[Grade] ❌ statMap is EMPTY - no ESSAY questions to update");
+        }
+        log.info("[Grade] ===== END GRADE STATS UPDATE =====");
+        
+        return toResponse(attempt, true);
     }
 
     @Override
@@ -450,6 +504,7 @@ public class AttemptServiceImpl implements AttemptService {
             r.setAllowResume(a.getExam().getAllowResume() != null ? a.getExam().getAllowResume() : true);
         }
         if (a.getStudent() != null) {
+            r.setStudentId(a.getStudent().getId());
             r.setStudentName(a.getStudent().getFullName());
             r.setStudentEmail(a.getStudent().getEmail());
             if (a.getStudent().getStudentProfile() != null)

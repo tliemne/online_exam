@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { adminApi } from '../../api/services'
 import { useToast } from '../../context/ToastContext'
+import { useTranslation } from 'react-i18next'
 
 // ── Icons ─────────────────────────────────────────────────
 const Icon = {
@@ -38,15 +39,15 @@ const ACTION_COLOR = {
 }
 
 const ACTION_LABEL = {
-  LOGIN: 'Đăng nhập', LOGOUT: 'Đăng xuất',
-  CREATE_EXAM: 'Tạo đề', UPDATE_EXAM: 'Sửa đề', DELETE_EXAM: 'Xóa đề',
-  PUBLISH_EXAM: 'Publish', CLOSE_EXAM: 'Đóng đề',
-  CREATE_QUESTION: 'Tạo câu hỏi', UPDATE_QUESTION: 'Sửa câu hỏi', DELETE_QUESTION: 'Xóa câu hỏi',
-  CREATE_COURSE: 'Tạo lớp', UPDATE_COURSE: 'Sửa lớp', DELETE_COURSE: 'Xóa lớp',
-  ADD_STUDENT: 'Thêm SV', REMOVE_STUDENT: 'Xóa SV',
-  SUBMIT_ATTEMPT: 'Nộp bài', GRADE_ATTEMPT: 'Chấm điểm',
-  CREATE_TAG: 'Tạo tag', UPDATE_TAG: 'Sửa tag', DELETE_TAG: 'Xóa tag',
-  CREATE_USER: 'Tạo user', DELETE_USER: 'Xóa user',
+  LOGIN: 'login', LOGOUT: 'logout',
+  CREATE_EXAM: 'createExam', UPDATE_EXAM: 'updateExam', DELETE_EXAM: 'deleteExam',
+  PUBLISH_EXAM: 'publish', CLOSE_EXAM: 'close',
+  CREATE_QUESTION: 'createQuestion', UPDATE_QUESTION: 'updateQuestion', DELETE_QUESTION: 'deleteQuestion',
+  CREATE_COURSE: 'createCourse', UPDATE_COURSE: 'updateCourse', DELETE_COURSE: 'deleteCourse',
+  ADD_STUDENT: 'addStudent', REMOVE_STUDENT: 'removeStudent',
+  SUBMIT_ATTEMPT: 'submitExam', GRADE_ATTEMPT: 'gradeExam',
+  CREATE_TAG: 'createTag', UPDATE_TAG: 'updateTag', DELETE_TAG: 'deleteTag',
+  CREATE_USER: 'createUser', DELETE_USER: 'deleteUser',
 }
 
 const ALL_ACTIONS = [
@@ -57,9 +58,10 @@ const ALL_ACTIONS = [
   'CREATE_TAG', 'UPDATE_TAG', 'DELETE_TAG',
 ]
 
-function ActionBadge({ action }) {
+function ActionBadge({ action, t }) {
   const color = ACTION_COLOR[action] || 'bg-slate-500/15 text-slate-400'
-  const label = ACTION_LABEL[action] || action
+  const labelKey = ACTION_LABEL[action] || action
+  const label = t(`admin.${labelKey}`) || labelKey
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${color}`}>
       {label}
@@ -78,6 +80,7 @@ function formatDateTime(dt) {
 
 export default function AdminActivityLogPage() {
   const toast = useToast()
+  const { t } = useTranslation()
 
   // ── Filter state ──────────────────────────────────────
   const [keyword, setKeyword]   = useState('')
@@ -111,7 +114,7 @@ export default function AdminActivityLogPage() {
       setTotalPages(data.totalPages || 0)
       setTotalItems(data.totalElements || 0)
     } catch {
-      toast.error('Không thể tải nhật ký hoạt động')
+      toast.error(t('messages.loadingFailed'))
     } finally {
       setLoading(false)
     }
@@ -137,8 +140,8 @@ export default function AdminActivityLogPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="page-title">Nhật ký hoạt động</h1>
-          <p className="page-subtitle">Theo dõi tất cả hoạt động trong hệ thống</p>
+          <h1 className="page-title">{t('nav.activityLog')}</h1>
+          <p className="page-subtitle">{t('messages.loadingFailed')}</p>
         </div>
         <button
           onClick={() => fetchLogs(page)}
@@ -146,7 +149,7 @@ export default function AdminActivityLogPage() {
           disabled={loading}
         >
           <span className={loading ? 'animate-spin' : ''}>{Icon.refresh}</span>
-          Làm mới
+          {t('questionStat.refresh')}
         </button>
       </div>
 
@@ -156,7 +159,7 @@ export default function AdminActivityLogPage() {
       >
         <div className="flex items-center gap-2 text-sm font-medium" style={{ color: 'var(--text-2)' }}>
           {Icon.filter}
-          <span>Bộ lọc</span>
+          <span>{t('common.search')}</span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -167,7 +170,7 @@ export default function AdminActivityLogPage() {
             </span>
             <input
               className="input-field pl-9 w-full"
-              placeholder="Username / mô tả..."
+              placeholder={t('user.username')}
               value={keyword}
               onChange={e => setKeyword(e.target.value)}
             />
@@ -179,7 +182,7 @@ export default function AdminActivityLogPage() {
             value={action}
             onChange={e => setAction(e.target.value)}
           >
-            <option value="">-- Tất cả hành động --</option>
+            <option value="">-- {t('common.search')} --</option>
             {ALL_ACTIONS.map(a => (
               <option key={a} value={a}>{ACTION_LABEL[a]} ({a})</option>
             ))}
@@ -187,7 +190,7 @@ export default function AdminActivityLogPage() {
 
           {/* From */}
           <div>
-            <label className="block text-xs mb-1" style={{ color: 'var(--text-3)' }}>Từ ngày</label>
+            <label className="block text-xs mb-1" style={{ color: 'var(--text-3)' }}>{t('exam.startTime')}</label>
             <input
               type="datetime-local"
               className="input-field w-full"
@@ -198,7 +201,7 @@ export default function AdminActivityLogPage() {
 
           {/* To */}
           <div>
-            <label className="block text-xs mb-1" style={{ color: 'var(--text-3)' }}>Đến ngày</label>
+            <label className="block text-xs mb-1" style={{ color: 'var(--text-3)' }}>{t('exam.endTime')}</label>
             <input
               type="datetime-local"
               className="input-field w-full"
@@ -210,10 +213,10 @@ export default function AdminActivityLogPage() {
 
         <div className="flex gap-2">
           <button type="submit" className="btn-primary px-4 py-2 text-sm" disabled={loading}>
-            {Icon.search} <span className="ml-1">Tìm kiếm</span>
+            {Icon.search} <span className="ml-1">{t('common.search')}</span>
           </button>
           <button type="button" onClick={handleReset} className="btn-ghost px-4 py-2 text-sm">
-            Xóa bộ lọc
+            {t('question.clearFilter')}
           </button>
         </div>
       </form>
@@ -221,8 +224,8 @@ export default function AdminActivityLogPage() {
       {/* Stats bar */}
       {!loading && (
         <p className="text-sm" style={{ color: 'var(--text-3)' }}>
-          Tìm thấy <span className="font-semibold" style={{ color: 'var(--text-1)' }}>{totalItems}</span> bản ghi
-          {totalPages > 1 && ` — trang ${page + 1}/${totalPages}`}
+          {t('messages.loadingFailed')} <span className="font-semibold" style={{ color: 'var(--text-1)' }}>{totalItems}</span> {t('messages.notFound')}
+          {totalPages > 1 && ` — ${t('common.next')} ${page + 1}/${totalPages}`}
         </p>
       )}
 
@@ -234,15 +237,15 @@ export default function AdminActivityLogPage() {
           </div>
         ) : logs.length === 0 ? (
           <div className="py-16 text-center" style={{ color: 'var(--text-3)' }}>
-            <p className="text-lg">Không có dữ liệu</p>
-            <p className="text-sm mt-1">Thử thay đổi bộ lọc hoặc làm mới trang</p>
+            <p className="text-lg">{t('stats.noData')}</p>
+            <p className="text-sm mt-1">{t('question.clearFilter')}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr style={{ borderBottom: '1px solid var(--border-base)' }}>
-                  {['Thời gian', 'Người dùng', 'Hành động', 'Đối tượng', 'Mô tả', 'IP'].map(h => (
+                  {[t('exam.startTime'), t('user.username'), 'Action', t('course.title'), t('course.description'), 'IP'].map(h => (
                     <th key={h}
                       className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide"
                       style={{ color: 'var(--text-3)', background: 'var(--bg-elevated)' }}
@@ -275,7 +278,7 @@ export default function AdminActivityLogPage() {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <ActionBadge action={log.action} />
+                      <ActionBadge action={log.action} t={t} />
                     </td>
                     <td className="px-4 py-3 text-xs" style={{ color: 'var(--text-2)' }}>
                       {log.targetType

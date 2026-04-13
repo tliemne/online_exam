@@ -98,4 +98,21 @@ public class QuestionCacheService {
             log.warn("[QuestionCache] evictByCourse error courseId={}: {}", courseId, e.getMessage());
         }
     }
+
+    /**
+     * Xóa toàn bộ cache (dùng cho debug)
+     */
+    public void evictAll() {
+        try {
+            Set<String> keys = redis.keys("questions:*");
+            if (keys != null && !keys.isEmpty()) {
+                for (String key : keys) {
+                    redis.delete(key);
+                }
+                log.info("[QuestionCache] evicted all {} cache keys", keys.size());
+            }
+        } catch (Exception e) {
+            log.warn("[QuestionCache] evictAll error: {}", e.getMessage());
+        }
+    }
 }

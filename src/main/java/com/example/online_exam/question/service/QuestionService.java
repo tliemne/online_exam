@@ -19,4 +19,5 @@ public interface QuestionService {
     List<QuestionResponse> searchWithTag(Long courseId, QuestionType type, Difficulty difficulty, String keyword, Long tagId);
     Page<QuestionResponse> searchPaged(Long courseId, QuestionType type, Difficulty difficulty, String keyword, Pageable pageable);
     Page<QuestionResponse> searchPagedWithTag(Long courseId, QuestionType type, Difficulty difficulty, String keyword, Long tagId, Pageable pageable);
+    void clearCache();
 }

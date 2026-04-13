@@ -4,6 +4,7 @@ import { courseApi, userApi } from '../../api/services'
 import { useAuth } from '../../context/AuthContext'
 import { useConfirm } from '../../components/common/ConfirmDialog'
 import { useToast } from '../../context/ToastContext'
+import { useTranslation } from 'react-i18next'
 
 // ── Icons ────────────────────────────────────────────────
 const Icon = {
@@ -35,11 +36,12 @@ function Modal({ title, onClose, children }) {
 
 // ── Course Form Modal ────────────────────────────────────
 function CourseFormModal({ course, onClose, onSaved, isAdmin, allUsers }) {
+  const { t } = useTranslation()
   const { user } = useAuth()
   const [form, setForm] = useState({
     name: course?.name || '',
     description: course?.description || '',
-    teacherId: course?.teacherId || (isAdmin ? '' : user?.id),
+    teacherId: course?.teachers?.[0]?.id || (isAdmin ? '' : user?.id),
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -61,32 +63,32 @@ function CourseFormModal({ course, onClose, onSaved, isAdmin, allUsers }) {
       onSaved()
       onClose()
     } catch (err) {
-      setError(err.response?.data?.message || 'Có lỗi xảy ra')
+      setError(err.response?.data?.message || t('common.error'))
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <Modal title={course ? 'Sửa lớp học' : 'Tạo lớp học mới'} onClose={onClose}>
+    <Modal title={course ? t('course.editCourse') : t('course.createNewCourse')} onClose={onClose}>
       {error && <div className="mb-4 px-4 py-3 rounded-2xl bg-danger/10 border border-danger/30 text-danger text-sm">{error}</div>}
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="label">Tên lớp học</label>
-          <input className="input-field" placeholder="Lập trình Web 2024..." value={form.name}
+          <label className="label">{t('course.courseName')}</label>
+          <input className="input-field" placeholder={t('course.coursePlaceholder')} value={form.name}
             onChange={e => setForm({ ...form, name: e.target.value })} required autoFocus />
         </div>
         <div>
-          <label className="label">Mô tả</label>
-          <textarea className="input-field resize-none" rows={3} placeholder="Mô tả nội dung..."
+          <label className="label">{t('course.description')}</label>
+          <textarea className="input-field resize-none" rows={3} placeholder={t('course.descriptionPlaceholder')}
             value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
         </div>
         {isAdmin && (
           <div>
-            <label className="label">Giảng viên phụ trách</label>
+            <label className="label">{t('course.mainTeacher')}</label>
             <select className="input-field" value={form.teacherId}
               onChange={e => setForm({ ...form, teacherId: e.target.value })} required>
-              <option value="">-- Chọn giảng viên --</option>
+              <option value="">{t('course.selectTeacher')}</option>
               {teachers.map(t => (
                 <option key={t.id} value={t.id}>{t.fullName || t.username}</option>
               ))}
@@ -95,17 +97,17 @@ function CourseFormModal({ course, onClose, onSaved, isAdmin, allUsers }) {
         )}
         <div className="flex gap-3 pt-2">
           <button type="submit" disabled={saving} className="btn-primary flex-1">
-            {saving ? 'Đang lưu...' : course ? 'Lưu thay đổi' : 'Tạo lớp'}
+            {saving ? t('course.saving') : course ? t('course.saveChanges') : t('course.createCourse')}
           </button>
-          <button type="button" onClick={onClose} className="btn-secondary flex-1">Hủy</button>
+          <button type="button" onClick={onClose} className="btn-secondary flex-1">{t('common.cancel')}</button>
         </div>
       </form>
     </Modal>
   )
 }
-
 // ── Add Students Modal ───────────────────────────────────
 function AddStudentsModal({ courseId, currentStudents, onClose, onSaved, allUsers }) {
+  const { t } = useTranslation()
   const [selected, setSelected] = useState([])
   const [search, setSearch] = useState('')
   const [saving, setSaving] = useState(false)
@@ -132,24 +134,24 @@ function AddStudentsModal({ courseId, currentStudents, onClose, onSaved, allUser
       onSaved()
       onClose()
     } catch (err) {
-      setError(err.response?.data?.message || 'Có lỗi xảy ra')
+      setError(err.response?.data?.message || t('common.error'))
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <Modal title="Thêm sinh viên vào lớp" onClose={onClose}>
+    <Modal title={t('course.addStudentsToCourse')} onClose={onClose}>
       {error && <div className="mb-4 px-4 py-3 rounded-2xl bg-danger/10 border border-danger/30 text-danger text-sm">{error}</div>}
       <div className="space-y-5">
         <div className="relative">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-3)]">{Icon.search}</span>
-          <input className="input-field pl-9" placeholder="Tìm sinh viên..." value={search}
+          <input className="input-field pl-9" placeholder={t('course.searchStudent')} value={search}
             onChange={e => setSearch(e.target.value)} autoFocus />
         </div>
         <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
           {available.length === 0 ? (
-            <p className="text-center text-[var(--text-3)] text-sm py-6">Không có sinh viên nào khả dụng</p>
+            <p className="text-center text-[var(--text-3)] text-sm py-6">{t('course.noStudentsAvailable')}</p>
           ) : available.map(u => (
             <label key={u.id}
               className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
@@ -168,18 +170,18 @@ function AddStudentsModal({ courseId, currentStudents, onClose, onSaved, allUser
                 <p className="text-[var(--text-1)] text-sm font-medium">{u.fullName || u.username}</p>
                 <p className="text-[var(--text-3)] text-xs font-mono">@{u.username}</p>
               </div>
-              {selected.includes(u.id) && <span className="badge-blue text-xs">Đã chọn</span>}
+              {selected.includes(u.id) && <span className="badge-blue text-xs">{t('course.selected')}</span>}
             </label>
           ))}
         </div>
         {selected.length > 0 && (
-          <p className="text-accent text-sm">Đã chọn {selected.length} sinh viên</p>
+          <p className="text-accent text-sm">{t('course.selected')} {selected.length} {t('course.students').toLowerCase()}</p>
         )}
         <div className="flex gap-3 pt-2">
           <button onClick={handleAdd} disabled={saving || !selected.length} className="btn-primary flex-1">
-            {saving ? 'Đang thêm...' : `Thêm ${selected.length > 0 ? selected.length + ' ' : ''}sinh viên`}
+            {saving ? t('course.adding') : `${t('course.addStudents')}${selected.length > 0 ? ' ' + selected.length : ''}`}
           </button>
-          <button onClick={onClose} className="btn-secondary flex-1">Hủy</button>
+          <button onClick={onClose} className="btn-secondary flex-1">{t('common.cancel')}</button>
         </div>
       </div>
     </Modal>
@@ -188,6 +190,8 @@ function AddStudentsModal({ courseId, currentStudents, onClose, onSaved, allUser
 
 // ── Students Modal ───────────────────────────────────────
 function StudentsModal({ course, onClose, onUpdated, allUsers }) {
+  const { t } = useTranslation()
+  const [confirmDialog] = useConfirm()
   const [students, setStudents] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
@@ -204,7 +208,7 @@ function StudentsModal({ course, onClose, onUpdated, allUsers }) {
   useEffect(() => { load() }, [load])
 
   const handleRemove = async (studentId) => {
-    if (!(await confirmDialog({ title: 'Xóa sinh viên khỏi lớp?', danger: true, confirmLabel: 'Xóa' }))) return
+    if (!(await confirmDialog({ title: t('course.removeStudent'), danger: true, confirmLabel: t('common.delete') }))) return
     setRemoving(studentId)
     try {
       await courseApi.removeStudent(course.id, studentId)
@@ -223,16 +227,16 @@ function StudentsModal({ course, onClose, onUpdated, allUsers }) {
 
   return (
     <>
-      <Modal title={`Danh sách sinh viên — ${course.name}`} onClose={onClose}>
+      <Modal title={`${t('course.studentList')} — ${course.name}`} onClose={onClose}>
         <div className="space-y-5">
           <div className="flex gap-3">
             <div className="relative flex-1">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-3)]">{Icon.search}</span>
-              <input className="input-field pl-9" placeholder="Tìm sinh viên..." value={search}
+              <input className="input-field pl-9" placeholder={t('course.searchStudent')} value={search}
                 onChange={e => setSearch(e.target.value)} />
             </div>
             <button onClick={() => setShowAdd(true)} className="btn-primary shrink-0">
-              {Icon.plus} Thêm
+              {Icon.plus} {t('common.add')}
             </button>
           </div>
 
@@ -243,10 +247,10 @@ function StudentsModal({ course, onClose, onUpdated, allUsers }) {
           ) : filtered.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-[var(--text-3)] text-sm">
-                {students.length === 0 ? 'Chưa có sinh viên nào trong lớp' : 'Không tìm thấy'}
+                {students.length === 0 ? t('course.noStudentsInCourse') : t('course.notFound')}
               </p>
               {students.length === 0 && (
-                <button onClick={() => setShowAdd(true)} className="btn-primary mt-3">Thêm sinh viên</button>
+                <button onClick={() => setShowAdd(true)} className="btn-primary mt-3">{t('course.addStudent')}</button>
               )}
             </div>
           ) : (
@@ -274,8 +278,8 @@ function StudentsModal({ course, onClose, onUpdated, allUsers }) {
             </div>
           )}
           <div className="flex justify-between items-center pt-2 border-t border-[var(--border-base)]">
-            <span className="text-[var(--text-3)] text-sm">{students.length} sinh viên</span>
-            <button onClick={onClose} className="btn-secondary">Đóng</button>
+            <span className="text-[var(--text-3)] text-sm">{students.length} {t('course.students').toLowerCase()}</span>
+            <button onClick={onClose} className="btn-secondary">{t('common.close')}</button>
           </div>
         </div>
       </Modal>
@@ -293,35 +297,152 @@ function StudentsModal({ course, onClose, onUpdated, allUsers }) {
   )
 }
 
+// ── Manage Teachers Modal ────────────────────────────────
+function ManageTeachersModal({ course, onClose, onSaved, allUsers, currentUser }) {
+  const { t } = useTranslation()
+  const [teachers, setTeachers] = useState(course?.teachers || [])
+  const [selectedTeacherId, setSelectedTeacherId] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const canManage = course?.createdById === currentUser?.id
+
+  if (!canManage) return null
+
+  const availableTeachers = allUsers.filter(u =>
+    u.roles?.includes('TEACHER') &&
+    !teachers.some(t => t.id === u.id)
+  )
+
+  const handleAddTeacher = async () => {
+    if (!selectedTeacherId) {
+      setError(t('course.selectTeacher'))
+      return
+    }
+    setLoading(true)
+    setError('')
+    try {
+      const res = await courseApi.addTeacher(course.id, Number(selectedTeacherId))
+      setTeachers(res.data.data.teachers || [])
+      setSelectedTeacherId('')
+    } catch (err) {
+      setError(err.response?.data?.message || t('common.error'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRemoveTeacher = async (teacherId) => {
+    if (teachers.length === 1) {
+      setError(t('course.minOneTeacher'))
+      return
+    }
+    setLoading(true)
+    setError('')
+    try {
+      const res = await courseApi.removeTeacher(course.id, teacherId)
+      setTeachers(res.data.data.teachers || [])
+    } catch (err) {
+      setError(err.response?.data?.message || t('common.error'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Modal title={t('course.manageTeachers')} onClose={onClose}>
+      {error && <div className="mb-4 px-4 py-3 rounded-2xl bg-danger/10 border border-danger/30 text-danger text-sm">{error}</div>}
+      <div className="space-y-5">
+        <div>
+          <label className="label">{t('course.teacherList')}</label>
+          <div className="space-y-2 max-h-48 overflow-y-auto">
+            {teachers.length === 0 ? (
+              <p className="text-[var(--text-3)] text-sm py-3">{t('course.noTeachers')}</p>
+            ) : teachers.map(t => (
+              <div key={t.id} className="flex items-center justify-between p-3 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-base)]">
+                <div>
+                  <p className="text-[var(--text-1)] text-sm font-medium">{t.fullName || t.username}</p>
+                  <p className="text-[var(--text-3)] text-xs">@{t.username}</p>
+                </div>
+                {teachers.length > 1 && (
+                  <button onClick={() => handleRemoveTeacher(t.id)} disabled={loading}
+                    className="btn-ghost text-danger/70 hover:text-danger hover:bg-danger/10 px-2 py-1 text-xs">
+                    {t('common.delete')}
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {availableTeachers.length > 0 && (
+          <div>
+            <label className="label">{t('course.addTeacher')}</label>
+            <div className="flex gap-2">
+              <select className="input-field flex-1" value={selectedTeacherId}
+                onChange={e => setSelectedTeacherId(e.target.value)}>
+                <option value="">{t('course.selectTeacher')}</option>
+                {availableTeachers.map(t => (
+                  <option key={t.id} value={t.id}>{t.fullName || t.username}</option>
+                ))}
+              </select>
+              <button onClick={handleAddTeacher} disabled={loading || !selectedTeacherId}
+                className="btn-primary px-4">
+                {loading ? '...' : t('common.add')}
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div className="flex gap-3 pt-2">
+          <button onClick={onClose} className="btn-secondary flex-1">{t('common.close')}</button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
 // ── Course Card ──────────────────────────────────────────
-function CourseCard({ course, onEdit, onDelete, onDetail, isOwner }) {
+function CourseCard({ course, onEdit, onDelete, onDetail, isOwner, canManageTeachers, onManageTeachers }) {
+  const { t } = useTranslation()
   return (
     <div className="card group flex flex-col gap-4 hover:border-accent/30 transition-all duration-200">
-      {/* Click vào phần trên → vào chi tiết lớp */}
       <div className="flex-1 cursor-pointer" onClick={() => onDetail(course)}>
         <div className="flex items-start justify-between mb-3">
           <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-accent/20 to-cyan-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
             <span className="text-accent font-bold font-display">{course.name?.[0]?.toUpperCase()}</span>
           </div>
-          {isOwner && <span className="badge-blue">Của tôi</span>}
+          {isOwner && <span className="badge-blue">{t('course.myCourse')}</span>}
         </div>
         <h3 className="font-display font-semibold text-[var(--text-1)] group-hover:text-accent transition-colors">{course.name}</h3>
-        <p className="text-[var(--text-3)] text-sm mt-1 line-clamp-2">{course.description || 'Không có mô tả'}</p>
-        {course.teacherName && (
-          <p className="text-[var(--text-2)] text-xs mt-2">Giáo viên: {course.teacherName}</p>
+        <p className="text-[var(--text-3)] text-sm mt-1 line-clamp-2">{course.description || t('course.noDescription')}</p>
+        {course.teachers && course.teachers.length > 0 && (
+          <p className="text-[var(--text-2)] text-xs mt-2">
+            {t('course.teacher')}: {course.teachers.map(t => t.fullName || t.username).join(', ')}
+          </p>
         )}
-        {/* <p className="text-accent text-xs mt-2 opacity-0 group-hover:opacity-100 transition-opacity">Xem chi tiết →</p> */}
+        {course.createdByName && (
+          <p className="text-[var(--text-3)] text-xs mt-1">{t('course.createdBy')}: {course.createdByName}</p>
+        )}
       </div>
       <div className="flex gap-2 pt-3 border-t border-[var(--border-base)]">
         <button onClick={() => onDetail(course)} className="btn-ghost flex-1 text-xs py-1.5">
-          {Icon.users} <span>Chi tiết</span>
+          {Icon.users} {t('course.details')}
         </button>
-        <button onClick={() => onEdit(course)} className="btn-ghost px-2.5 py-1.5 text-[var(--text-2)] hover:text-accent">
-          {Icon.edit}
-        </button>
-        <button onClick={() => onDelete(course)} className="btn-ghost px-2.5 py-1.5 text-[var(--text-2)] hover:text-danger hover:bg-danger/10">
-          {Icon.trash}
-        </button>
+        {canManageTeachers && (
+          <button onClick={() => onManageTeachers(course)} className="btn-ghost px-2.5 py-1.5 text-xs text-[var(--text-2)] hover:text-accent">
+            {t('course.teachers')}
+          </button>
+        )}
+        {isOwner && (
+          <button onClick={() => onEdit(course)} className="btn-ghost px-2.5 py-1.5 text-[var(--text-2)] hover:text-accent">
+            {Icon.edit}
+          </button>
+        )}
+        {isOwner && (
+          <button onClick={() => onDelete(course)} className="btn-ghost px-2.5 py-1.5 text-[var(--text-2)] hover:text-danger hover:bg-danger/10">
+            {Icon.trash}
+          </button>
+        )}
       </div>
     </div>
   )
@@ -329,6 +450,7 @@ function CourseCard({ course, onEdit, onDelete, onDetail, isOwner }) {
 
 // ── Main Page ────────────────────────────────────────────
 export default function CoursesPage() {
+  const { t } = useTranslation()
   const { user, hasRole } = useAuth()
   const navigate = useNavigate()
   const toast = useToast()
@@ -338,9 +460,10 @@ export default function CoursesPage() {
   const [courses, setCourses] = useState([])
   const [allUsers, setAllUsers] = useState([])
   const [loading, setLoading] = useState(true)
-  const [view, setView] = useState('grid') // 'grid' | 'table'
+  const [view, setView] = useState('grid')
   const [search, setSearch] = useState('')
-  const [modal, setModal] = useState(null) // null | 'create' | 'edit' | 'students'
+  const [modal, setModal] = useState(null)
+  const [teachersModal, setTeachersModal] = useState(null)
   const [selected, setSelected] = useState(null)
   const [deleting, setDeleting] = useState(null)
 
@@ -358,15 +481,14 @@ export default function CoursesPage() {
 
   useEffect(() => { load() }, [load])
 
-  // Teacher cần allUsers để thêm SV — lấy riêng
   useEffect(() => {
     if (!isAdmin && hasRole('TEACHER')) {
       userApi.getAllStudents().then(r => setAllUsers(r.data.data || [])).catch(() => {})
     }
-  }, [isAdmin])
+  }, [isAdmin, hasRole])
 
   const handleDelete = async (course) => {
-    if (!(await confirmDialog({ title: `Xóa lớp "${course.name}"?`, message: 'Tất cả dữ liệu liên quan sẽ bị xóa.', danger: true, confirmLabel: 'Xóa lớp' }))) return
+    if (!(await confirmDialog({ title: `${t('course.deleteConfirm')} "${course.name}"?`, message: t('course.deleteMessage'), danger: true, confirmLabel: t('course.deleteConfirm') }))) return
     setDeleting(course.id)
     try {
       await courseApi.delete(course.id)
@@ -379,35 +501,32 @@ export default function CoursesPage() {
   const filtered = courses.filter(c =>
     c.name?.toLowerCase().includes(search.toLowerCase()) ||
     c.description?.toLowerCase().includes(search.toLowerCase()) ||
-    c.teacherName?.toLowerCase().includes(search.toLowerCase())
+    c.teachers?.some(t => t.fullName?.toLowerCase().includes(search.toLowerCase()))
   )
 
-  const myCourses = filtered.filter(c => c.teacherName && user?.fullName && c.teacherName === user.fullName)
+  const myCourses = filtered.filter(c => c.createdById === user?.id)
 
   return (
     <>
     {ConfirmDialogUI}
     <div className="max-w-6xl mx-auto space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="page-title">Lớp học</h1>
-          <p className="text-[var(--text-2)] text-sm mt-1">{courses.length} lớp học trong hệ thống</p>
+          <h1 className="page-title">{t('course.title')}</h1>
+          <p className="text-[var(--text-2)] text-sm mt-1">{courses.length} {t('course.totalCourses')}</p>
         </div>
         <button onClick={() => { setSelected(null); setModal('create') }} className="btn-primary">
-          {Icon.plus} Tạo lớp mới
+          {Icon.plus} {t('course.createCourse')}
         </button>
       </div>
 
-      {/* Toolbar */}
       <div className="flex items-center gap-3">
         <div className="relative flex-1 max-w-sm">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-3)]">{Icon.search}</span>
-          <input className="input-field pl-9" placeholder="Tìm kiếm lớp học..." value={search}
+          <input className="input-field pl-9" placeholder={t('course.searchCourses')} value={search}
             onChange={e => setSearch(e.target.value)} />
         </div>
         <button onClick={load} className="btn-secondary">{Icon.refresh}</button>
-        {/* Toggle view */}
         <div className="flex bg-[var(--bg-elevated)] border border-[var(--border-base)] rounded-lg p-1 gap-1">
           <button onClick={() => setView('grid')}
             className={`p-1.5 rounded transition-all ${view === 'grid' ? 'bg-accent text-white' : 'text-[var(--text-3)] hover:text-[var(--text-1)]'}`}>
@@ -420,7 +539,6 @@ export default function CoursesPage() {
         </div>
       </div>
 
-      {/* Content */}
       {loading ? (
         <div className="flex justify-center py-16">
           <div className="w-8 h-8 rounded-full border-2 border-accent border-t-transparent animate-spin" />
@@ -428,27 +546,28 @@ export default function CoursesPage() {
       ) : filtered.length === 0 ? (
         <div className="card text-center py-16">
           <div className="text-4xl mb-3">📚</div>
-          <p className="text-[var(--text-2)]">Chưa có lớp học nào. Hãy tạo lớp đầu tiên!</p>
-          <button onClick={() => { setSelected(null); setModal('create') }} className="btn-primary mt-4">Tạo lớp</button>
+          <p className="text-[var(--text-2)]">{t('course.createFirst')}</p>
+          <button onClick={() => { setSelected(null); setModal('create') }} className="btn-primary mt-4">{t('course.createCourse')}</button>
         </div>
       ) : view === 'grid' ? (
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(c => (
             <CourseCard key={c.id} course={c}
               isOwner={myCourses.some(m => m.id === c.id)}
+              canManageTeachers={c.createdById === user?.id}
               onEdit={(c) => { setSelected(c); setModal('edit') }}
               onDelete={handleDelete}
+              onManageTeachers={(c) => setTeachersModal(c)}
               onDetail={(c) => navigate(`${basePath}/courses/${c.id}`)}
             />
           ))}
         </div>
       ) : (
-        /* Table view */
         <div className="card">
           <table className="w-full">
             <thead>
               <tr className="border-b border-[var(--border-base)]">
-                {['#', 'Tên lớp', 'Mô tả', 'Giảng viên', ''].map(h => (
+                {['#', t('course.courseName'), t('course.description'), t('course.teacher'), ''].map(h => (
                   <th key={h} className="text-left text-xs text-[var(--text-3)] uppercase tracking-wider pb-3 pr-4 font-mono">{h}</th>
                 ))}
               </tr>
@@ -463,17 +582,29 @@ export default function CoursesPage() {
                   <td className="py-3 pr-4 text-[var(--text-2)] text-sm max-w-xs">
                     <p className="truncate">{c.description || '—'}</p>
                   </td>
-                  <td className="py-3 pr-4 text-[var(--text-2)] text-sm">{c.teacherName || '—'}</td>
+                  <td className="py-3 pr-4 text-[var(--text-2)] text-sm">
+                    {c.teachers?.map(t => t.fullName || t.username).join(', ') || '—'}
+                  </td>
                   <td className="py-3">
                     <div className="flex items-center gap-1">
                       <button onClick={() => navigate(`${basePath}/courses/${c.id}`)}
                         className="btn-ghost px-2 py-1.5 text-xs">{Icon.users}</button>
-                      <button onClick={() => { setSelected(c); setModal('edit') }}
-                        className="btn-ghost px-2 py-1.5 text-xs text-[var(--text-2)] hover:text-accent">{Icon.edit}</button>
-                      <button onClick={() => handleDelete(c)} disabled={deleting === c.id}
-                        className="btn-ghost px-2 py-1.5 text-xs text-[var(--text-2)] hover:text-danger hover:bg-danger/10">
-                        {deleting === c.id ? '...' : Icon.trash}
-                      </button>
+                      {c.createdById === user?.id && (
+                        <button onClick={() => setTeachersModal(c)}
+                          className="btn-ghost px-2 py-1.5 text-xs text-[var(--text-2)] hover:text-accent">
+                          {t('course.teachers')}
+                        </button>
+                      )}
+                      {c.createdById === user?.id && (
+                        <button onClick={() => { setSelected(c); setModal('edit') }}
+                          className="btn-ghost px-2 py-1.5 text-xs text-[var(--text-2)] hover:text-accent">{Icon.edit}</button>
+                      )}
+                      {c.createdById === user?.id && (
+                        <button onClick={() => handleDelete(c)} disabled={deleting === c.id}
+                          className="btn-ghost px-2 py-1.5 text-xs text-[var(--text-2)] hover:text-danger hover:bg-danger/10">
+                          {deleting === c.id ? '...' : Icon.trash}
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -483,7 +614,6 @@ export default function CoursesPage() {
         </div>
       )}
 
-      {/* Modals */}
       {(modal === 'create' || modal === 'edit') && (
         <CourseFormModal
           course={modal === 'edit' ? selected : null}
@@ -499,6 +629,15 @@ export default function CoursesPage() {
           allUsers={allUsers}
           onClose={() => setModal(null)}
           onUpdated={load}
+        />
+      )}
+      {teachersModal && (
+        <ManageTeachersModal
+          course={teachersModal}
+          currentUser={user}
+          allUsers={allUsers}
+          onClose={() => setTeachersModal(null)}
+          onSaved={load}
         />
       )}
     </div>

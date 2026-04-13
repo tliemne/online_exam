@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useTranslation } from 'react-i18next'
 
 function getRole(r) { return typeof r === 'string' ? r : r.name }
 
@@ -26,12 +27,15 @@ function FloatingShape({ cx, cy, r, delay, opacity }) {
 
 export default function LoginPage() {
   const { login }   = useAuth()
+  const { t, ready }       = useTranslation()
   const navigate    = useNavigate()
   const [form, setForm]       = useState({ username: '', password: '' })
   const [error, setError]     = useState('')
   const [blocked, setBlocked] = useState(false)
   const [loading, setLoading] = useState(false)
   const [showPass, setShowPass] = useState(false)
+
+  if (!ready) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>Loading...</div>
 
   const handleUsernameChange = (e) => {
     setForm({ ...form, username: e.target.value })
@@ -52,9 +56,9 @@ export default function LoginPage() {
       const message = err.response?.data?.message
       if (status === 429) {
         setBlocked(true)
-        setError(message || 'Tài khoản tạm bị khóa. Vui lòng thử lại sau.')
+        setError(message || t('messages.loadingFailed'))
       } else {
-        setError('Sai tên đăng nhập hoặc mật khẩu.')
+        setError(t('messages.unauthorized'))
       }
     } finally { setLoading(false) }
   }
@@ -78,10 +82,10 @@ export default function LoginPage() {
               <span className="text-xl font-bold" style={{ color: 'var(--text-1)' }}>ExamPortal</span>
             </div>
             <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--text-1)' }}>
-              Đăng nhập
+              {t('auth.loginTitle')}
             </h1>
             <p className="text-sm" style={{ color: 'var(--text-3)' }}>
-              Nhập thông tin tài khoản để tiếp tục!
+              {t('auth.loginSubtitle')}
             </p>
           </div>
 
@@ -99,17 +103,17 @@ export default function LoginPage() {
                   : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
                 }
               </svg>
-              <span>{blocked ? 'Tài khoản tạm bị khóa — ' : ''}{error}</span>
+              <span>{blocked ? t('auth.accountLocked') : ''}{error}</span>
             </div>
           )}
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="input-label">Tên đăng nhập</label>
+              <label className="input-label">{t('auth.usernameLabel')}</label>
               <input
                 className="input-field"
-                placeholder="Nhập tên đăng nhập..."
+                placeholder={t('auth.usernamePlaceholder')}
                 value={form.username}
                 onChange={handleUsernameChange}
                 autoFocus required autoComplete="username"
@@ -117,12 +121,12 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="input-label">Mật khẩu</label>
+              <label className="input-label">{t('auth.passwordLabel')}</label>
               <div className="relative">
                 <input
                   type={showPass ? 'text' : 'password'}
                   className="input-field pr-12"
-                  placeholder="Tối thiểu 6 ký tự"
+                  placeholder={t('auth.passwordPlaceholder')}
                   value={form.password}
                   onChange={e => setForm({ ...form, password: e.target.value })}
                   required autoComplete="current-password"
@@ -141,18 +145,18 @@ export default function LoginPage() {
               {loading
                 ? <span className="flex items-center justify-center gap-2">
                     <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin"/>
-                    Đang đăng nhập...
+                    {t('auth.loggingIn')}
                   </span>
-                : 'Đăng nhập →'
+                : t('auth.loginButton')
               }
             </button>
           </form>
 
           <p className="mt-8 text-sm text-center" style={{ color: 'var(--text-3)' }}>
-            Chưa có tài khoản?{' '}
+            {t('auth.noAccount')}{' '}
             <Link to="/register" className="font-bold transition-colors"
               style={{ color: 'var(--accent)' }}>
-              Đăng ký ngay
+              {t('auth.registerLink')}
             </Link>
           </p>
         </div>
@@ -176,13 +180,13 @@ export default function LoginPage() {
           {/* Mock dashboard card */}
           <div className="rounded-3xl p-6 mb-8 text-left animate-scale-in"
             style={{ background: 'rgba(255,255,255,0.08)', backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.12)' }}>
-            <p className="text-xs font-bold mb-4" style={{ color: 'rgba(255,255,255,0.5)', letterSpacing: '0.08em' }}>TỔNG QUAN HỆ THỐNG</p>
+            <p className="text-xs font-bold mb-4" style={{ color: 'rgba(255,255,255,0.5)', letterSpacing: '0.08em' }}>{t('auth.systemOverview')}</p>
             <div className="grid grid-cols-2 gap-3 mb-4">
               {[
-                { label: 'Học sinh', value: '1,248', color: '#7551ff' },
-                { label: 'Đề thi',   value: '86',    color: '#01b574' },
-                { label: 'Lượt thi', value: '3,421', color: '#3965ff' },
-                { label: 'Tỉ lệ đạt', value: '78%', color: '#ffb547' },
+                { label: t('auth.students'), value: '1,248', color: '#7551ff' },
+                { label: t('auth.exams'),   value: '86',    color: '#01b574' },
+                { label: t('auth.attempts'), value: '3,421', color: '#3965ff' },
+                { label: t('auth.passRate'), value: '78%', color: '#ffb547' },
               ].map(s => (
                 <div key={s.label} className="rounded-2xl p-3"
                   style={{ background: 'rgba(255,255,255,0.06)' }}>
@@ -209,10 +213,10 @@ export default function LoginPage() {
           </div>
 
           <h2 className="text-2xl font-bold text-white mb-3">
-            Hệ thống thi trực tuyến
+            {t('common.systemName')}
           </h2>
           <p className="text-sm leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>
-            Quản lý đề thi, chấm điểm tự động và theo dõi tiến độ học tập của sinh viên.
+            {t('auth.systemDescription')}
           </p>
         </div>
 

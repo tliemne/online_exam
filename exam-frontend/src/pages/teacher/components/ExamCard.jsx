@@ -49,7 +49,8 @@ export default function ExamCard({
   onClose,
   onManageQuestions,
   onStats,
-  onPreview     
+  onPreview,
+  onViewAttendance
 }) {
 
   const isDraft = exam.status === 'DRAFT'
@@ -127,6 +128,15 @@ export default function ExamCard({
           <span>Câu hỏi</span>
         </button>
 
+        <button
+          onClick={() => onViewAttendance(exam)}
+          className="btn-ghost px-2.5 py-1.5"
+          title="Xem danh sách sinh viên"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.856-1.487M15 10a3 3 0 11-6 0 3 3 0 016 0zM6 20a9 9 0 0118 0v2h2v-2a11 11 0 00-20 0v2h2z"/>
+          </svg>
+        </button>
        
         <button
           onClick={() => onPreview(exam)}

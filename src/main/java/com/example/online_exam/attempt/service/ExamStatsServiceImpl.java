@@ -52,11 +52,11 @@ public class ExamStatsServiceImpl implements ExamStatsService {
         }
 
         // ── Tổng quan ───────────────────────────────────────────────────────
-        int passCount  = (int) attempts.stream().filter(a -> Boolean.TRUE.equals(a.getPassed())).count();
-        int failCount  = attempts.size() - passCount;
-        double avg     = attempts.stream().mapToDouble(Attempt::getScore).average().orElse(0);
-        double max     = attempts.stream().mapToDouble(Attempt::getScore).max().orElse(0);
-        double min     = attempts.stream().mapToDouble(Attempt::getScore).min().orElse(0);
+        int passCount = (int) attempts.stream().filter(a -> Boolean.TRUE.equals(a.getPassed())).count();
+        int failCount = attempts.size() - passCount;
+        double avg = attempts.stream().mapToDouble(a -> a.getScore() != null ? a.getScore() : 0.0).average().orElse(0);
+        double max = attempts.stream().mapToDouble(a -> a.getScore() != null ? a.getScore() : 0.0).max().orElse(0);
+        double min = attempts.stream().mapToDouble(a -> a.getScore() != null ? a.getScore() : 0.0).min().orElse(0);
         double passRate = attempts.isEmpty() ? 0 :
                 Math.round(passCount * 1000.0 / attempts.size()) / 10.0;
 
@@ -64,6 +64,10 @@ public class ExamStatsServiceImpl implements ExamStatsService {
         List<LeaderboardEntry> leaderboard = new ArrayList<>();
         int rank = 1;
         for (Attempt a : attempts.subList(0, Math.min(10, attempts.size()))) {
+            // ✅ FIX: Skip attempts with null score (essay not graded yet)
+            if (a.getScore() == null) continue;
+            
+            Double score = a.getScore();
             String code = a.getStudent().getStudentProfile() != null
                     ? a.getStudent().getStudentProfile().getStudentCode() : "";
             leaderboard.add(LeaderboardEntry.builder()
@@ -71,7 +75,7 @@ public class ExamStatsServiceImpl implements ExamStatsService {
                     .studentId(a.getStudent().getId())
                     .studentName(a.getStudent().getFullName())
                     .studentCode(code)
-                    .score(a.getScore())
+                    .score(score)
                     .totalScore(totalScoreMax)
                     .passed(Boolean.TRUE.equals(a.getPassed()))
                     .tabViolations(a.getTabViolationCount() != null ? a.getTabViolationCount() : 0)
@@ -83,28 +87,32 @@ public class ExamStatsServiceImpl implements ExamStatsService {
         List<ScoreBucket> distribution = buildHistogram(attempts, totalScoreMax);
 
         // ── Điểm TB theo câu hỏi ────────────────────────────────────────────
+        // ✅ FIX: Lấy stats theo exam, không theo course (để chính xác hơn)
         List<Object[]> qRows = attemptRepo.findQuestionStatsByExam(examId);
+        
         List<QuestionStat> questionStats = new ArrayList<>();
-        for (Object[] row : qRows) {
-            Long qId        = ((Number) row[0]).longValue();
-            int  total      = ((Number) row[1]).intValue();
-            int  correct    = ((Number) row[2]).intValue();
-            double avgScore = ((Number) row[3]).doubleValue();
-            double rate     = total == 0 ? 0 : Math.round(correct * 1000.0 / total) / 10.0;
+        if (qRows != null) {
+            for (Object[] row : qRows) {
+                Long qId = ((Number) row[0]).longValue();
+                int total = ((Number) row[1]).intValue();
+                int correct = ((Number) row[2]).intValue();
+                double avgScore = ((Number) row[3]).doubleValue();
+                double rate = total == 0 ? 0 : Math.round(correct * 1000.0 / total) / 10.0;
 
-            String content = questionRepo.findById(qId)
-                    .map(q -> q.getContent().length() > 80
-                            ? q.getContent().substring(0, 80) + "..." : q.getContent())
-                    .orElse("Câu " + qId);
+                String content = questionRepo.findById(qId)
+                        .map(q -> q.getContent().length() > 80
+                                ? q.getContent().substring(0, 80) + "..." : q.getContent())
+                        .orElse("Câu " + qId);
 
-            questionStats.add(QuestionStat.builder()
-                    .questionId(qId)
-                    .questionContent(content)
-                    .totalAnswered(total)
-                    .correctCount(correct)
-                    .correctRate(rate)
-                    .avgScore(Math.round(avgScore * 100.0) / 100.0)
-                    .build());
+                questionStats.add(QuestionStat.builder()
+                        .questionId(qId)
+                        .questionContent(content)
+                        .totalAnswered(total)
+                        .correctCount(correct)
+                        .correctRate(rate)
+                        .avgScore(Math.round(avgScore * 100.0) / 100.0)
+                        .build());
+            }
         }
 
         return ExamStatsResponse.builder()
@@ -126,7 +134,7 @@ public class ExamStatsServiceImpl implements ExamStatsService {
         double step = max / buckets;
         int[] counts = new int[buckets];
         for (Attempt a : attempts) {
-            double s = a.getScore();
+            double s = a.getScore() != null ? a.getScore() : 0.0;
             int idx = (int) Math.min(s / step, buckets - 1);
             counts[idx]++;
         }

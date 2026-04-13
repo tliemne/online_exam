@@ -43,6 +43,9 @@ export const courseApi = {
   addStudents: (id, studentIds) => api.post(`/courses/${id}/students`, studentIds),
   removeStudent: (id, studentId) => api.delete(`/courses/${id}/students/${studentId}`),
   getLeaderboard: (id) => api.get(`/courses/${id}/leaderboard`),
+  addTeacher: (id, teacherId) => api.post(`/courses/${id}/teachers/${teacherId}`),
+  removeTeacher: (id, teacherId) => api.delete(`/courses/${id}/teachers/${teacherId}`),
+  getTeachers: (id) => api.get(`/courses/${id}/teachers`),
 }
 
 // ── QUESTIONS ────────────────────────────────────────────

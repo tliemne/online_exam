@@ -7,26 +7,26 @@ import org.springframework.http.HttpStatus;
 public enum ErrorCode {
 
     // ===== USER =====
-    USERNAME_EXISTS(HttpStatus.BAD_REQUEST, "Username already exists"),
-    EMAIL_EXISTS(HttpStatus.BAD_REQUEST, "Email already exists"),
-    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "User not found"),
-    INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "Invalid password"),
-    ROLE_NOT_FOUND(HttpStatus.NOT_FOUND, "Role not found"),
-    TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "Token expired"),
-    COURSE_NOT_FOUND(HttpStatus.NOT_FOUND, "Course not found"),
-    INVALID_TEACHER(HttpStatus.BAD_REQUEST, "Assigned user is not a teacher"),
+    USERNAME_EXISTS(HttpStatus.BAD_REQUEST, "Tên đăng nhập đã tồn tại"),
+    EMAIL_EXISTS(HttpStatus.BAD_REQUEST, "Email đã tồn tại"),
+    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "Người dùng không tồn tại"),
+    INVALID_PASSWORD(HttpStatus.BAD_REQUEST, "Mật khẩu không hợp lệ"),
+    ROLE_NOT_FOUND(HttpStatus.NOT_FOUND, "Vai trò không tồn tại"),
+    TOKEN_EXPIRED(HttpStatus.UNAUTHORIZED, "Token đã hết hạn"),
+    COURSE_NOT_FOUND(HttpStatus.NOT_FOUND, "Lớp học không tồn tại"),
+    INVALID_TEACHER(HttpStatus.BAD_REQUEST, "Người dùng này không phải giáo viên"),
 
     // ===== AUTH =====
-    UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "Unauthorized"),
-    FORBIDDEN(HttpStatus.FORBIDDEN, "Access denied"),
-    TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "Token invalid"),
+    UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "Chưa xác thực"),
+    FORBIDDEN(HttpStatus.FORBIDDEN, "Bạn không có quyền thực hiện hành động này"),
+    TOKEN_INVALID(HttpStatus.UNAUTHORIZED, "Token không hợp lệ"),
 
     // ===== REQUEST =====
-    INVALID_REQUEST(HttpStatus.BAD_REQUEST, "Invalid request data"),
-    VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "Validation failed"),
+    INVALID_REQUEST(HttpStatus.BAD_REQUEST, "Dữ liệu yêu cầu không hợp lệ"),
+    VALIDATION_ERROR(HttpStatus.BAD_REQUEST, "Xác thực dữ liệu thất bại"),
 
     // ===== QUESTION =====
-    QUESTION_NOT_FOUND(HttpStatus.NOT_FOUND, "Question not found"),
+    QUESTION_NOT_FOUND(HttpStatus.NOT_FOUND, "Câu hỏi không tồn tại"),
     QUESTION_IN_USE(HttpStatus.BAD_REQUEST, "Câu hỏi đang được dùng trong đề thi, không thể xóa. Hãy gỡ khỏi đề thi trước!"),
     ALREADY_SUBMITTED(HttpStatus.BAD_REQUEST, "Bài thi đã được nộp trước đó"),
     TAG_NOT_FOUND(HttpStatus.NOT_FOUND, "Tag không tồn tại"),
@@ -34,14 +34,14 @@ public enum ErrorCode {
 
 
     // ===== MODULES =====
-    EXAM_NOT_FOUND(HttpStatus.NOT_FOUND, "Exam not found"),
-    LECTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "Lecture not found"),
+    EXAM_NOT_FOUND(HttpStatus.NOT_FOUND, "Đề thi không tồn tại"),
+    LECTURE_NOT_FOUND(HttpStatus.NOT_FOUND, "Bài giảng không tồn tại"),
     // ===== ATTEMPT =====
-    ATTEMPT_NOT_FOUND(HttpStatus.NOT_FOUND, "Attempt not found"),
-    EXAM_ALREADY_ATTEMPTED(HttpStatus.BAD_REQUEST, "Exam already attempted"),
+    ATTEMPT_NOT_FOUND(HttpStatus.NOT_FOUND, "Bài làm không tồn tại"),
+    EXAM_ALREADY_ATTEMPTED(HttpStatus.BAD_REQUEST, "Bạn đã làm đề thi này rồi"),
 
     // ===== SYSTEM =====
-    INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error"),
+    INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Lỗi hệ thống"),
 
     // ===== RATE LIMIT =====
     TOO_MANY_LOGIN_ATTEMPTS(HttpStatus.TOO_MANY_REQUESTS, "Quá nhiều lần đăng nhập sai. Vui lòng thử lại sau."),

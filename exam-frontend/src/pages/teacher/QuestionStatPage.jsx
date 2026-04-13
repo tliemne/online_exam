@@ -1,22 +1,23 @@
 import { useState, useEffect } from 'react'
 import { courseApi } from '../../api/services'
 import api from '../../api/client'
+import { useTranslation } from 'react-i18next'
 
-const FLAG_META = {
-  TOO_EASY: { label: 'Quá dễ',  cls: 'bg-yellow-500/15 text-yellow-400 border border-yellow-500/30' },
-  TOO_HARD: { label: 'Quá khó', cls: 'bg-red-500/15 text-red-400 border border-red-500/30' },
-  OK:       { label: 'Bình thường', cls: 'bg-green-500/15 text-green-400 border border-green-500/30' },
-}
-const DIFF_META = {
-  EASY:   { label: 'Dễ',   cls: 'text-green-400' },
-  MEDIUM: { label: 'TB',   cls: 'text-blue-400'  },
-  HARD:   { label: 'Khó',  cls: 'text-red-400'   },
-}
-const TYPE_META = {
-  MULTIPLE_CHOICE: 'Trắc nghiệm',
-  TRUE_FALSE:      'Đúng/Sai',
-  ESSAY:           'Tự luận',
-}
+const FLAG_META = (t) => ({
+  TOO_EASY: { label: t('questionStat.flagTooEasy'),  cls: 'bg-yellow-500/15 text-yellow-400 border border-yellow-500/30' },
+  TOO_HARD: { label: t('questionStat.flagTooHard'), cls: 'bg-red-500/15 text-red-400 border border-red-500/30' },
+  OK:       { label: t('questionStat.flagOk'), cls: 'bg-green-500/15 text-green-400 border border-green-500/30' },
+})
+const DIFF_META = (t) => ({
+  EASY:   { label: t('questionStat.easy'),   cls: 'text-green-400' },
+  MEDIUM: { label: t('questionStat.medium'),   cls: 'text-blue-400'  },
+  HARD:   { label: t('questionStat.hard'),  cls: 'text-red-400'   },
+})
+const TYPE_META = (t) => ({
+  MULTIPLE_CHOICE: t('questionStat.multipleChoice'),
+  TRUE_FALSE:      t('questionStat.trueFalse'),
+  ESSAY:           t('questionStat.essay'),
+})
 
 function CorrectRateBar({ rate }) {
   const pct = Math.round(rate * 100)
@@ -32,6 +33,7 @@ function CorrectRateBar({ rate }) {
 }
 
 export default function QuestionStatPage() {
+  const { t } = useTranslation()
   const [courses, setCourses]   = useState([])
   const [courseId, setCourseId] = useState('')
   const [stats, setStats]       = useState([])
@@ -49,13 +51,17 @@ export default function QuestionStatPage() {
       .catch(() => {})
   }, [])
 
-  useEffect(() => {
+  const loadStats = () => {
     if (!courseId) return
     setLoading(true)
     api.get(`/questions/stats/course/${courseId}`)
       .then(r => setStats(r.data.data || []))
       .catch(() => setStats([]))
       .finally(() => setLoading(false))
+  }
+
+  useEffect(() => {
+    loadStats()
   }, [courseId])
 
   const filtered = stats
@@ -75,12 +81,26 @@ export default function QuestionStatPage() {
       {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="page-title">Thống kê câu hỏi</h1>
-          <p className="page-subtitle">Tỷ lệ đúng/sai · Phát hiện câu quá dễ hoặc quá khó</p>
+          <h1 className="page-title">{t('questionStat.title')}</h1>
+          <p className="page-subtitle">{t('questionStat.subtitle')}</p>
         </div>
-        <select className="input-field w-56" value={courseId} onChange={e => setCourseId(e.target.value)}>
-          {courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
+        <div className="flex items-center gap-3">
+          <select className="input-field w-56" value={courseId} onChange={e => setCourseId(e.target.value)}>
+            {courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+          <button onClick={loadStats} disabled={loading || !courseId}
+            className="btn-secondary flex items-center gap-2 text-sm"
+            title="Làm mới dữ liệu">
+            {loading ? (
+              <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"/>
+            ) : (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+              </svg>
+            )}
+            {t('questionStat.refresh')}
+          </button>
+        </div>
       </div>
 
       {/* Summary cards */}
@@ -88,19 +108,19 @@ export default function QuestionStatPage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="card text-center">
             <div className="text-2xl font-bold text-[var(--text-1)]">{stats.length}</div>
-            <div className="text-xs text-[var(--text-3)] mt-1">Câu hỏi có dữ liệu</div>
+            <div className="text-xs text-[var(--text-3)] mt-1">{t('questionStat.questionsWithData')}</div>
           </div>
           <div className="card text-center">
             <div className="text-2xl font-bold text-[var(--accent)]">{avgRate}%</div>
-            <div className="text-xs text-[var(--text-3)] mt-1">Tỷ lệ đúng TB</div>
+            <div className="text-xs text-[var(--text-3)] mt-1">{t('questionStat.avgCorrectRate')}</div>
           </div>
           <div className="card text-center">
             <div className="text-2xl font-bold text-red-400">{tooHard}</div>
-            <div className="text-xs text-[var(--text-3)] mt-1">Câu quá khó (&lt;30%)</div>
+            <div className="text-xs text-[var(--text-3)] mt-1">{t('questionStat.tooHard')}</div>
           </div>
           <div className="card text-center">
             <div className="text-2xl font-bold text-yellow-400">{tooEasy}</div>
-            <div className="text-xs text-[var(--text-3)] mt-1">Câu quá dễ (&gt;85%)</div>
+            <div className="text-xs text-[var(--text-3)] mt-1">{t('questionStat.tooEasy')}</div>
           </div>
         </div>
       )}
@@ -110,7 +130,7 @@ export default function QuestionStatPage() {
         <div className="flex gap-3 flex-wrap">
           {/* Flag filter */}
           <div className="flex gap-1 bg-[var(--bg-elevated)] border border-[var(--border-base)] rounded-lg p-1">
-            {[['ALL','Tất cả'], ['OK','Bình thường'], ['TOO_HARD','Quá khó'], ['TOO_EASY','Quá dễ']].map(([v, l]) => (
+            {[['ALL',t('questionStat.all')], ['OK',t('questionStat.normal')], ['TOO_HARD',t('questionStat.veryHard')], ['TOO_EASY',t('questionStat.veryEasy')]].map(([v, l]) => (
               <button key={v} onClick={() => setFlagFilter(v)}
                 className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
                   flagFilter === v ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-3)] hover:text-[var(--text-1)]'
@@ -120,11 +140,11 @@ export default function QuestionStatPage() {
           </div>
           {/* Sort — rõ ràng hơn dropdown */}
           <div className="flex gap-1 bg-[var(--bg-elevated)] border border-[var(--border-base)] rounded-lg p-1">
-            <span className="px-2 py-1 text-xs text-[var(--text-3)] self-center">Sắp xếp:</span>
+            <span className="px-2 py-1 text-xs text-[var(--text-3)] self-center">{t('questionStat.sort')}</span>
             {[
-              ['rate_asc',  'Khó nhất trước'],
-              ['rate_desc', 'Dễ nhất trước'],
-              ['attempts',  'Nhiều lần làm'],
+              ['rate_asc',  t('questionStat.hardestFirst')],
+              ['rate_desc', t('questionStat.easiestFirst')],
+              ['attempts',  t('questionStat.mostAttempts')],
             ].map(([v, l]) => (
               <button key={v} onClick={() => setSortBy(v)}
                 className={`px-3 py-1 rounded-md text-xs font-medium transition-all ${
@@ -142,13 +162,13 @@ export default function QuestionStatPage() {
           <div className="w-6 h-6 rounded-full border-2 border-[var(--accent)] border-t-transparent animate-spin"/>
         </div>
       ) : !courseId ? (
-        <div className="card text-center py-16 text-[var(--text-3)]">Chọn lớp học để xem thống kê</div>
+        <div className="card text-center py-16 text-[var(--text-3)]">{t('questionStat.selectCourse')}</div>
       ) : filtered.length === 0 ? (
         <div className="card text-center py-16">
           <p className="text-[var(--text-3)]">
             {stats.length === 0
-              ? 'Chưa có dữ liệu — câu hỏi cần được làm ít nhất 5 lần để hiện thống kê'
-              : 'Không có câu hỏi nào khớp filter'}
+              ? t('questionStat.noData')
+              : t('questionStat.noMatching')}
           </p>
         </div>
       ) : (
@@ -156,19 +176,19 @@ export default function QuestionStatPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[var(--border-base)] bg-[var(--bg-elevated)]">
-                <th className="text-left px-4 py-3 text-[var(--text-3)] font-medium w-8">#</th>
-                <th className="text-left px-4 py-3 text-[var(--text-3)] font-medium">Câu hỏi</th>
-                <th className="text-center px-3 py-3 text-[var(--text-3)] font-medium w-24">Loại</th>
-                <th className="text-center px-3 py-3 text-[var(--text-3)] font-medium w-16">Độ khó</th>
-                <th className="text-center px-3 py-3 text-[var(--text-3)] font-medium w-20">Lần TL</th>
-                <th className="text-left px-4 py-3 text-[var(--text-3)] font-medium w-48">Tỷ lệ đúng</th>
-                <th className="text-center px-3 py-3 text-[var(--text-3)] font-medium w-28">Đánh giá</th>
+                <th className="text-left px-4 py-3 text-[var(--text-3)] font-medium w-8">{t('questionStat.number')}</th>
+                <th className="text-left px-4 py-3 text-[var(--text-3)] font-medium">{t('questionStat.question')}</th>
+                <th className="text-center px-3 py-3 text-[var(--text-3)] font-medium w-24">{t('questionStat.type')}</th>
+                <th className="text-center px-3 py-3 text-[var(--text-3)] font-medium w-16">{t('questionStat.difficulty')}</th>
+                <th className="text-center px-3 py-3 text-[var(--text-3)] font-medium w-20">{t('questionStat.attempts')}</th>
+                <th className="text-left px-4 py-3 text-[var(--text-3)] font-medium w-48">{t('questionStat.correctRate')}</th>
+                <th className="text-center px-3 py-3 text-[var(--text-3)] font-medium w-28">{t('questionStat.evaluation')}</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((q, i) => {
-                const flag = FLAG_META[q.difficultyFlag] || FLAG_META.OK
-                const diff = DIFF_META[q.difficulty] || {}
+                const flag = FLAG_META(t)[q.difficultyFlag] || FLAG_META(t).OK
+                const diff = DIFF_META(t)[q.difficulty] || {}
                 return (
                   <tr key={q.questionId} className="border-b border-[var(--border-base)] hover:bg-[var(--bg-elevated)] transition-colors">
                     <td className="px-4 py-3 text-[var(--text-3)] text-xs">{i + 1}</td>
@@ -176,7 +196,7 @@ export default function QuestionStatPage() {
                       <p className="text-[var(--text-1)] line-clamp-2">{q.questionContent}</p>
                     </td>
                     <td className="px-3 py-3 text-center">
-                      <span className="text-xs text-[var(--text-3)]">{TYPE_META[q.questionType] || q.questionType}</span>
+                      <span className="text-xs text-[var(--text-3)]">{TYPE_META(t)[q.questionType] || q.questionType}</span>
                     </td>
                     <td className="px-3 py-3 text-center">
                       <span className={`text-xs font-medium ${diff.cls}`}>{diff.label}</span>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
+import { useTranslation } from 'react-i18next'
 import { attemptApi } from '../../api/services'
 import api from '../../api/client'
 
@@ -585,6 +586,7 @@ function WeaknessWidget() {
 // ── Main ──────────────────────────────────────────────────
 export default function StudentDashboard() {
   const { user }              = useAuth()
+  const { t }                 = useTranslation()
   const navigate              = useNavigate()
   const [stats, setStats]     = useState(null)
   const [loading, setLoading] = useState(true)
@@ -593,7 +595,7 @@ export default function StudentDashboard() {
   useEffect(() => {
     api.get('/dashboard/student')
       .then(r => setStats(r.data.data))
-      .catch(e => setError(e?.response?.data?.message || 'Không tải được dữ liệu'))
+      .catch(e => setError(e?.response?.data?.message || t('messages.loadingFailed')))
       .finally(() => setLoading(false))
   }, [])
 
@@ -613,8 +615,8 @@ export default function StudentDashboard() {
 
       {/* Header */}
       <div>
-        <h1 className="page-title">Tổng quan</h1>
-        <p className="page-subtitle">Xin chào, <span className="font-bold" style={{ color:'var(--text-2)' }}>{user?.fullName || user?.username}</span></p>
+        <h1 className="page-title">{t('nav.dashboard')}</h1>
+        <p className="page-subtitle">{t('common.hello')}, <span className="font-bold" style={{ color:'var(--text-2)' }}>{user?.fullName || user?.username}</span></p>
       </div>
 
       {error && <div className="px-5 py-4 rounded-2xl text-sm" style={{ background:'var(--danger-subtle)', color:'var(--danger)', border:'1px solid var(--danger-border)' }}>{error}</div>}
@@ -622,10 +624,10 @@ export default function StudentDashboard() {
       {/* Stat Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label:'Lớp đang học',   value:stats?.enrolledCourses,   icon:<IcoCourses/>,  color:'var(--accent)'  },
-          { label:'Đề có thể thi',  value:stats?.availableExams,    icon:<IcoExams/>,    color:'var(--purple)'  },
-          { label:'Bài đã làm',     value:stats?.completedAttempts, icon:<IcoResults/>,  color:'var(--cyan)'    },
-          { label:'Bài đạt',        value:stats?.passedAttempts,    icon:<IcoPassed/>,   color:'var(--success)' },
+          { label:t('student.myCourses'),   value:stats?.enrolledCourses,   icon:<IcoCourses/>,  color:'var(--accent)'  },
+          { label:t('exam.noExams'),  value:stats?.availableExams,    icon:<IcoExams/>,    color:'var(--purple)'  },
+          { label:t('attempt.submitted'),     value:stats?.completedAttempts, icon:<IcoResults/>,  color:'var(--cyan)'    },
+          { label:t('attempt.passed'),        value:stats?.passedAttempts,    icon:<IcoPassed/>,   color:'var(--success)' },
         ].map(s => <StatCard key={s.label} {...s} loading={loading}/>)}
       </div>
 
@@ -634,15 +636,15 @@ export default function StudentDashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           {/* Score line chart */}
           <div className="card lg:col-span-2">
-            <p className="font-bold" style={{ color:'var(--text-1)' }}>Điểm số gần đây</p>
-            <p className="text-xs mt-0.5 mb-4" style={{ color:'var(--text-3)' }}>Lịch sử các bài thi</p>
+            <p className="font-bold" style={{ color:'var(--text-1)' }}>{t('stats.recentExams')}</p>
+            <p className="text-xs mt-0.5 mb-4" style={{ color:'var(--text-3)' }}>{t('attempt.resultHistory')}</p>
             {recentScores.length > 0 ? (
               <ReactApexChart type="area" height={180}
-                series={[{ name:'Điểm số', data:recentScores }]}
+                series={[{ name:t('attempt.score'), data:recentScores }]}
                 options={lineOpts(recentLabels)}/>
             ) : (
               <div className="flex items-center justify-center h-44 text-sm" style={{ color:'var(--text-3)' }}>
-                Chưa có bài thi nào
+                {t('exam.noExamsInCourse')}
               </div>
             )}
           </div>

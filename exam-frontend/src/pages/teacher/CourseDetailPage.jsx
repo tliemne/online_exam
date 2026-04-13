@@ -6,6 +6,7 @@ import { courseApi, userApi, lectureApi, announcementApi } from '../../api/servi
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import { useConfirm } from '../../components/common/ConfirmDialog'
+import { useTranslation } from 'react-i18next'
 import api from '../../api/client'
 
 // ── Icons ─────────────────────────────────────────────────
@@ -21,6 +22,119 @@ const Icon = {
   check:   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.5 12.75l6 6 9-13.5"/></svg>,
   youtube: <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 00-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 00.502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 002.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 002.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>,
   link:    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>,
+}
+
+// ── Manage Teachers Modal ────────────────────────────────
+function ManageTeachersModal({ course, onClose, onSaved, allUsers, currentUser, isAdmin, t }) {
+  const [teachers, setTeachers] = useState(course?.teachers || [])
+  const [selectedTeacherId, setSelectedTeacherId] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const canManage = isAdmin || course?.createdById === currentUser?.id
+
+  if (!canManage) return null
+
+  const availableTeachers = allUsers.filter(u =>
+    u.roles?.includes('TEACHER') &&
+    !teachers.some(t => t.id === u.id)
+  )
+
+  const handleAddTeacher = async () => {
+    if (!selectedTeacherId) {
+      setError(t('course.selectTeacherError'))
+      return
+    }
+    setLoading(true)
+    setError('')
+    try {
+      const res = await courseApi.addTeacher(course.id, Number(selectedTeacherId))
+      setTeachers(res.data.data.teachers || [])
+      setSelectedTeacherId('')
+      if (onSaved) onSaved()
+    } catch (err) {
+      setError(err.response?.data?.message || t('messages.saveFailed'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRemoveTeacher = async (teacherId) => {
+    if (teachers.length === 1) {
+      setError(t('course.minOneTeacher'))
+      return
+    }
+    setLoading(true)
+    setError('')
+    try {
+      const res = await courseApi.removeTeacher(course.id, teacherId)
+      setTeachers(res.data.data.teachers || [])
+      if (onSaved) onSaved()
+    } catch (err) {
+      setError(err.response?.data?.message || t('messages.saveFailed'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-box max-w-lg">
+        <div className="modal-header">
+          <h2 className="section-title">{t('course.manageTeachers')}</h2>
+          <button onClick={onClose} className="btn-ghost p-1.5">{Icon.x}</button>
+        </div>
+        <div className="p-6 space-y-5">
+          {error && <div className="px-4 py-3 rounded-2xl bg-danger/10 border border-danger/30 text-danger text-sm">{error}</div>}
+          
+          <div>
+            <label className="label">{t('course.teacherList')}</label>
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {teachers.length === 0 ? (
+                <p className="text-[var(--text-3)] text-sm py-3">{t('course.noTeachers')}</p>
+              ) : teachers.map(teacher => (
+                <div key={teacher.id} className="flex items-center justify-between p-3 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-base)]">
+                  <div>
+                    <p className="text-[var(--text-1)] text-sm font-medium">{teacher.fullName || teacher.username}</p>
+                    <p className="text-[var(--text-3)] text-xs">@{teacher.username}</p>
+                  </div>
+                  {teachers.length > 1 && (
+                    <button onClick={() => handleRemoveTeacher(teacher.id)} disabled={loading}
+                      className="btn-ghost text-danger/70 hover:text-danger hover:bg-danger/10 px-2 py-1 text-xs">
+                      {t('common.delete')}
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {availableTeachers.length > 0 && (
+            <div>
+              <label className="label">{t('course.addTeacher')}</label>
+              <div className="flex gap-2">
+                <select className="input-field flex-1" value={selectedTeacherId}
+                  onChange={e => setSelectedTeacherId(e.target.value)}>
+                  <option value="">{t('common.selectPlaceholder')}</option>
+                  {availableTeachers.map(teacher => (
+                    <option key={teacher.id} value={teacher.id}>{teacher.fullName || teacher.username}</option>
+                  ))}
+                </select>
+                <button onClick={handleAddTeacher} disabled={loading || !selectedTeacherId}
+                  className="btn-primary px-4">
+                  {loading ? t('common.adding') : t('common.add')}
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-2">
+            <button onClick={onClose} className="btn-secondary flex-1">{t('common.close')}</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 }
 
 // ── Add Student Modal ──────────────────────────────────────
@@ -857,8 +971,9 @@ export default function CourseDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const toast = useToast()
+  const { t } = useTranslation()
   const [confirmDialog, ConfirmDialogUI] = useConfirm()
-  const { hasRole } = useAuth()
+  const { hasRole, user } = useAuth()
   const isTeacher = hasRole('TEACHER') || hasRole('ADMIN')
   const isAdmin   = hasRole('ADMIN')
 
@@ -866,6 +981,8 @@ export default function CourseDetailPage() {
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState(isTeacher ? 'students' : 'announcements')
   const [exporting, setExporting] = useState(false)
+  const [showManageTeachers, setShowManageTeachers] = useState(false)
+  const [allUsers, setAllUsers] = useState([])
   const TABS = isTeacher ? TEACHER_TABS : STUDENT_TABS
 
   const handleExportReport = async () => {
@@ -877,9 +994,9 @@ export default function CourseDetailPage() {
       link.download = `bao-cao-${course.name.replace(/\s+/g, '-')}.xlsx`
       link.click()
       URL.revokeObjectURL(link.href)
-      toast.success('Xuất báo cáo thành công')
+      toast.success(t('messages.saveSuccess'))
     } catch {
-      toast.error('Xuất báo cáo thất bại')
+      toast.error(t('messages.saveFailed'))
     } finally {
       setExporting(false)
     }
@@ -896,6 +1013,15 @@ export default function CourseDetailPage() {
   }, [id, navigate])
 
   useEffect(() => { loadCourse() }, [loadCourse])
+
+  // Load danh sách giáo viên nếu là teacher hoặc admin
+  useEffect(() => {
+    if (isTeacher) {
+      userApi.getAllTeachers()
+        .then(r => setAllUsers(r.data.data || []))
+        .catch(() => setAllUsers([]))
+    }
+  }, [isTeacher])
 
   if (loading) return (
     <div className="flex justify-center items-center min-h-64">
@@ -916,7 +1042,7 @@ export default function CourseDetailPage() {
       <div>
         <button onClick={() => navigate(backPath)}
           className="flex items-center gap-1.5 text-[var(--text-3)] hover:text-[var(--text-1)] text-sm mb-4 transition-colors">
-          {Icon.back} Quay lại danh sách lớp
+          {Icon.back} {t('common.back')}
         </button>
 
         <div className="flex items-start justify-between">
@@ -932,7 +1058,13 @@ export default function CourseDetailPage() {
                 <p className="text-[var(--text-2)] text-sm mt-1">{course.description}</p>
               )}
               <div className="flex items-center gap-3 mt-2.5 text-sm text-[var(--text-3)]">
-                <span>Giáo viên: {course.teacherName || 'Chưa có giảng viên'}</span>
+                <span>
+                  Giáo viên: {
+                    course.teachers && course.teachers.length > 0
+                      ? course.teachers.map(t => t.fullName || t.username).join(', ')
+                      : 'Chưa có giáo viên'
+                  }
+                </span>
                 <span>·</span>
                 <span>{course.studentCount ?? 0} Sinh viên</span>
               </div>
@@ -940,6 +1072,15 @@ export default function CourseDetailPage() {
           </div>
           {/* Action buttons — gom lại 1 chỗ */}
           <div className="flex items-center gap-2 shrink-0">
+            {(course.createdById === user?.id || isAdmin) && (
+              <button
+                onClick={() => setShowManageTeachers(true)}
+                className="btn-secondary flex items-center gap-2 text-sm"
+                title="Thêm hoặc xóa giáo viên quản lý lớp"
+              >
+                Thêm giáo viên
+              </button>
+            )}
             <button
               onClick={() => navigate(`${isTeacher ? (isAdmin ? `/admin` : `/teacher`) : `/student`}/courses/${course.id}/leaderboard`)}
               className="btn-secondary flex items-center gap-2 text-sm"
@@ -992,6 +1133,19 @@ export default function CourseDetailPage() {
         {tab === 'exams'    && <TabExams    course={course} isTeacher={isTeacher} />}
         {tab === 'ai_analysis' && <TabAiAnalysis courseId={course.id} />}
       </div>
+
+      {/* Manage Teachers Modal */}
+      {showManageTeachers && (
+        <ManageTeachersModal
+          course={course}
+          onClose={() => setShowManageTeachers(false)}
+          onSaved={loadCourse}
+          allUsers={allUsers}
+          currentUser={user}
+          isAdmin={isAdmin}
+          t={t}
+        />
+      )}
     </div>
     </>
   )

@@ -3,6 +3,8 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useSettings } from '../../context/SettingsContext'
 import { notifApi } from '../../api/services'
+import { useTranslation } from 'react-i18next'
+import LanguageSwitcherSidebar from './LanguageSwitcherSidebar'
 
 // ── SVG Icons ─────────────────────────────────────────────
 const Icon = {
@@ -28,53 +30,53 @@ const Icon = {
 }
 
 // ── Nav structure with groups ─────────────────────────────
-function getNavItems(role) {
+function getNavItems(role, t) {
   const p = role === 'ADMIN' ? '/admin' : '/teacher'
 
   const questionGroup = {
-    group: true, label: 'Câu hỏi', icon: Icon.questions,
+    group: true, label: t('nav.questions'), icon: Icon.questions,
     matchPrefixes: [`${p}/questions`, `${p}/tags`, `${p}/question-stats`],
     children: [
-      { to: `${p}/questions`,      label: 'Ngân hàng', icon: Icon.questions },
+      { to: `${p}/questions`,      label: t('question.title'), icon: Icon.questions },
       { to: `${p}/tags`,           label: 'Tags',       icon: Icon.tags      },
-      { to: `${p}/question-stats`, label: 'Thống kê',  icon: Icon.stats     },
+      { to: `${p}/question-stats`, label: t('stats.title'),  icon: Icon.stats     },
     ]
   }
 
   const examGroup = {
-    group: true, label: 'Bài kiểm tra', icon: Icon.exams,
+    group: true, label: t('exam.title'), icon: Icon.exams,
     matchPrefixes: [`${p}/exams`, `${p}/grading`, `${p}/stats`],
     children: [
-      { to: `${p}/exams`,   label: 'Đề thi',    icon: Icon.exams    },
-      { to: `${p}/grading`, label: 'Chấm điểm', icon: Icon.grading  },
-      { to: `${p}/stats`,   label: 'Thống kê',  icon: Icon.stats    },
+      { to: `${p}/exams`,   label: t('exam.title'),    icon: Icon.exams    },
+      { to: `${p}/grading`, label: t('grade.title'), icon: Icon.grading  },
+      { to: `${p}/stats`,   label: t('stats.title'),  icon: Icon.stats    },
     ]
   }
 
   if (role === 'ADMIN') return [
-    { to: '/admin',          label: 'Tổng quan',   end: true, icon: Icon.dashboard },
-    { to: '/admin/users',    label: 'Người dùng',             icon: Icon.users     },
-    { to: '/admin/courses',  label: 'Lớp học',                icon: Icon.courses   },
+    { to: '/admin',          label: t('nav.dashboard'),   end: true, icon: Icon.dashboard },
+    { to: '/admin/users',    label: t('user.title'),             icon: Icon.users     },
+    { to: '/admin/courses',  label: t('course.title'),                icon: Icon.courses   },
     questionGroup,
     examGroup,
-    { to: '/admin/logs',     label: 'Nhật ký',                icon: Icon.logs      },
+    { to: '/admin/logs',     label: t('nav.activityLog'),                icon: Icon.logs      },
   ]
 
   if (role === 'TEACHER') return [
-    { to: '/teacher',         label: 'Tổng quan', end: true, icon: Icon.dashboard },
-    { to: '/teacher/courses', label: 'Lớp học',              icon: Icon.courses   },
+    { to: '/teacher',         label: t('nav.dashboard'), end: true, icon: Icon.dashboard },
+    { to: '/teacher/courses', label: t('course.title'),              icon: Icon.courses   },
     questionGroup,
     examGroup,
   ]
 
   // STUDENT — flat list
   return [
-    { to: '/student',           label: 'Tổng quan',  end: true, icon: Icon.dashboard   },
-    { to: '/student/courses',   label: 'Lớp học',               icon: Icon.courses     },
-    { to: '/student/exams',     label: 'Bài thi',               icon: Icon.exams        },
-    { to: '/student/results',   label: 'Kết quả',               icon: Icon.results      },
-    { to: '/student/schedule',  label: 'Lịch thi',              icon: Icon.schedule     },
-    { to: '/student/rankings',  label: 'Xếp hạng',              icon: Icon.leaderboard  },
+    { to: '/student',           label: t('nav.dashboard'),  end: true, icon: Icon.dashboard   },
+    { to: '/student/courses',   label: t('course.title'),               icon: Icon.courses     },
+    { to: '/student/exams',     label: t('exam.title'),               icon: Icon.exams        },
+    { to: '/student/results',   label: t('attempt.result'),               icon: Icon.results      },
+    { to: '/student/schedule',  label: t('nav.schedule'),              icon: Icon.schedule     },
+    { to: '/student/rankings',  label: t('stats.title'),              icon: Icon.leaderboard  },
   ]
 }
 
@@ -152,8 +154,8 @@ function NavGroup({ item, collapsed }) {
 
 const roleConfig = {
   ADMIN:   { label: 'Admin',      color: 'var(--danger)', bg: 'var(--danger-subtle)',  border: 'var(--danger-border)'  },
-  TEACHER: { label: 'Giảng viên', color: 'var(--cyan)', bg: 'var(--cyan-subtle)', border: 'rgba(8,145,178,0.2)'  },
-  STUDENT: { label: 'Sinh viên',  color: 'var(--success)', bg: 'var(--success-subtle)', border: 'var(--success-border)'  },
+  TEACHER: { label: 'Teacher', color: 'var(--cyan)', bg: 'var(--cyan-subtle)', border: 'rgba(8,145,178,0.2)'  },
+  STUDENT: { label: 'Student',  color: 'var(--success)', bg: 'var(--success-subtle)', border: 'var(--success-border)'  },
 }
 
 function SideBtn({ onClick, icon, label, collapsed, danger }) {
@@ -175,6 +177,7 @@ function SideBtn({ onClick, icon, label, collapsed, danger }) {
 // ── Notification Bell ─────────────────────────────────────
 function NotificationBell() {
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const [open, setOpen]           = useState(false)
   const [notifications, setNotifs] = useState([])
   const [unread, setUnread]        = useState(0)
@@ -284,18 +287,18 @@ function NotificationBell() {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: 'var(--border-base)' }}>
             <span className="text-sm font-semibold" style={{ color: 'var(--text-1)' }}>
-              Thông báo {unread > 0 && <span className="ml-1 text-xs px-1.5 py-0.5 rounded-full text-white" style={{ background: '#ef4444' }}>{unread}</span>}
+              {t('common.loading')} {unread > 0 && <span className="ml-1 text-xs px-1.5 py-0.5 rounded-full text-white" style={{ background: '#ef4444' }}>{unread}</span>}
             </span>
             <div className="flex items-center gap-2">
               {unread > 0 && (
                 <button onClick={handleMarkAllRead} className="text-xs" style={{ color: 'var(--accent)' }}>
-                  Đọc tất cả
+                  {t('common.confirm')}
                 </button>
               )}
               {notifications.length > 0 && (
                 <button onClick={handleDeleteAll} className="text-xs" style={{ color: 'var(--text-3)' }}
-                  title="Xóa tất cả">
-                  Xóa tất cả
+                  title={t('common.delete')}>
+                  {t('common.delete')}
                 </button>
               )}
             </div>
@@ -308,7 +311,7 @@ function NotificationBell() {
                 <div className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin" style={{ borderColor: 'var(--accent)' }}/>
               </div>
             ) : notifications.length === 0 ? (
-              <p className="text-center py-8 text-sm" style={{ color: 'var(--text-3)' }}>Chưa có thông báo</p>
+              <p className="text-center py-8 text-sm" style={{ color: 'var(--text-3)' }}>{t('messages.notFound')}</p>
             ) : (
               notifications.map(n => {
                 const dotColor = TYPE_COLOR[n.type] || '#6b7280'
@@ -374,12 +377,16 @@ function NotificationBell() {
 export default function AppLayout({ children }) {
   const { user, logout }          = useAuth()
   const { theme, toggleTheme }    = useSettings()
+  const { i18n, t }               = useTranslation()
   const navigate                  = useNavigate()
   const [collapsed, setCollapsed] = useState(false)
 
   const role     = Array.isArray(user?.roles) ? user.roles[0] : [...(user?.roles || [])][0]
-  const navItems = getNavItems(role)
+  const navItems = getNavItems(role, t)
   const rc       = roleConfig[role] || { label: role, color: 'var(--text-3)', bg: 'var(--bg-elevated)', border: 'var(--border-base)' }
+  
+  // Get translated role label
+  const roleLabel = role === 'ADMIN' ? t('user.roleAdmin') : role === 'TEACHER' ? t('user.roleTeacher') : role === 'STUDENT' ? t('user.roleStudent') : role
 
   const handleLogout = async () => { await logout(); navigate('/login') }
 
@@ -404,7 +411,7 @@ export default function AppLayout({ children }) {
               <span className="font-bold text-base tracking-tight block" style={{ color: 'var(--text-1)' }}>
                 ExamPortal
               </span>
-              <span className="text-xs" style={{ color: 'var(--text-3)' }}>Hệ thống thi</span>
+              <span className="text-xs" style={{ color: 'var(--text-3)' }}>{t('common.systemShortName')}</span>
             </div>
           )}
         </div>
@@ -424,10 +431,11 @@ export default function AppLayout({ children }) {
         {/* Bottom */}
         <div className="px-3 py-3 space-y-0.5">
           <div className="mb-2" style={{ height: '1px', background: 'var(--border-subtle)' }}/>
+          <LanguageSwitcherSidebar collapsed={collapsed} />
           <SideBtn
             onClick={toggleTheme}
             icon={theme === 'dark' ? Icon.sun : Icon.moon}
-            label={theme === 'dark' ? 'Giao diện sáng' : 'Giao diện tối'}
+            label={theme === 'dark' ? t('common.settings') : t('common.settings')}
             collapsed={collapsed}
           />
           <NavLink to="/profile"
@@ -448,16 +456,16 @@ export default function AppLayout({ children }) {
                 </p>
                 <span className="inline-block text-[10px] font-medium px-1.5 py-px rounded border mt-0.5"
                   style={{ color: rc.color, background: rc.bg, borderColor: rc.border }}>
-                  {rc.label}
+                  {roleLabel}
                 </span>
               </div>
             )}
           </NavLink>
-          <SideBtn onClick={handleLogout} icon={Icon.logout} label="Đăng xuất" collapsed={collapsed} danger/>
+          <SideBtn onClick={handleLogout} icon={Icon.logout} label={t('common.logout')} collapsed={collapsed} danger/>
           <SideBtn
             onClick={() => setCollapsed(p => !p)}
             icon={<span className={`transition-transform duration-200 inline-flex ${collapsed ? 'rotate-180' : ''}`}>{Icon.chevron}</span>}
-            label="Thu gọn"
+            label={t('common.back')}
             collapsed={collapsed}
           />
         </div>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { examApi } from '../../api/services'
 import api from '../../api/client'
 import { useToast } from '../../context/ToastContext'
+import { useTranslation } from 'react-i18next'
 
 const Icon = {
   x:      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>,
@@ -12,11 +13,11 @@ const Icon = {
 }
 
 // ── Confidence badge ──────────────────────────────────────
-function ConfBadge({ conf }) {
+function ConfBadge({ conf, t }) {
   const map = {
-    HIGH:   { label: 'Tin cậy cao', bg: 'rgba(22,163,74,0.12)',   color: 'var(--success)', border: 'rgba(22,163,74,0.3)' },
-    MEDIUM: { label: 'Trung bình',  bg: 'rgba(217,119,6,0.12)',   color: 'var(--warning)', border: 'rgba(217,119,6,0.3)' },
-    LOW:    { label: 'Thấp',        bg: 'rgba(220,38,38,0.12)',   color: 'var(--danger)', border: 'rgba(220,38,38,0.3)' },
+    HIGH:   { label: t('teacher.confidenceHigh'), bg: 'rgba(22,163,74,0.12)',   color: 'var(--success)', border: 'rgba(22,163,74,0.3)' },
+    MEDIUM: { label: t('teacher.confidenceMedium'),  bg: 'rgba(217,119,6,0.12)',   color: 'var(--warning)', border: 'rgba(217,119,6,0.3)' },
+    LOW:    { label: t('teacher.confidenceLow'),        bg: 'rgba(220,38,38,0.12)',   color: 'var(--danger)', border: 'rgba(220,38,38,0.3)' },
   }
   const s = map[conf] || map.LOW
   return (
@@ -29,6 +30,8 @@ function ConfBadge({ conf }) {
 
 // ── Grade Modal ───────────────────────────────────────────
 function GradeModal({ attempt, onClose, onGraded }) {
+  const { t } = useTranslation()
+  const toast = useToast()
   const [detail,      setDetail]   = useState(null)
   const [loading,     setLoading]  = useState(true)
   const [grades,      setGrades]   = useState({})
@@ -76,7 +79,7 @@ function GradeModal({ attempt, onClose, onGraded }) {
       suggestions.forEach(s => { map[s.attemptAnswerId] = s })
       setAiSugg(map)
     } catch {
-      toast.error('Không thể kết nối AI. Vui lòng thử lại.')
+      toast.error(t('teacher.aiError'))
     } finally {
       setAiLoading(false)
     }
@@ -95,7 +98,7 @@ function GradeModal({ attempt, onClose, onGraded }) {
       onGraded()
       onClose()
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Lỗi khi lưu điểm')
+      toast.error(err?.response?.data?.message || t('teacher.saveError'))
     } finally {
       setSaving(false)
     }
@@ -115,7 +118,7 @@ function GradeModal({ attempt, onClose, onGraded }) {
         <div className="flex items-center justify-between px-6 py-4 shrink-0"
           style={{ borderBottom: '1px solid var(--border-subtle)' }}>
           <div>
-            <h3 className="font-semibold" style={{ color: 'var(--text-1)' }}>Chấm điểm bài thi</h3>
+            <h3 className="font-semibold" style={{ color: 'var(--text-1)' }}>{t('teacher.gradeExam')}</h3>
             <p className="text-xs" style={{ color: 'var(--text-3)' }}>
               {attempt.studentName}
               {attempt.studentCode && ` · ${attempt.studentCode}`}
@@ -132,7 +135,7 @@ function GradeModal({ attempt, onClose, onGraded }) {
                 {aiLoading
                   ? <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin"/>
                   : Icon.ai}
-                {aiLoading ? 'Đang gợi ý...' : 'AI gợi ý'}
+                {aiLoading ? t('teacher.aiSuggesting') : t('teacher.aiSuggest')}
               </button>
             )}
             <button onClick={onClose} className="p-2 rounded-lg transition-colors"
@@ -152,20 +155,20 @@ function GradeModal({ attempt, onClose, onGraded }) {
               <div className="rounded-xl p-4 grid grid-cols-3 gap-4 text-center"
                 style={{ background: 'var(--bg-elevated)' }}>
                 <div>
-                  <p className="text-xs mb-1" style={{ color: 'var(--text-3)' }}>Điểm hiện tại</p>
+                  <p className="text-xs mb-1" style={{ color: 'var(--text-3)' }}>{t('teacher.currentScore')}</p>
                   <p className="text-2xl font-bold" style={{ color: detail.score != null ? 'var(--accent)' : 'var(--text-3)' }}>
-                    {detail.score != null ? `${detail.score}/${detail.totalScore}` : 'Chưa chấm'}
+                    {detail.score != null ? `${detail.score}/${detail.totalScore}` : t('teacher.notGraded')}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs mb-1" style={{ color: 'var(--text-3)' }}>Trạng thái</p>
+                  <p className="text-xs mb-1" style={{ color: 'var(--text-3)' }}>{t('grading.status')}</p>
                   <p className="text-sm font-semibold"
                     style={{ color: detail.status === 'GRADED' ? 'var(--success)' : 'var(--warning)' }}>
-                    {detail.status === 'GRADED' ? '✓ Đã chấm' : '○ Chờ chấm'}
+                    {detail.status === 'GRADED' ? `✓ ${t('grading.graded')}` : `○ ${t('grading.pendingGrading')}`}
                   </p>
                 </div>
                 <div>
-                  <p className="text-xs mb-1" style={{ color: 'var(--text-3)' }}>Câu đúng</p>
+                  <p className="text-xs mb-1" style={{ color: 'var(--text-3)' }}>{t('teacher.correctAnswers')}</p>
                   <p className="text-sm font-semibold" style={{ color: 'var(--text-1)' }}>
                     {detail.correctCount}/{detail.totalQuestions}
                   </p>
@@ -178,8 +181,7 @@ function GradeModal({ attempt, onClose, onGraded }) {
                   style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.25)',
                            color: 'var(--purple)' }}>
                   {Icon.ai}
-                  <span>AI đã gợi ý điểm cho {Object.keys(aiSuggests).length} câu tự luận.
-                    Nhấn <b>"Áp dụng"</b> để điền vào ô điểm, hoặc tự nhập tay.</span>
+                  <span>{t('grading.aiSuggestInfo', { count: Object.keys(aiSuggests).length })}</span>
                 </div>
               )}
 
@@ -202,12 +204,12 @@ function GradeModal({ attempt, onClose, onGraded }) {
                         style={isEssay
                           ? { background: 'rgba(139,92,246,0.12)', color: 'var(--purple)', border: '1px solid rgba(139,92,246,0.25)' }
                           : { background: 'var(--bg-surface)', color: 'var(--text-3)', border: '1px solid var(--border-base)' }}>
-                        {isEssay ? '✏ Tự luận' : a.questionType === 'MULTIPLE_CHOICE' ? 'Trắc nghiệm' : 'Đúng/Sai'}
+                        {isEssay ? `✏ ${t('grading.essay')}` : a.questionType === 'MULTIPLE_CHOICE' ? t('grading.multipleChoice') : t('grading.trueFalse')}
                       </span>
                       {!isEssay && (
                         <span className="ml-auto text-xs font-medium"
                           style={{ color: a.isCorrect ? 'var(--success)' : 'var(--danger)' }}>
-                          {a.isCorrect ? '✓ Đúng' : '✗ Sai'} · {a.score ?? 0}đ
+                          {a.isCorrect ? `✓ ${t('grading.correct')}` : `✗ ${t('grading.incorrect')}`} · {a.score ?? 0}đ
                         </span>
                       )}
                     </div>
@@ -218,7 +220,7 @@ function GradeModal({ attempt, onClose, onGraded }) {
 
                     {a.selectedAnswerContent && (
                       <div className="mb-2 p-2 rounded-lg" style={{ background: 'var(--bg-surface)' }}>
-                        <p className="text-xs mb-0.5" style={{ color: 'var(--text-3)' }}>Đáp án chọn:</p>
+                        <p className="text-xs mb-0.5" style={{ color: 'var(--text-3)' }}>{t('grading.selectedAnswer')}</p>
                         <p className="text-sm" style={{ color: a.isCorrect ? 'var(--success)' : 'var(--danger)' }}>
                           {a.selectedAnswerContent}
                         </p>
@@ -226,7 +228,7 @@ function GradeModal({ attempt, onClose, onGraded }) {
                     )}
                     {a.textAnswer && (
                       <div className="mb-2 p-3 rounded-lg" style={{ background: 'var(--bg-surface)' }}>
-                        <p className="text-xs mb-1" style={{ color: 'var(--text-3)' }}>Câu trả lời:</p>
+                        <p className="text-xs mb-1" style={{ color: 'var(--text-3)' }}>{t('grading.textAnswer')}</p>
                         <p className="text-sm leading-relaxed" style={{ color: 'var(--text-1)' }}>
                           {a.textAnswer}
                         </p>
@@ -242,20 +244,20 @@ function GradeModal({ attempt, onClose, onGraded }) {
                             style={{ background: 'rgba(139,92,246,0.08)', border: '1px solid rgba(139,92,246,0.2)' }}>
                             <div className="flex items-center justify-between mb-1.5">
                               <div className="flex items-center gap-1.5 text-xs font-medium" style={{ color: 'var(--purple)' }}>
-                                {Icon.ai} Gợi ý AI
+                                {Icon.ai} {t('grading.aiSuggestion')}
                               </div>
                               <div className="flex items-center gap-2">
-                                <ConfBadge conf={suggest.confidence}/>
+                                <ConfBadge conf={suggest.confidence} t={t}/>
                                 <button onClick={() => applyAiSuggest(a.id)}
                                   className="text-xs px-2.5 py-1 rounded-lg font-medium transition-all"
                                   style={{ background: 'var(--purple)', color: '#fff' }}>
-                                  Áp dụng
+                                  {t('grading.apply')}
                                 </button>
                               </div>
                             </div>
                             <div className="flex items-center gap-3 text-sm">
                               <span style={{ color: 'var(--text-2)' }}>
-                                Điểm gợi ý: <b style={{ color: 'var(--purple)' }}>{suggest.suggestedScore ?? '—'}</b>
+                                {t('grading.suggestedScore')} <b style={{ color: 'var(--purple)' }}>{suggest.suggestedScore ?? '—'}</b>
                               </span>
                             </div>
                             {suggest.comment && (
@@ -267,22 +269,22 @@ function GradeModal({ attempt, onClose, onGraded }) {
                         )}
 
                         <div className="flex gap-3 items-center">
-                          <label className="text-xs w-16 shrink-0" style={{ color: 'var(--text-3)' }}>Điểm:</label>
+                          <label className="text-xs w-16 shrink-0" style={{ color: 'var(--text-3)' }}>{t('grading.scoreLabel')}</label>
                           <input type="number" min="0" step="0.5"
                             value={g.score ?? ''}
                             onChange={e => setGrade(a.id, 'score', e.target.value)}
                             className="input-field py-1.5 w-24 text-sm"
-                            placeholder="0.0"
+                            placeholder={t('grading.scorePlaceholder')}
                           />
                         </div>
                         <div className="flex gap-3 items-start">
-                          <label className="text-xs w-16 shrink-0 mt-2" style={{ color: 'var(--text-3)' }}>Nhận xét:</label>
+                          <label className="text-xs w-16 shrink-0 mt-2" style={{ color: 'var(--text-3)' }}>{t('grading.commentLabel')}</label>
                           <textarea
                             value={g.comment ?? ''}
                             onChange={e => setGrade(a.id, 'comment', e.target.value)}
                             className="input-field py-1.5 text-sm resize-none flex-1"
                             rows={2}
-                            placeholder="Nhận xét cho sinh viên (tuỳ chọn)..."
+                            placeholder={t('grading.commentPlaceholder')}
                           />
                         </div>
                       </div>
@@ -293,7 +295,7 @@ function GradeModal({ attempt, onClose, onGraded }) {
             </>
           ) : (
             <p className="text-center py-8 text-sm" style={{ color: 'var(--text-3)' }}>
-              Không tải được dữ liệu
+              {t('teacher.noData')}
             </p>
           )}
         </div>
@@ -301,9 +303,9 @@ function GradeModal({ attempt, onClose, onGraded }) {
         {/* Footer */}
         <div className="px-6 py-4 flex justify-between shrink-0"
           style={{ borderTop: '1px solid var(--border-subtle)' }}>
-          <button onClick={onClose} className="btn-secondary">Đóng</button>
+          <button onClick={onClose} className="btn-secondary">{t('common.close')}</button>
           <button onClick={handleSave} disabled={saving || loading} className="btn-primary">
-            {saving ? 'Đang lưu...' : '✓ Lưu điểm'}
+            {saving ? `${t('grading.savingGrade')}` : `✓ ${t('grading.saveGrade')}`}
           </button>
         </div>
       </div>
@@ -313,6 +315,7 @@ function GradeModal({ attempt, onClose, onGraded }) {
 
 // ── Main Page ─────────────────────────────────────────────
 export default function TeacherGradingPage() {
+  const { t } = useTranslation()
   const toast = useToast()
   const navigate = useNavigate()
   const [exams,         setExams]       = useState([])
@@ -373,9 +376,9 @@ export default function TeacherGradingPage() {
       link.download = `ket-qua-${selectedExam.title.replace(/\s+/g, '-')}.xlsx`
       link.click()
       URL.revokeObjectURL(url)
-      toast.success('Xuất Excel thành công')
+      toast.success(t('grading.exportSuccess'))
     } catch {
-      toast.error('Xuất Excel thất bại. Vui lòng thử lại.')
+      toast.error(t('grading.exportError'))
     } finally {
       setExporting(false)
     }
@@ -390,7 +393,7 @@ export default function TeacherGradingPage() {
       await api.delete(`/attempts/${id}/reset`)
       loadAttempts(selectedExam)
     } catch {
-      toast.error('Reset thất bại. Vui lòng thử lại.')
+      toast.error(t('grading.resetError'))
     } finally {
       setResetting(null)
     }
@@ -410,13 +413,13 @@ export default function TeacherGradingPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-6">
       <div>
-        <h1 className="page-title">Chấm điểm</h1>
-        <p className="page-subtitle">Xem danh sách bài nộp và chấm điểm tự luận</p>
+        <h1 className="page-title">{t('grading.title')}</h1>
+        <p className="page-subtitle">{t('grading.subtitle')}</p>
       </div>
 
       {/* Exam selector */}
       <div className="card p-4">
-        <p className="text-xs uppercase tracking-wider mb-3 font-medium" style={{ color: 'var(--text-3)' }}>Chọn đề thi</p>
+        <p className="text-xs uppercase tracking-wider mb-3 font-medium" style={{ color: 'var(--text-3)' }}>{t('grading.selectExam')}</p>
         {loadingExams ? (
           <div className="h-10 flex items-center">
             <div className="w-5 h-5 rounded-full border-2 animate-spin"
@@ -447,7 +450,7 @@ export default function TeacherGradingPage() {
                 )}
               </button>
             ))}
-            {exams.length === 0 && <p className="text-sm" style={{ color: 'var(--text-3)' }}>Chưa có đề thi nào</p>}
+            {exams.length === 0 && <p className="text-sm" style={{ color: 'var(--text-3)' }}>{t('grading.noExams')}</p>}
           </div>
         )}
       </div>
@@ -458,9 +461,9 @@ export default function TeacherGradingPage() {
           <div className="flex items-start gap-4">
             <div className="grid grid-cols-3 gap-4 flex-1">
               {[
-                { l: 'Tổng bài nộp', v: attempts.length, color: 'var(--accent)' },
-                { l: 'Chờ chấm',     v: pendingCount,    color: 'var(--warning)' },
-                { l: 'Đã chấm',      v: gradedCount,     color: 'var(--success)' },
+                { l: t('grading.totalSubmissions'), v: attempts.length, color: 'var(--accent)' },
+                { l: t('grading.pendingGrading'),     v: pendingCount,    color: 'var(--warning)' },
+                { l: t('grading.graded'),      v: gradedCount,     color: 'var(--success)' },
               ].map(s => (
                 <div key={s.l} className="card text-center py-4">
                   <p className="text-2xl font-bold" style={{ color: s.color }}>{s.v}</p>
@@ -478,7 +481,7 @@ export default function TeacherGradingPage() {
               {exporting
                 ? <span className="w-4 h-4 rounded-full border-2 border-current border-t-transparent animate-spin"/>
                 : Icon.export}
-              <span>{exporting ? 'Đang xuất...' : 'Xuất Excel'}</span>
+              <span>{exporting ? t('grading.exporting') : t('grading.exportExcel')}</span>
             </button>
 
             {/* Stats button */}
@@ -489,16 +492,16 @@ export default function TeacherGradingPage() {
                        border: '1px solid rgba(139,92,246,0.3)',
                        opacity: attempts.length === 0 ? 0.5 : 1 }}>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zm9.75-9.75c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v16.5c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V3.375zm-9.75 9.75c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25"/></svg>
-              <span>Thống kê</span>
+              <span>{t('stats.statistics')}</span>
             </button>
           </div>
 
           {/* Filter */}
           <div className="flex gap-2">
             {[
-              { k: 'all',     l: `Tất cả (${attempts.length})` },
-              { k: 'pending', l: `○ Chờ chấm (${pendingCount})` },
-              { k: 'graded',  l: `✓ Đã chấm (${gradedCount})` },
+              { k: 'all',     l: `${t('grading.all')} (${attempts.length})` },
+              { k: 'pending', l: `○ ${t('grading.pendingGrading')} (${pendingCount})` },
+              { k: 'graded',  l: `✓ ${t('grading.graded')} (${gradedCount})` },
             ].map(f => (
               <button key={f.k} onClick={() => setFilter(f.k)}
                 className="px-4 py-2 rounded-lg text-sm font-medium transition-all"
@@ -520,7 +523,7 @@ export default function TeacherGradingPage() {
           ) : filtered.length === 0 ? (
             <div className="card text-center py-12">
               <p style={{ color: 'var(--text-3)' }}>
-                {attempts.length === 0 ? 'Chưa có sinh viên nào nộp bài' : 'Không có bài trong mục này'}
+                {attempts.length === 0 ? t('grading.noSubmissions') : t('grading.noSubmissionsInFilter')}
               </p>
             </div>
           ) : (
@@ -528,7 +531,7 @@ export default function TeacherGradingPage() {
               <table className="w-full">
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-                    {['Sinh viên', 'Thời gian nộp', 'Điểm', 'Vi phạm', 'Trạng thái', 'Hành động'].map(h => (
+                    {[t('grading.student'), t('grading.submittedAt'), t('grading.score'), t('grading.violations'), t('grading.status'), t('grading.actions')].map(h => (
                       <th key={h} className="text-left px-5 py-3 text-xs uppercase tracking-wider font-medium"
                         style={{ color: 'var(--text-3)' }}>{h}</th>
                     ))}
@@ -585,7 +588,7 @@ export default function TeacherGradingPage() {
                           style={a.status === 'GRADED'
                             ? { background: 'var(--success-subtle)', color: 'var(--success)', border: '1px solid rgba(22,163,74,0.3)' }
                             : { background: 'var(--warning-subtle)', color: 'var(--warning)', border: '1px solid rgba(217,119,6,0.3)' }}>
-                          {a.status === 'GRADED' ? '✓ Đã chấm' : '○ Chờ chấm'}
+                          {a.status === 'GRADED' ? `✓ ${t('grading.graded')}` : `○ ${t('grading.pendingGrading')}`}
                         </span>
                       </td>
                       <td className="px-5 py-3 text-center">
@@ -596,12 +599,12 @@ export default function TeacherGradingPage() {
                               ? { background: 'var(--accent)', color: '#fff', border: '1px solid var(--accent)' }
                               : { color: 'var(--accent)', border: '1px solid rgba(79,110,247,0.3)',
                                   background: 'rgba(79,110,247,0.08)' }}>
-                            {a.status === 'SUBMITTED' ? '✏ Chấm' : 'Xem / Sửa'}
+                            {a.status === 'SUBMITTED' ? `✏ ${t('grading.grade')}` : `${t('grading.view')} / ${t('common.edit')}`}
                           </button>
                           <button
                             onClick={() => setConfirmReset({ id: a.id, studentName: a.studentName })}
                             disabled={resetting === a.id}
-                            title="Reset — cho sinh viên làm lại"
+                            title={t('grading.resetMessage')}
                             className="text-xs px-2 py-1.5 rounded-lg font-medium transition-all"
                             style={{ color: 'var(--danger)', border: '1px solid rgba(220,38,38,0.3)',
                                      background: 'var(--danger-subtle)' }}>
@@ -631,22 +634,22 @@ export default function TeacherGradingPage() {
               </svg>
             </div>
             <h3 className="text-center font-semibold mb-2" style={{ color: 'var(--text-1)' }}>
-              Reset bài thi?
+              {t('grading.resetConfirm')}
             </h3>
             <p className="text-center text-sm mb-1" style={{ color: 'var(--text-2)' }}>
-              Bài thi của <b>{confirmReset.studentName}</b> sẽ bị xóa.
+              {t('grading.resetMessage')} <b>{confirmReset.studentName}</b>
             </p>
             <p className="text-center text-sm mb-6" style={{ color: 'var(--text-3)' }}>
-              Sinh viên có thể làm lại từ đầu.
+              {t('grading.resetMessage')}
             </p>
             <div className="flex gap-3">
               <button onClick={() => setConfirmReset(null)} className="btn-secondary flex-1">
-                Hủy
+                {t('common.cancel')}
               </button>
               <button onClick={handleReset}
                 className="flex-1 py-2 px-4 rounded-xl text-sm font-medium text-white transition-all"
                 style={{ background: 'var(--danger)' }}>
-                Xác nhận Reset
+                {t('grading.resetConfirm')}
               </button>
             </div>
           </div>

@@ -1,7 +1,13 @@
 package com.example.online_exam.dashboard.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.util.List;
 
@@ -35,14 +41,34 @@ public class DashboardResponse {
         private List<CourseStats> courseStats;
     }
 
-    @Data @Builder
+    @Builder @NoArgsConstructor @AllArgsConstructor
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public static class CourseStats {
+        @JsonProperty("courseId")
         private Long   courseId;
+        @JsonProperty("courseName")
         private String courseName;
+        @JsonProperty("studentCount")
         private int    studentCount;
+        @JsonProperty("examCount")
         private int    examCount;
+        @JsonProperty("attemptCount")
         private int    attemptCount;
-        private Integer passRate;   // % bài đạt, null nếu chưa có attempt
+        @JsonProperty("passRate")
+        private Integer passRate;
+
+        public Long getCourseId() { return courseId; }
+        public void setCourseId(Long courseId) { this.courseId = courseId; }
+        public String getCourseName() { return courseName; }
+        public void setCourseName(String courseName) { this.courseName = courseName; }
+        public int getStudentCount() { return studentCount; }
+        public void setStudentCount(int studentCount) { this.studentCount = studentCount; }
+        public int getExamCount() { return examCount; }
+        public void setExamCount(int examCount) { this.examCount = examCount; }
+        public int getAttemptCount() { return attemptCount; }
+        public void setAttemptCount(int attemptCount) { this.attemptCount = attemptCount; }
+        public Integer getPassRate() { return passRate; }
+        public void setPassRate(Integer passRate) { this.passRate = passRate; }
     }
 
     // ── Student ──────────────────────────────────────────

@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { Suspense } from 'react'
 import { AuthProvider } from './context/AuthContext'
 import { ToastProvider } from './context/ToastContext'
 import AdminActivityLogPage from './pages/admin/AdminActivityLogPage'
@@ -39,6 +40,10 @@ import {
   UnauthorizedPage,
 } from './pages/Placeholders'
 
+function LoadingFallback() {
+  return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>Loading...</div>
+}
+
 function WithLayout({ children }) {
   return <AppLayout>{children}</AppLayout>
 }
@@ -48,6 +53,7 @@ export default function App() {
     <BrowserRouter>
       <ToastProvider>
       <AuthProvider>
+        <Suspense fallback={<LoadingFallback />}>
         <Routes>
           {/* Public */}
           <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
@@ -104,6 +110,7 @@ export default function App() {
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
+        </Suspense>
       </AuthProvider>
       </ToastProvider>
     </BrowserRouter>

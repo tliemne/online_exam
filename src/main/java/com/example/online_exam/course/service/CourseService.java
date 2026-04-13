@@ -52,11 +52,11 @@ public class CourseService {
 
     public CourseResponse create(CourseRequest request) {
         User currentUser = currentUserService.requireCurrentUser();
-        User teacher;
+        User primaryTeacher;
         if (currentUserService.isAdmin(currentUser)) {
-            teacher = findValidTeacher(request.getTeacherId());
+            primaryTeacher = findValidTeacher(request.getTeacherId());
         } else if (currentUserService.hasRole(currentUser, RoleName.TEACHER)) {
-            teacher = userRepository.findById(currentUser.getId())
+            primaryTeacher = userRepository.findById(currentUser.getId())
                     .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
         } else {
             throw new AppException(ErrorCode.FORBIDDEN);
@@ -65,7 +65,8 @@ public class CourseService {
         Course course = new Course();
         course.setName(request.getName());
         course.setDescription(request.getDescription());
-        course.setTeacher(teacher);
+        course.getTeachers().add(primaryTeacher);  // Thêm giáo viên chính vào danh sách
+        course.setCreatedBy(currentUser);  // Set người tạo lớp
         courseRepository.save(course);
 
         activityLogService.logUser(currentUser, ActivityLogAction.CREATE_COURSE,
@@ -73,6 +74,7 @@ public class CourseService {
 
         return courseMapper.toResponse(course);
     }
+
 
     public CourseResponse getById(Long id) {
         return courseMapper.toResponse(findCourseByDataScope(id));
@@ -84,7 +86,22 @@ public class CourseService {
         if (currentUserService.isAdmin(currentUser)) {
             courses = courseRepository.findAll();
         } else if (currentUserService.hasRole(currentUser, RoleName.TEACHER)) {
-            courses = courseRepository.findByTeacherId(currentUser.getId());
+            // Lấy lớp do teacher tạo
+            List<Course> createdCourses = courseRepository.findAll().stream()
+                    .filter(c -> c.getCreatedBy() != null && c.getCreatedBy().getId().equals(currentUser.getId()))
+                    .toList();
+            // Lấy lớp mà teacher là giáo viên quản lý (teachers set)
+            List<Course> managedCourses = courseRepository.findAll().stream()
+                    .filter(c -> c.getTeachers().stream().anyMatch(t -> t.getId().equals(currentUser.getId())))
+                    .toList();
+            // Lấy lớp cũ (dùng teacher field - backward compatible)
+            List<Course> oldCourses = courseRepository.findByTeacherId(currentUser.getId());
+            
+            // Gộp lại (loại bỏ trùng)
+            courses = java.util.stream.Stream.concat(
+                    java.util.stream.Stream.concat(createdCourses.stream(), managedCourses.stream()),
+                    oldCourses.stream()
+            ).distinct().toList();
         } else if (currentUserService.hasRole(currentUser, RoleName.STUDENT)) {
             courses = courseRepository.findByStudents_Id(currentUser.getId());
         } else {
@@ -97,11 +114,6 @@ public class CourseService {
         Course course = findCourseByManageScope(id);
         if (request.getName() != null) course.setName(request.getName());
         if (request.getDescription() != null) course.setDescription(request.getDescription());
-        if (request.getTeacherId() != null) {
-            User currentUser = currentUserService.requireCurrentUser();
-            if (!currentUserService.isAdmin(currentUser)) throw new AppException(ErrorCode.FORBIDDEN);
-            course.setTeacher(findValidTeacher(request.getTeacherId()));
-        }
         courseRepository.save(course);
 
         User caller = currentUserService.requireCurrentUser();
@@ -112,7 +124,18 @@ public class CourseService {
     }
 
     public void delete(Long id) {
-        Course course = findCourseByManageScope(id);
+        User currentUser = currentUserService.requireCurrentUser();
+        Course course = courseRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
+        
+        // Chỉ admin hoặc creator mới có quyền xóa lớp
+        boolean isAdmin = currentUserService.isAdmin(currentUser);
+        boolean isCreator = course.getCreatedBy() != null && course.getCreatedBy().getId().equals(currentUser.getId());
+        
+        if (!isAdmin && !isCreator) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+        
         String name = course.getName();
 
         // ── Xóa đúng thứ tự để không vi phạm FK ──────────────────────────
@@ -231,9 +254,15 @@ public class CourseService {
         User currentUser = currentUserService.requireCurrentUser();
         if (currentUserService.isAdmin(currentUser))
             return courseRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
-        if (currentUserService.hasRole(currentUser, RoleName.TEACHER))
-            return courseRepository.findByIdAndTeacherId(id, currentUser.getId())
-                    .orElseThrow(() -> new AppException(ErrorCode.FORBIDDEN));
+        if (currentUserService.hasRole(currentUser, RoleName.TEACHER)) {
+            Course course = courseRepository.findById(id)
+                    .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
+            boolean isCreator = course.getCreatedBy() != null && course.getCreatedBy().getId().equals(currentUser.getId());
+            boolean isTeacher = course.getTeachers().stream().anyMatch(t -> t.getId().equals(currentUser.getId()));
+            boolean isOldTeacher = course.getTeacher() != null && course.getTeacher().getId().equals(currentUser.getId());
+            if (!isCreator && !isTeacher && !isOldTeacher) throw new AppException(ErrorCode.FORBIDDEN);
+            return course;
+        }
         if (currentUserService.hasRole(currentUser, RoleName.STUDENT))
             return courseRepository.findByIdAndStudents_Id(id, currentUser.getId())
                     .orElseThrow(() -> new AppException(ErrorCode.FORBIDDEN));
@@ -244,9 +273,19 @@ public class CourseService {
         User currentUser = currentUserService.requireCurrentUser();
         if (currentUserService.isAdmin(currentUser))
             return courseRepository.findById(id).orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
-        if (currentUserService.hasRole(currentUser, RoleName.TEACHER))
-            return courseRepository.findByIdAndTeacherId(id, currentUser.getId())
-                    .orElseThrow(() -> new AppException(ErrorCode.FORBIDDEN));
+        if (currentUserService.hasRole(currentUser, RoleName.TEACHER)) {
+            // Teacher có thể quản lý nếu:
+            // 1. Tạo lớp (createdBy = teacher)
+            // 2. Là giáo viên quản lý (trong teachers set)
+            // 3. Là giáo viên chính (teacher field - backward compatible)
+            Course course = courseRepository.findById(id)
+                    .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
+            boolean isCreator = course.getCreatedBy() != null && course.getCreatedBy().getId().equals(currentUser.getId());
+            boolean isTeacher = course.getTeachers().stream().anyMatch(t -> t.getId().equals(currentUser.getId()));
+            boolean isOldTeacher = course.getTeacher() != null && course.getTeacher().getId().equals(currentUser.getId());
+            if (!isCreator && !isTeacher && !isOldTeacher) throw new AppException(ErrorCode.FORBIDDEN);
+            return course;
+        }
         throw new AppException(ErrorCode.FORBIDDEN);
     }
 
@@ -257,5 +296,69 @@ public class CourseService {
                 .anyMatch(role -> role.getName() == RoleName.TEACHER);
         if (!isTeacher) throw new AppException(ErrorCode.INVALID_TEACHER);
         return teacher;
+    }
+
+    /**
+     * Thêm giáo viên quản lý lớp
+     */
+    public CourseResponse addTeacher(Long courseId, Long teacherId) {
+        User currentUser = currentUserService.requireCurrentUser();
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
+
+        // Chỉ người tạo lớp mới có quyền thêm giáo viên
+        if (!course.getCreatedBy().getId().equals(currentUser.getId())) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+
+        User teacher = findValidTeacher(teacherId);
+        course.getTeachers().add(teacher);
+        courseRepository.save(course);
+
+        activityLogService.logUser(currentUser, ActivityLogAction.UPDATE_COURSE,
+                "COURSE", courseId,
+                "Thêm giáo viên " + teacher.getUsername() + " quản lý lớp: " + course.getName());
+
+        return courseMapper.toResponse(course);
+    }
+
+    /**
+     * Xóa giáo viên quản lý lớp
+     */
+    public CourseResponse removeTeacher(Long courseId, Long teacherId) {
+        User currentUser = currentUserService.requireCurrentUser();
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
+
+        // Chỉ người tạo lớp mới có quyền xóa giáo viên
+        if (!course.getCreatedBy().getId().equals(currentUser.getId())) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
+
+        User teacher = userRepository.findById(teacherId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        course.getTeachers().remove(teacher);
+        courseRepository.save(course);
+
+        activityLogService.logUser(currentUser, ActivityLogAction.UPDATE_COURSE,
+                "COURSE", courseId,
+                "Xóa giáo viên " + teacher.getUsername() + " khỏi lớp: " + course.getName());
+
+        return courseMapper.toResponse(course);
+    }
+
+    /**
+     * Lấy danh sách giáo viên quản lý lớp
+     */
+    public List<CourseResponse.TeacherInfo> getTeachers(Long courseId) {
+        Course course = findCourseByDataScope(courseId);
+        return course.getTeachers().stream()
+                .map(t -> CourseResponse.TeacherInfo.builder()
+                        .id(t.getId())
+                        .fullName(t.getFullName())
+                        .username(t.getUsername())
+                        .build())
+                .toList();
     }
 }

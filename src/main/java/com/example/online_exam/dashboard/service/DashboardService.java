@@ -15,16 +15,19 @@ import com.example.online_exam.user.entity.User;
 import com.example.online_exam.user.enums.RoleName;
 import com.example.online_exam.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@Slf4j
 public class DashboardService {
 
     private final UserRepository     userRepo;
@@ -85,18 +88,42 @@ public class DashboardService {
     // ── TEACHER ───────────────────────────────────────────
     public DashboardResponse.Teacher teacherStats() {
         User teacher = currentUserService.requireCurrentUser();
+        log.info("[Dashboard] ===== START teacherStats for teacher={} =====", teacher.getId());
 
+        // Lấy tất cả courses của teacher (created by hoặc là member)
         List<Course> courses = courseRepo.findByTeacherId(teacher.getId());
-        List<Exam>   exams   = examRepo.findByCreatedById(teacher.getId());
+        
+        // Lấy tất cả exams của teacher (created by) + exams trong courses của teacher
+        List<Exam> allExams = new ArrayList<>();
+        allExams.addAll(examRepo.findByCreatedById(teacher.getId()));
+        
+        for (Course c : courses) {
+            allExams.addAll(examRepo.findByCourseId(c.getId()));
+        }
+        
+        // Remove duplicates
+        List<Exam> exams = allExams.stream().distinct().collect(Collectors.toList());
+        
+        log.info("[Dashboard] Found {} courses, {} exams", courses.size(), exams.size());
 
         long publishedExams = exams.stream()
                 .filter(e -> e.getStatus() == ExamStatus.PUBLISHED).count();
 
-        // Gom tất cả attempt của đề mình tạo
+        // Gom tất cả attempt của đề mà teacher có quyền (chỉ SUBMITTED + GRADED)
         List<Long> examIds = exams.stream().map(Exam::getId).collect(Collectors.toList());
-        List<Attempt> myAttempts = attemptRepo.findAll().stream()
+        log.info("[Dashboard] examIds: {}", examIds);
+        
+        List<Attempt> allAttempts = attemptRepo.findAll();
+        log.info("[Dashboard] Total attempts in DB: {}", allAttempts.size());
+        
+        List<Attempt> myAttempts = allAttempts.stream()
                 .filter(a -> examIds.contains(a.getExam().getId()))
+                .filter(a -> a.getStatus() == AttemptStatus.SUBMITTED || a.getStatus() == AttemptStatus.GRADED)
                 .collect(Collectors.toList());
+        log.info("[Dashboard] Filtered myAttempts (SUBMITTED+GRADED): {}", myAttempts.size());
+        for (Attempt a : myAttempts) {
+            log.info("[Dashboard]   - Attempt {} exam={} status={}", a.getId(), a.getExam().getId(), a.getStatus());
+        }
 
         long pending = myAttempts.stream()
                 .filter(a -> a.getStatus() == AttemptStatus.SUBMITTED).count();
@@ -115,9 +142,13 @@ public class DashboardService {
                     .filter(e -> e.getCourse() != null && e.getCourse().getId().equals(c.getId()))
                     .collect(Collectors.toList());
             List<Long> cExamIds = cExams.stream().map(Exam::getId).collect(Collectors.toList());
+            log.info("[Dashboard] Course {} cExamIds: {}", c.getId(), cExamIds);
+            
             List<Attempt> cAttempts = myAttempts.stream()
                     .filter(a -> cExamIds.contains(a.getExam().getId()))
                     .collect(Collectors.toList());
+            log.info("[Dashboard] Course {} cAttempts: {}", c.getId(), cAttempts.size());
+            
             List<Attempt> cGraded = cAttempts.stream()
                     .filter(a -> a.getStatus() != null && a.getStatus().name().equals("GRADED"))
                     .collect(Collectors.toList());
@@ -134,7 +165,8 @@ public class DashboardService {
                     .build();
         }).collect(Collectors.toList());
 
-        return DashboardResponse.Teacher.builder()
+        log.info("[Dashboard] ===== END teacherStats =====");
+        DashboardResponse.Teacher response = DashboardResponse.Teacher.builder()
                 .myCourses(courses.size())
                 .myExams(exams.size())
                 .publishedExams(publishedExams)
@@ -144,6 +176,10 @@ public class DashboardService {
                 .passRate(passRate)
                 .courseStats(courseStats)
                 .build();
+        log.info("[Dashboard] Response courseStats: {}", courseStats.stream()
+                .map(c -> c.getCourseName() + "=" + c.getAttemptCount())
+                .collect(Collectors.toList()));
+        return response;
     }
 
     // ── STUDENT ───────────────────────────────────────────

@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../../api/client'
 import { useToast } from '../../context/ToastContext'
+import { useTranslation } from 'react-i18next'
+import ReactApexChart from 'react-apexcharts'
 
 // ── Mini chart components (thuần SVG, không cần recharts) ──────────────────
 
-function PieChart({ passCount, failCount }) {
+function PieChart({ passCount, failCount, t }) {
   const total = passCount + failCount
-  if (total === 0) return <div className="text-center text-[var(--text-3)] py-8">Chưa có dữ liệu</div>
+  if (total === 0) return <div className="text-center text-[var(--text-3)] py-8">{t('stats.noData')}</div>
   const passAngle = (passCount / total) * 360
   const r = 70, cx = 90, cy = 90
   const toRad = d => (d - 90) * Math.PI / 180
@@ -30,20 +32,20 @@ function PieChart({ passCount, failCount }) {
         {failCount > 0 && <path d={failPath} fill="#ef4444" />}
         <circle cx={cx} cy={cy} r={r * 0.5} fill="var(--bg-card)" />
         <text x={cx} y={cy - 6} textAnchor="middle" fill="var(--text-1)" fontSize="16" fontWeight="bold">{Math.round(passCount/total*100)}%</text>
-        <text x={cx} y={cy + 14} textAnchor="middle" fill="var(--text-3)" fontSize="11">Tỉ lệ đạt</text>
+        <text x={cx} y={cy + 14} textAnchor="middle" fill="var(--text-3)" fontSize="11">{t('stats.passRate')}</text>
       </svg>
       <div className="space-y-3">
         <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-green-500 inline-block"/>
-          <span className="text-sm text-[var(--text-2)]">Đạt: <b className="text-green-400">{passCount}</b></span>
+          <span className="text-sm text-[var(--text-2)]">{t('stats.passed')}: <b className="text-green-400">{passCount}</b></span>
         </div>
         <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-red-500 inline-block"/>
-          <span className="text-sm text-[var(--text-2)]">Trượt: <b className="text-red-400">{failCount}</b></span>
+          <span className="text-sm text-[var(--text-2)]">{t('stats.failed')}: <b className="text-red-400">{failCount}</b></span>
         </div>
         <div className="flex items-center gap-2">
           <span className="w-3 h-3 rounded-full bg-blue-500 inline-block"/>
-          <span className="text-sm text-[var(--text-2)]">Tổng: <b className="text-blue-400">{total}</b></span>
+          <span className="text-sm text-[var(--text-2)]">{t('stats.students')}: <b className="text-blue-400">{total}</b></span>
         </div>
       </div>
     </div>
@@ -114,6 +116,7 @@ export default function ExamStatsPage() {
   const { examId } = useParams()
   const navigate   = useNavigate()
   const toast      = useToast()
+  const { t }      = useTranslation()
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
@@ -136,9 +139,9 @@ export default function ExamStatsPage() {
       link.download = `ket-qua-${stats?.examTitle?.replace(/\s+/g, '-') ?? examId}.xlsx`
       link.click()
       URL.revokeObjectURL(url)
-      toast.success('Xuất Excel thành công')
+      toast.success(t('grading.exportSuccess'))
     } catch {
-      toast.error('Xuất Excel thất bại. Vui lòng thử lại.')
+      toast.error(t('grading.exportError'))
     } finally {
       setExporting(false)
     }
@@ -149,12 +152,12 @@ export default function ExamStatsPage() {
       <div className="w-8 h-8 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin"/>
     </div>
   )
-  if (!stats) return <div className="p-8 text-center text-[var(--text-3)]">Không tải được dữ liệu</div>
+  if (!stats) return <div className="p-8 text-center text-[var(--text-3)]">{t('stats.noData')}</div>
 
   const tabs = [
-    { id: 'overview',    label: 'Tổng quan' },
+    { id: 'overview',    label: t('stats.title') },
     { id: 'leaderboard', label: 'Leaderboard' },
-    { id: 'questions',   label: 'Theo câu hỏi' },
+    { id: 'questions',   label: t('questionStat.title') },
   ]
 
   return (
@@ -163,15 +166,15 @@ export default function ExamStatsPage() {
       <div className="flex items-center justify-between">
         <div>
           <button onClick={() => navigate(-1)} className="text-sm text-[var(--text-3)] hover:text-[var(--text-1)] mb-1 flex items-center gap-1">
-            ← Quay lại
+            ← {t('common.back')}
           </button>
-          <h1 className="text-2xl font-bold text-[var(--text-1)]">Thống kê đề thi</h1>
+          <h1 className="text-2xl font-bold text-[var(--text-1)]">{t('stats.title')}</h1>
           <p className="text-[var(--text-3)] mt-1">{stats.examTitle}</p>
         </div>
         <div className="flex items-center gap-2">
           {stats.totalAttempts === 0 && (
             <div className="px-4 py-2 rounded-lg bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-sm">
-              Chưa có sinh viên nộp bài
+              {t('grading.noSubmissions')}
             </div>
           )}
           {stats.totalAttempts > 0 && (
@@ -187,7 +190,7 @@ export default function ExamStatsPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />
                 </svg>
               )}
-              {exporting ? 'Đang xuất...' : 'Xuất Excel'}
+              {exporting ? t('grading.exporting') : t('grading.exportExcel')}
             </button>
           )}
         </div>
@@ -196,10 +199,10 @@ export default function ExamStatsPage() {
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Số lượt thi', value: stats.totalAttempts, color: 'text-blue-400' },
-          { label: 'Điểm TB', value: stats.avgScore?.toFixed(1) ?? '—', sub: `/ ${stats.totalScoreMax}`, color: 'text-purple-400' },
-          { label: 'Tỉ lệ đạt', value: `${stats.passRate}%`, color: stats.passRate >= 50 ? 'text-green-400' : 'text-red-400' },
-          { label: 'Cao nhất', value: stats.maxScore?.toFixed(1) ?? '—', sub: `Thấp: ${stats.minScore?.toFixed(1) ?? '—'}`, color: 'text-yellow-400' },
+          { label: t('stats.attempts'), value: stats.totalAttempts, color: 'text-blue-400' },
+          { label: t('stats.averageScore'), value: stats.avgScore?.toFixed(1) ?? '—', sub: `/ ${stats.totalScoreMax}`, color: 'text-purple-400' },
+          { label: t('stats.passRate'), value: `${stats.passRate}%`, color: stats.passRate >= 50 ? 'text-green-400' : 'text-red-400' },
+          { label: t('stats.highestScore'), value: stats.maxScore?.toFixed(1) ?? '—', sub: `${t('stats.lowestScore')}: ${stats.minScore?.toFixed(1) ?? '—'}`, color: 'text-yellow-400' },
         ].map((c, i) => (
           <div key={i} className="card p-4 rounded-xl space-y-1">
             <p className="text-xs text-[var(--text-3)]">{c.label}</p>
@@ -225,14 +228,75 @@ export default function ExamStatsPage() {
 
       {/* Tab content */}
       {tab === 'overview' && (
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="card p-5 rounded-xl">
-            <h3 className="font-semibold text-[var(--text-1)] mb-4">Tỉ lệ Đạt / Trượt</h3>
-            <PieChart passCount={stats.passCount} failCount={stats.failCount} />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="card lg:col-span-2">
+            <p className="font-bold" style={{ color:'var(--text-1)' }}>{t('stats.distribution')}</p>
+            <p className="text-xs mt-0.5 mb-4" style={{ color:'var(--text-3)' }}>{t('stats.byDifficulty')}</p>
+            {stats.scoreDistribution && stats.scoreDistribution.length > 0 ? (
+              <div className="space-y-3">
+                {stats.scoreDistribution.map((bucket, i) => {
+                  const maxCount = Math.max(...stats.scoreDistribution.map(d => d.count), 1)
+                  const colors = ['#8b5cf6', '#3b82f6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444']
+                  return (
+                    <div key={i} className="flex items-center gap-3">
+                      <span className="text-xs text-[var(--text-3)] w-16 text-right shrink-0">{bucket.label}</span>
+                      <div className="flex-1 h-8 bg-[var(--bg-elevated)] rounded overflow-hidden">
+                        <div
+                          className="h-full rounded transition-all duration-500 flex items-center justify-end pr-2"
+                          style={{ 
+                            width: `${(bucket.count / maxCount) * 100}%`, 
+                            backgroundColor: colors[i % colors.length],
+                            minWidth: bucket.count > 0 ? '2rem' : 0 
+                          }}
+                        >
+                          {bucket.count > 0 && <span className="text-white text-xs font-bold">{bucket.count}</span>}
+                        </div>
+                      </div>
+                      <span className="text-xs text-[var(--text-3)] w-8">{bucket.count}</span>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-48 text-sm" style={{ color:'var(--text-3)' }}>
+                {t('stats.noData')}
+              </div>
+            )}
           </div>
-          <div className="card p-5 rounded-xl">
-            <h3 className="font-semibold text-[var(--text-1)] mb-4">Phân phối điểm số</h3>
-            <Histogram data={stats.scoreDistribution} />
+          <div className="card flex flex-col">
+            <p className="font-bold" style={{ color:'var(--text-1)' }}>{t('stats.passRate')}</p>
+            <p className="text-xs mt-0.5 mb-2" style={{ color:'var(--text-3)' }}>{t('stats.graded')}</p>
+            <div className="flex-1 flex items-center justify-center">
+              {stats.passCount !== undefined && stats.failCount !== undefined ? (
+                <ReactApexChart 
+                  type="donut" 
+                  height={200} 
+                  width="100%" 
+                  series={[stats.passCount, stats.failCount]} 
+                  options={{
+                    chart: { background: 'transparent' },
+                    theme: { mode: document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark' },
+                    labels: [t('stats.passed'), t('stats.failed')],
+                    colors: ['#22c55e', '#ef4444'],
+                    legend: { show: false },
+                    dataLabels: { enabled: false },
+                    stroke: { width: 0 },
+                    plotOptions: { pie: { donut: { size: '68%' } } },
+                    tooltip: { theme: 'dark' },
+                  }}
+                />
+              ) : (
+                <div style={{ color:'var(--text-3)' }}>{t('stats.noData')}</div>
+              )}
+            </div>
+            <div className="flex justify-center gap-6 mt-2">
+              {[['var(--success)',t('stats.passed'),stats.passCount??0],['var(--danger)',t('stats.failed'),stats.failCount??0]].map(([c,l,v])=>(
+                <div key={l} className="flex items-center gap-1.5">
+                  <div className="w-2 h-2 rounded-full shrink-0" style={{background:c}}/>
+                  <span className="text-xs" style={{color:'var(--text-2)'}}>{l}: <b>{v}</b></span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -240,15 +304,15 @@ export default function ExamStatsPage() {
       {tab === 'leaderboard' && (
         <div className="card rounded-xl overflow-hidden">
           <div className="p-4 border-b border-[var(--border)]">
-            <h3 className="font-semibold text-[var(--text-1)]">Top {stats.leaderboard?.length} sinh viên điểm cao nhất</h3>
+            <h3 className="font-semibold text-[var(--text-1)]">Top {stats.leaderboard?.length} {t('stats.students')} {t('stats.highestScore')}</h3>
           </div>
           {stats.leaderboard?.length === 0
-            ? <div className="p-8 text-center text-[var(--text-3)]">Chưa có dữ liệu</div>
+            ? <div className="p-8 text-center text-[var(--text-3)]">{t('stats.noData')}</div>
             : (
             <table className="w-full text-sm">
               <thead className="bg-[var(--bg-1)]">
                 <tr>
-                  {['#', 'Sinh viên', 'Mã SV', 'Điểm', 'Kết quả', 'Vi phạm', 'Nộp lúc'].map(h => (
+                  {['#', t('grading.student'), t('user.username'), t('grading.score'), t('grading.status'), t('grading.violations'), t('grading.submittedAt')].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-xs text-[var(--text-3)] font-medium">{h}</th>
                   ))}
                 </tr>
@@ -277,7 +341,7 @@ export default function ExamStatsPage() {
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                         entry.passed ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
-                      }`}>{entry.passed ? 'Đạt' : 'Trượt'}</span>
+                      }`}>{entry.passed ? t('stats.passed') : t('stats.failed')}</span>
                     </td>
                     <td className="px-4 py-3 text-center">
                       {entry.tabViolations > 0
@@ -295,14 +359,14 @@ export default function ExamStatsPage() {
 
       {tab === 'questions' && (
         <div className="card p-5 rounded-xl">
-          <h3 className="font-semibold text-[var(--text-1)] mb-4">Tỉ lệ trả lời đúng theo câu hỏi</h3>
+          <h3 className="font-semibold text-[var(--text-1)] mb-4">{t('questionStat.correctRate')} {t('questionStat.byType')}</h3>
           <div className="mb-3 flex gap-4 text-xs text-[var(--text-3)]">
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-green-500 inline-block"/> ≥ 70% dễ</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-yellow-500 inline-block"/> 40–70% TB</span>
-            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-red-500 inline-block"/> &lt; 40% khó</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-green-500 inline-block"/> ≥ 70% {t('question.easy')}</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-yellow-500 inline-block"/> 40–70% {t('question.medium')}</span>
+            <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-red-500 inline-block"/> &lt; 40% {t('question.hard')}</span>
           </div>
           {stats.questionStats?.length === 0
-            ? <div className="text-center text-[var(--text-3)] py-8">Chưa có dữ liệu</div>
+            ? <div className="text-center text-[var(--text-3)] py-8">{t('stats.noData')}</div>
             : <BarChart data={stats.questionStats} />}
         </div>
       )}

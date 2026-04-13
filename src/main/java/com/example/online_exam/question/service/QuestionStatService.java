@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,58 +27,59 @@ public class QuestionStatService {
 
     private static final double THRESHOLD_EASY = 0.85;
     private static final double THRESHOLD_HARD = 0.30;
-    private static final int    MIN_ATTEMPTS   = 5;
+    private static final int MIN_ATTEMPTS = 2;
 
     /**
      * Nhận Map<questionId, isCorrect> — plain data, không phải entity.
-     * An toàn khi chạy @Async vì không cần Hibernate session.
-     *
-     * FIX: Code cũ nhận List<AttemptAnswer> rồi lazy-load aa.getQuestion()
-     * trong thread mới → Hibernate session đã đóng → LazyInitializationException
-     * → bị catch silent → KHÔNG GHI GÌ VÀO question_statistics.
+     * ✅ Dùng CHỈ native SQL UPDATE — không dùng JPA save
      */
-    @Async("statExecutor")
-    @Transactional
+    @Transactional(propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
     public void updateStatsById(Map<Long, Boolean> questionCorrectMap) {
-        if (questionCorrectMap == null || questionCorrectMap.isEmpty()) return;
+        if (questionCorrectMap == null || questionCorrectMap.isEmpty()) {
+            log.warn("[QuestionStat] updateStatsById called with empty map");
+            return;
+        }
+        log.info("[QuestionStat] ===== START updateStatsById with {} questions =====", questionCorrectMap.size());
+        int successCount = 0;
+        int failCount = 0;
+        
         try {
             for (Map.Entry<Long, Boolean> entry : questionCorrectMap.entrySet()) {
                 Long    questionId = entry.getKey();
                 Boolean isCorrect  = entry.getValue();
-                if (isCorrect == null) continue;
-
-                QuestionStat stat = statRepo.findByQuestionId(questionId)
-                        .orElseGet(() -> {
-                            Question q = questionRepo.findById(questionId).orElse(null);
-                            if (q == null) return null;
-                            QuestionStat s = new QuestionStat();
-                            s.setQuestion(q);
-                            s.setQuestionId(questionId);
-                            return s;
-                        });
-
-                if (stat == null) continue;
-
-                stat.setTotalAttempts(stat.getTotalAttempts() + 1);
-                if (Boolean.TRUE.equals(isCorrect)) {
-                    stat.setCorrectCount(stat.getCorrectCount() + 1);
+                if (isCorrect == null) {
+                    log.warn("[QuestionStat] Q={} has null isCorrect, skipping", questionId);
+                    continue;
                 }
 
-                double rate = stat.getTotalAttempts() == 0 ? 0.0
-                        : (double) stat.getCorrectCount() / stat.getTotalAttempts();
-                stat.setCorrectRate(Math.round(rate * 1000.0) / 1000.0);
-
-                if (stat.getTotalAttempts() >= MIN_ATTEMPTS) {
-                    if (rate >= THRESHOLD_EASY)      stat.setDifficultyFlag("TOO_EASY");
-                    else if (rate <= THRESHOLD_HARD) stat.setDifficultyFlag("TOO_HARD");
-                    else                             stat.setDifficultyFlag("OK");
+                try {
+                    // Kiểm tra xem stat có tồn tại không
+                    Optional<QuestionStat> existing = statRepo.findByQuestionId(questionId);
+                    
+                    if (existing.isEmpty()) {
+                        // Tạo mới bằng native SQL INSERT
+                        int correctCount = isCorrect ? 1 : 0;
+                        double rate = isCorrect ? 1.0 : 0.0;
+                        String flag = rate >= 0.85 ? "TOO_EASY" : rate <= 0.30 ? "TOO_HARD" : "OK";
+                        
+                        // Dùng native SQL để tránh JPA merge
+                        statRepo.createNewStat(questionId, 1, correctCount, rate, flag);
+                        successCount++;
+                        log.info("[QuestionStat] ✅ Q={} created: total=1 correct={} rate={} flag={}",
+                                questionId, correctCount, rate, flag);
+                    } else {
+                        // Update bằng native SQL
+                        int correctIncrement = isCorrect ? 1 : 0;
+                        statRepo.incrementStats(questionId, correctIncrement);
+                        successCount++;
+                        log.info("[QuestionStat] ✅ Q={} updated via SQL", questionId);
+                    }
+                } catch (Exception e) {
+                    failCount++;
+                    log.error("[QuestionStat] ❌ Failed to update Q={}: {}", questionId, e.getMessage(), e);
                 }
-
-                statRepo.save(stat);
-                log.info("[QuestionStat] q={} total={} rate={} flag={}",
-                        questionId, stat.getTotalAttempts(),
-                        stat.getCorrectRate(), stat.getDifficultyFlag());
             }
+            log.info("[QuestionStat] ===== END updateStatsById: {} success, {} failed =====", successCount, failCount);
         } catch (Exception e) {
             log.error("[QuestionStat] updateStatsById error: {}", e.getMessage(), e);
         }

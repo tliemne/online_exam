@@ -120,4 +120,15 @@ public class QuestionController {
                 .data(questionService.create(req))
                 .timestamp(LocalDateTime.now()).build();
     }
+
+    /** DEBUG: Xóa toàn bộ cache (chỉ admin) */
+    @PostMapping("/cache/clear")
+    @PreAuthorize("hasRole('ADMIN')")
+    public BaseResponse<String> clearCache() {
+        questionService.clearCache();
+        return BaseResponse.<String>builder()
+                .status(200).message("Đã xóa cache")
+                .data("Cache cleared successfully")
+                .timestamp(LocalDateTime.now()).build();
+    }
 }

@@ -5,6 +5,7 @@ import com.example.online_exam.course.dto.CourseRequest;
 import com.example.online_exam.course.dto.CourseResponse;
 import com.example.online_exam.course.dto.CourseUpdateRequest;
 import com.example.online_exam.course.service.CourseService;
+import com.example.online_exam.user.dto.UserResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -119,6 +120,42 @@ public class CourseController {
                 .status(200)
                 .message("add students success")
                 .data(courseService.addStudents(id, studentIds))
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+    @PostMapping("/{id}/teachers/{teacherId}")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    public BaseResponse<CourseResponse> addTeacher(
+            @PathVariable Long id,
+            @PathVariable Long teacherId) {
+        return BaseResponse.<CourseResponse>builder()
+                .status(200)
+                .message("add teacher success")
+                .data(courseService.addTeacher(id, teacherId))
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
+    @DeleteMapping("/{id}/teachers/{teacherId}")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    public BaseResponse<CourseResponse> removeTeacher(
+            @PathVariable Long id,
+            @PathVariable Long teacherId) {
+        return BaseResponse.<CourseResponse>builder()
+                .status(200)
+                .message("remove teacher success")
+                .data(courseService.removeTeacher(id, teacherId))
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
+    @GetMapping("/{id}/teachers")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
+    public BaseResponse<List<CourseResponse.TeacherInfo>> getTeachers(@PathVariable Long id) {
+        return BaseResponse.<List<CourseResponse.TeacherInfo>>builder()
+                .status(200)
+                .message("get teachers success")
+                .data(courseService.getTeachers(id))
                 .timestamp(LocalDateTime.now())
                 .build();
     }

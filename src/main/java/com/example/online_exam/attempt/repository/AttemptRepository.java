@@ -103,12 +103,12 @@ public interface AttemptRepository extends JpaRepository<Attempt, Long> {
 
     // ── Stats queries ───────────────────────────────────────────────────────
 
-    // Tất cả attempt GRADED/SUBMITTED của 1 exam (có score) — fetch student + profile luôn
+    // Tất cả attempt GRADED của 1 exam — fetch student + profile luôn
     @Query("SELECT a FROM Attempt a " +
             "LEFT JOIN FETCH a.student s " +
             "LEFT JOIN FETCH s.studentProfile " +
             "WHERE a.exam.id = :examId " +
-            "  AND a.status IN ('SUBMITTED','GRADED') " +
+            "  AND a.status = 'GRADED' " +
             "  AND a.score IS NOT NULL " +
             "ORDER BY a.score DESC")
     List<Attempt> findGradedByExam(@Param("examId") Long examId);
@@ -122,7 +122,8 @@ public interface AttemptRepository extends JpaRepository<Attempt, Long> {
         FROM attempt_answers aa
         JOIN attempts a ON a.id = aa.attempt_id
         WHERE a.exam_id = :examId
-          AND a.status IN ('SUBMITTED','GRADED')
+          AND a.status = 'GRADED'
+          AND a.score IS NOT NULL
         GROUP BY aa.question_id
     """, nativeQuery = true)
     List<Object[]> findQuestionStatsByExam(@Param("examId") Long examId);
@@ -148,4 +149,18 @@ public interface AttemptRepository extends JpaRepository<Attempt, Long> {
     @Modifying
     @Query(value = "DELETE a FROM attempts a JOIN exams e ON e.id = a.exam_id WHERE e.created_by = :userId", nativeQuery = true)
     void deleteByExamCreatedById(@Param("userId") Long userId);
+    @Query(value = """
+    SELECT aa.question_id,
+           COUNT(aa.id) AS total,
+           SUM(CASE WHEN aa.is_correct = 1 THEN 1 ELSE 0 END) AS correct_count,
+           AVG(COALESCE(aa.score, 0)) AS avg_score
+    FROM attempt_answers aa
+    JOIN attempts a ON a.id = aa.attempt_id
+    JOIN questions q ON q.id = aa.question_id
+    WHERE q.course_id = :courseId
+      AND a.status IN ('SUBMITTED','GRADED')
+    GROUP BY aa.question_id
+""", nativeQuery = true)
+    List<Object[]> findQuestionStatsByCourse(@Param("courseId") Long courseId);
+
 }

@@ -4,15 +4,14 @@ import api from '../../api/client'
 import * as XLSX from 'xlsx'
 import Pagination from '../../components/common/Pagination'
 import { useAuth } from '../../context/AuthContext'
+import { useTranslation } from 'react-i18next'
 import ImportQuestionsModal from '../../components/teacher/questions/ImportQuestionsModal'
 import QuestionFormModal from '../../components/teacher/questions/QuestionFormModal'
 import QuestionPreviewModal from '../../components/teacher/questions/QuestionPreviewModal'
 import { useToast } from '../../context/ToastContext'
 import { useConfirm } from '../../components/common/ConfirmDialog'
 
-const TYPE_LABELS = { MULTIPLE_CHOICE: 'Trắc nghiệm', TRUE_FALSE: 'Đúng / Sai', ESSAY: 'Tự luận' }
 const TYPE_COLORS = { MULTIPLE_CHOICE: 'badge-blue', TRUE_FALSE: 'badge-cyan', ESSAY: 'badge-neutral' }
-const DIFF_LABELS = { EASY: 'Dễ', MEDIUM: 'Trung bình', HARD: 'Khó' }
 const DIFF_COLORS = { EASY: 'badge-green', MEDIUM: 'badge-amber', HARD: 'badge-red' }
 
 const Icon = {
@@ -27,6 +26,19 @@ const Icon = {
 }
 
 function QuestionCard({ question, globalIndex, isTeacherOrAdmin, onPreview, onEdit, onDelete, deleting }) {
+  const { t } = useTranslation()
+  
+  const TYPE_LABELS = { 
+    MULTIPLE_CHOICE: t('question.multipleChoice'), 
+    TRUE_FALSE: t('question.trueOrFalse'), 
+    ESSAY: t('question.essay') 
+  }
+  const DIFF_LABELS = { 
+    EASY: t('question.easy'), 
+    MEDIUM: t('question.medium'), 
+    HARD: t('question.hard') 
+  }
+  
   return (
     <div className="card hover:border-accent/20 transition-all">
       <div className="flex items-start gap-4">
@@ -78,6 +90,7 @@ function QuestionCard({ question, globalIndex, isTeacherOrAdmin, onPreview, onEd
 }
 
 export default function QuestionsPage() {
+  const { t } = useTranslation()
   const toast = useToast()
   const [confirmDialog, ConfirmDialogUI] = useConfirm()
   const { hasRole } = useAuth()
@@ -139,13 +152,13 @@ export default function QuestionsPage() {
   useEffect(() => { loadQuestions() }, [loadQuestions])
 
   const handleDelete = async (q) => {
-    if (!(await confirmDialog({ title: 'Xóa câu hỏi này?', message: 'Câu hỏi sẽ bị xóa khỏi tất cả đề thi.', danger: true, confirmLabel: 'Xóa' }))) return
+    if (!(await confirmDialog({ title: t('question.deleteConfirm'), message: t('question.deleteMessage'), danger: true, confirmLabel: t('common.delete') }))) return
     setDeleting(q.id)
     try {
       await questionApi.delete(q.id)
       loadQuestions()
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Có lỗi xảy ra khi xóa câu hỏi')
+      toast.error(err?.response?.data?.message || t('question.deleteError'))
     } finally { setDeleting(null) }
   }
 
@@ -168,9 +181,9 @@ export default function QuestionsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="page-title">Ngân hàng câu hỏi</h1>
+          <h1 className="page-title">{t('question.questionBank')}</h1>
           <p className="text-[var(--text-2)] text-sm mt-1 flex items-center gap-2">
-            {totalElements || questions.length} câu hỏi
+            {totalElements || questions.length} {t('question.questionsCount')}
             {activeTagInfo && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-white"
                 style={{ backgroundColor: activeTagInfo.color || '#6b7280' }}>
@@ -184,13 +197,13 @@ export default function QuestionsPage() {
             <button onClick={() => setShowAiGenerate(true)}
               className="btn-secondary flex items-center gap-2"
               style={{ color: 'var(--purple)', borderColor: 'var(--purple-subtle)' }}>
-              ✦ AI Tạo câu hỏi
+              ✦ {t('question.aiGenerate')}
             </button>
             <button onClick={() => setShowImport(true)} className="btn-secondary flex items-center gap-2">
-              {Icon.upload} Import file
+              {Icon.upload} {t('question.importFile')}
             </button>
             <button onClick={() => { setSelected(null); setModal('create') }} className="btn-primary flex items-center gap-2">
-              {Icon.plus} Tạo câu hỏi
+              {Icon.plus} {t('question.createQuestion')}
             </button>
           </div>
         )}
@@ -200,43 +213,43 @@ export default function QuestionsPage() {
       <div className="card space-y-4">
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex-1 min-w-44">
-            <label className="label text-xs">Lớp học</label>
+            <label className="label text-xs">{t('question.course')}</label>
             <select className="input-field" value={selectedCourse} onChange={e => setSelectedCourse(e.target.value)}>
               {courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
           <div className="flex-1 min-w-36">
-            <label className="label text-xs">Loại câu hỏi</label>
+            <label className="label text-xs">{t('question.questionType')}</label>
             <select className="input-field" value={filterType} onChange={e => setFilterType(e.target.value)}>
-              <option value="">Tất cả loại</option>
-              <option value="MULTIPLE_CHOICE">Trắc nghiệm</option>
-              <option value="TRUE_FALSE">Đúng / Sai</option>
-              <option value="ESSAY">Tự luận</option>
+              <option value="">{t('question.allTypes')}</option>
+              <option value="MULTIPLE_CHOICE">{t('question.multipleChoice')}</option>
+              <option value="TRUE_FALSE">{t('question.trueOrFalse')}</option>
+              <option value="ESSAY">{t('question.essay')}</option>
             </select>
           </div>
           <div className="flex-1 min-w-32">
-            <label className="label text-xs">Độ khó</label>
+            <label className="label text-xs">{t('question.difficulty')}</label>
             <select className="input-field" value={filterDiff} onChange={e => setFilterDiff(e.target.value)}>
-              <option value="">Tất cả</option>
-              <option value="EASY">Dễ</option>
-              <option value="MEDIUM">Trung bình</option>
-              <option value="HARD">Khó</option>
+              <option value="">{t('question.allDifficulties')}</option>
+              <option value="EASY">{t('question.easy')}</option>
+              <option value="MEDIUM">{t('question.medium')}</option>
+              <option value="HARD">{t('question.hard')}</option>
             </select>
           </div>
           <div className="flex-1 min-w-36">
-            <label className="label text-xs flex items-center gap-1">{Icon.tag} Tag</label>
+            <label className="label text-xs flex items-center gap-1">{Icon.tag} {t('question.tags')}</label>
             <select className="input-field" value={filterTag} onChange={e => setFilterTag(e.target.value)}>
-              <option value="">Tất cả tag</option>
+              <option value="">{t('question.allTags')}</option>
               {tags.map(t => (
                 <option key={t.id} value={t.id}>{t.name} ({t.questionCount ?? 0})</option>
               ))}
             </select>
           </div>
           <div className="flex-1 min-w-44">
-            <label className="label text-xs">Tìm kiếm</label>
+            <label className="label text-xs">{t('common.search')}</label>
             <div className="relative">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-3)]">{Icon.search}</span>
-              <input className="input-field pl-9" placeholder="Nội dung câu hỏi..."
+              <input className="input-field pl-9" placeholder={t('question.searchPlaceholder')}
                 value={keyword} onChange={e => setKeyword(e.target.value)} />
             </div>
           </div>
@@ -245,7 +258,7 @@ export default function QuestionsPage() {
             {hasActiveFilter && (
               <button onClick={() => { setFilterType(''); setFilterDiff(''); setFilterTag(''); setKeyword('') }}
                 className="text-xs text-[var(--text-3)] hover:text-danger px-2 py-1">
-                Xóa filter
+                {t('question.clearFilter')}
               </button>
             )}
           </div>
@@ -253,12 +266,20 @@ export default function QuestionsPage() {
 
         {questions.length > 0 && (
           <div className="flex gap-3 flex-wrap pt-1 border-t border-[var(--border-base)]">
-            <span className="text-xs text-[var(--text-3)]">Phân bố:</span>
-            {Object.entries(TYPE_LABELS).map(([k, v]) => counts[k] > 0 && (
+            <span className="text-xs text-[var(--text-3)]">{t('question.distribution')}</span>
+            {Object.entries({
+              MULTIPLE_CHOICE: t('question.multipleChoice'),
+              TRUE_FALSE: t('question.trueOrFalse'),
+              ESSAY: t('question.essay')
+            }).map(([k, v]) => counts[k] > 0 && (
               <span key={k} className={`text-xs px-2 py-0.5 rounded-full ${TYPE_COLORS[k]}`}>{v}: {counts[k]}</span>
             ))}
             <span className="text-[var(--text-3)] text-xs">|</span>
-            {Object.entries(DIFF_LABELS).map(([k, v]) => counts[k] > 0 && (
+            {Object.entries({
+              EASY: t('question.easy'),
+              MEDIUM: t('question.medium'),
+              HARD: t('question.hard')
+            }).map(([k, v]) => counts[k] > 0 && (
               <span key={k} className={`text-xs px-2 py-0.5 rounded-full ${DIFF_COLORS[k]}`}>{v}: {counts[k]}</span>
             ))}
           </div>
@@ -273,12 +294,12 @@ export default function QuestionsPage() {
       ) : questions.length === 0 ? (
         <div className="card text-center py-16">
           <p className="text-[var(--text-2)]">
-            {hasActiveFilter ? 'Không tìm thấy câu hỏi nào phù hợp.' : `Chưa có câu hỏi nào.${isTeacherOrAdmin ? ' Hãy tạo hoặc import câu hỏi!' : ''}`}
+            {hasActiveFilter ? t('question.noQuestionsFound') : `${t('question.noQuestionsYet')}${isTeacherOrAdmin ? ' ' + t('question.createOrImport') : ''}`}
           </p>
           {isTeacherOrAdmin && !hasActiveFilter && (
             <div className="flex gap-3 justify-center mt-4">
-              <button onClick={() => setShowImport(true)} className="btn-secondary">{Icon.upload} Import file</button>
-              <button onClick={() => { setSelected(null); setModal('create') }} className="btn-primary">{Icon.plus} Tạo câu hỏi</button>
+              <button onClick={() => setShowImport(true)} className="btn-secondary">{Icon.upload} {t('question.importFile')}</button>
+              <button onClick={() => { setSelected(null); setModal('create') }} className="btn-primary">{Icon.plus} {t('question.createQuestion')}</button>
             </div>
           )}
         </div>
@@ -334,6 +355,7 @@ export default function QuestionsPage() {
 
 // ── AI Generate Modal ──────────────────────────────────────
 function AiGenerateModal({ courses, defaultCourseId, tags = [], onClose, onSaved }) {
+  const { t } = useTranslation()
   const toast = useToast()
   const [form, setForm] = useState({
     topic: '', type: 'MULTIPLE_CHOICE', difficulty: 'MEDIUM', count: 5,
@@ -347,7 +369,7 @@ function AiGenerateModal({ courses, defaultCourseId, tags = [], onClose, onSaved
   const [error, setError]       = useState('')
 
   const handleGenerate = async () => {
-    if (!form.topic.trim()) return setError('Nhập chủ đề trước')
+    if (!form.topic.trim()) return setError(t('question.enterTopicFirst'))
     setLoading(true); setError(''); setGenerated([]); setSaved(new Set()); setSaving(new Set())
     try {
       let list = []
@@ -374,10 +396,10 @@ function AiGenerateModal({ courses, defaultCourseId, tags = [], onClose, onSaved
         })
         list = r.data.data || []
       }
-      if (!list.length) setError('AI không tạo được câu hỏi. Thử lại.')
-      else if (list.length < form.count) setError(`AI chỉ tạo được ${list.length}/${form.count} câu. Có thể do giới hạn token. Bạn có thể lưu số câu hiện có.`)
+      if (!list.length) setError(t('question.aiNoQuestions'))
+      else if (list.length < form.count) setError(t('question.aiPartialGenerate', { generated: list.length, total: form.count }))
       setGenerated(list)
-    } catch (e) { setError(e?.response?.data?.message?.includes('Quota') || e?.response?.status === 429 ? 'Quota AI hết cho hôm nay. Đổi API key hoặc thử lại ngày mai.' : 'Lỗi kết nối AI. Thử lại.') }
+    } catch (e) { setError(e?.response?.data?.message?.includes('Quota') || e?.response?.status === 429 ? t('question.aiQuotaExceeded') : t('question.aiConnectionError')) }
     finally { setLoading(false) }
   }
 
@@ -387,9 +409,9 @@ function AiGenerateModal({ courses, defaultCourseId, tags = [], onClose, onSaved
       const tagParam = form.tags ? `&tags=${encodeURIComponent(form.tags)}` : ''
       await api.post(`/questions/ai-save?courseId=${form.courseId}${tagParam}`, q)
       setSaved(p => new Set(p).add(idx))
-      toast.success('Đã lưu câu hỏi')
+      toast.success(t('question.questionSaved'))
       onSaved?.()
-    } catch { toast.error('Lưu thất bại') }
+    } catch { toast.error(t('question.saveFailed')) }
     finally { setSaving(p => { const s = new Set(p); s.delete(idx); return s }) }
   }
 
@@ -446,8 +468,17 @@ function AiGenerateModal({ courses, defaultCourseId, tags = [], onClose, onSaved
     XLSX.writeFile(wb, filename)
   }
 
-  const TYPE_LABEL = { MULTIPLE_CHOICE: 'Trắc nghiệm', TRUE_FALSE: 'Đúng/Sai' }
-  const DIFF_LABEL = { ALL: 'Tất cả', EASY: 'Dễ', MEDIUM: 'Trung bình', HARD: 'Khó' }
+  const TYPE_LABEL = { 
+    MULTIPLE_CHOICE: t('question.multipleChoiceLabel'), 
+    TRUE_FALSE: t('question.trueFalseLabel'),
+    ESSAY: t('question.essayLabel')
+  }
+  const DIFF_LABEL = { 
+    ALL: t('question.allLabel'), 
+    EASY: t('question.easyLabel'), 
+    MEDIUM: t('question.mediumLabel'), 
+    HARD: t('question.hardLabel') 
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
@@ -460,8 +491,8 @@ function AiGenerateModal({ courses, defaultCourseId, tags = [], onClose, onSaved
         <div className="flex items-center justify-between px-5 py-4 border-b sticky top-0 z-10"
           style={{ borderColor: 'var(--border-base)', background: 'var(--bg-surface)' }}>
           <div>
-            <h3 className="font-semibold" style={{ color: 'var(--text-1)' }}>✦ AI Tạo câu hỏi</h3>
-            <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>Powered by Gemini · Kết quả được cache 30 phút</p>
+            <h3 className="font-semibold" style={{ color: 'var(--text-1)' }}>✦ {t('question.aiModalTitle')}</h3>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>{t('question.aiModalSubtitle')}</p>
           </div>
           <button onClick={onClose} className="btn-ghost p-1.5">✕</button>
         </div>
@@ -470,44 +501,44 @@ function AiGenerateModal({ courses, defaultCourseId, tags = [], onClose, onSaved
           {/* Config form */}
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
-              <label className="input-label">Chủ đề *</label>
-              <input className="input-field" placeholder="vd: Java OOP, SQL JOIN, Mạng máy tính..."
+              <label className="input-label">{t('question.topicLabel')}</label>
+              <input className="input-field" placeholder={t('question.topicPlaceholder')}
                 value={form.topic} onChange={e => setForm({...form, topic: e.target.value})}
                 onKeyDown={e => e.key === 'Enter' && handleGenerate()}/>
             </div>
             <div>
-              <label className="input-label">Lớp học</label>
+              <label className="input-label">{t('question.courseLabel')}</label>
               <select className="input-field" value={form.courseId}
                 onChange={e => setForm({...form, courseId: e.target.value})}>
                 {courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="input-label">Loại câu</label>
+              <label className="input-label">{t('question.questionTypeLabel')}</label>
               <select className="input-field" value={form.type}
                 onChange={e => setForm({...form, type: e.target.value})}>
-                <option value="MULTIPLE_CHOICE">Trắc nghiệm</option>
-                <option value="TRUE_FALSE">Đúng/Sai</option>
-                <option value="ESSAY">Tự luận</option>
+                <option value="MULTIPLE_CHOICE">{t('question.multipleChoiceLabel')}</option>
+                <option value="TRUE_FALSE">{t('question.trueFalseLabel')}</option>
+                <option value="ESSAY">{t('question.essayLabel')}</option>
               </select>
             </div>
             <div>
-              <label className="input-label">Độ khó</label>
+              <label className="input-label">{t('question.difficulty')}</label>
               <select className="input-field" value={form.difficulty}
                 onChange={e => setForm({...form, difficulty: e.target.value})}>
-                <option value="ALL">Tất cả mức độ</option>
-                <option value="EASY">Dễ</option>
-                <option value="MEDIUM">Trung bình</option>
-                <option value="HARD">Khó</option>
+                <option value="ALL">{t('question.allLevels')}</option>
+                <option value="EASY">{t('question.easyLabel')}</option>
+                <option value="MEDIUM">{t('question.mediumLabel')}</option>
+                <option value="HARD">{t('question.hardLabel')}</option>
               </select>
             </div>
             <div>
-              <label className="input-label">Số câu</label>
+              <label className="input-label">{t('question.questionCount')}</label>
               <input type="number" className="input-field" min={1}
                 value={form.count} onChange={e => setForm({...form, count: +e.target.value})}/>
             </div>
             <div className="col-span-2">
-              <label className="input-label">Tags gắn vào (tuỳ chọn)</label>
+              <label className="input-label">{t('question.tagsOptional')}</label>
               <div className="flex flex-wrap gap-1.5 mb-2">
                 {tags.map(t => (
                   <button key={t.id} type="button"
@@ -529,7 +560,7 @@ function AiGenerateModal({ courses, defaultCourseId, tags = [], onClose, onSaved
                   </button>
                 ))}
               </div>
-              <input className="input-field text-xs" placeholder="Hoặc nhập tên tag, cách nhau dấu phẩy..."
+              <input className="input-field text-xs" placeholder={t('question.tagsPlaceholder')}
                 value={form.tags} onChange={e => setForm({...form, tags: e.target.value})}/>
             </div>
           </div>
@@ -539,8 +570,8 @@ function AiGenerateModal({ courses, defaultCourseId, tags = [], onClose, onSaved
           <button onClick={handleGenerate} disabled={loading || !form.topic.trim()}
             className="btn-primary w-full">
             {loading
-              ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>Đang tạo...</>
-              : '✦ Tạo câu hỏi'}
+              ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"/>{t('question.generating')}</>
+              : t('question.generateButton')}
           </button>
 
           {/* Generated list */}
@@ -548,7 +579,7 @@ function AiGenerateModal({ courses, defaultCourseId, tags = [], onClose, onSaved
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium" style={{ color: 'var(--text-1)' }}>
-                  {generated.length} câu hỏi được tạo
+                  {generated.length} {t('question.questionsGenerated')}
                 </p>
                 <div className="flex items-center gap-2">
                 <button onClick={() => {
@@ -578,25 +609,25 @@ function AiGenerateModal({ courses, defaultCourseId, tags = [], onClose, onSaved
                           })
                           list = r.data.data || []
                         }
-                        if (!list.length) setError('AI không tạo được câu hỏi. Thử lại.')
+                        if (!list.length) setError(t('question.aiNoQuestions'))
                         setGenerated(list)
-                      } catch (e) { setError(e?.response?.data?.message?.includes('Quota') || e?.response?.status === 429 ? 'Quota AI hết cho hôm nay. Đổi API key hoặc thử lại ngày mai.' : 'Lỗi kết nối AI. Thử lại.') }
+                      } catch (e) { setError(e?.response?.data?.message?.includes('Quota') || e?.response?.status === 429 ? t('question.aiQuotaExceeded') : t('question.aiConnectionError')) }
                       finally { setLoading(false) }
                     }
                     doGenerate()
                   }}
                   disabled={loading}
                   className="btn-secondary text-xs py-1.5 px-3">
-                  ↻ Tạo lại
+                  {t('question.regenerate')}
                 </button>
                 <button onClick={exportToExcel}
                   className="btn-secondary text-xs py-1.5 px-3 flex items-center gap-1.5">
-                  ↓ Xuất Excel
+                  {t('question.exportExcel')}
                 </button>
                 <button onClick={handleSaveAll}
                   disabled={saved.size >= generated.length}
                   className="btn-secondary text-xs py-1.5 px-3">
-                  {saved.size >= generated.length ? '✓ Đã lưu tất cả' : `Lưu tất cả (${Math.max(0, generated.length - saved.size)} câu)`}
+                  {saved.size >= generated.length ? t('question.allSaved') : t('question.saveAllCount', { count: Math.max(0, generated.length - saved.size) })}
                 </button>
               </div>
               </div>
@@ -627,7 +658,7 @@ function AiGenerateModal({ courses, defaultCourseId, tags = [], onClose, onSaved
                         color: saved.has(i) ? 'var(--success)' : 'var(--text-2)',
                         border: '1px solid var(--border-base)',
                       }}>
-                      {saving.has(i) ? '...' : saved.has(i) ? '✓ Đã lưu' : 'Lưu'}
+                      {saving.has(i) ? t('question.saving') : saved.has(i) ? t('question.saved') : t('question.save')}
                     </button>
                   </div>
 

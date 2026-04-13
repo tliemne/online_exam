@@ -3,6 +3,7 @@ import { tagApi } from '../../api/services'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import { useConfirm } from '../../components/common/ConfirmDialog'
+import { useTranslation } from 'react-i18next'
 
 // ── Preset colors ─────────────────────────────────────────
 const PRESET_COLORS = [
@@ -21,6 +22,7 @@ const Icon = {
 
 // ── TagFormModal ──────────────────────────────────────────
 function TagFormModal({ tag, onClose, onSaved }) {
+  const { t } = useTranslation()
   const [form, setForm] = useState({
     name:        tag?.name        || '',
     description: tag?.description || '',
@@ -31,14 +33,14 @@ function TagFormModal({ tag, onClose, onSaved }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault(); setError('')
-    if (!form.name.trim()) { setError('Tên tag không được để trống'); return }
+    if (!form.name.trim()) { setError(t('tag.nameRequired')); return }
     setSaving(true)
     try {
       if (tag) await tagApi.update(tag.id, form)
       else     await tagApi.create(form)
       onSaved(); onClose()
     } catch (err) {
-      setError(err.response?.data?.message || 'Có lỗi xảy ra')
+      setError(err.response?.data?.message || t('tag.error'))
     } finally { setSaving(false) }
   }
 
@@ -47,7 +49,7 @@ function TagFormModal({ tag, onClose, onSaved }) {
       <div className="bg-[var(--bg-surface)] border border-[var(--border-base)] rounded-2xl w-full max-w-md shadow-md">
         {/* Header */}
         <div className="modal-header">
-          <h2 className="section-title">{tag ? 'Sửa tag' : 'Tạo tag mới'}</h2>
+          <h2 className="section-title">{tag ? t('tag.editTag') : t('tag.createTag')}</h2>
           <button onClick={onClose} className="btn-ghost p-1.5">{Icon.x}</button>
         </div>
 
@@ -58,28 +60,28 @@ function TagFormModal({ tag, onClose, onSaved }) {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Name + color preview */}
             <div>
-              <label className="input-label">Tên tag *</label>
+              <label className="input-label">{t('tag.tagName')} *</label>
               <div className="flex items-center gap-3">
-                <input className="input-field flex-1" placeholder="vd: Java, OOP, Backend..."
+                <input className="input-field flex-1" placeholder={t('tag.tagNamePlaceholder')}
                   value={form.name} onChange={e => setForm(f => ({...f, name: e.target.value}))} required />
                 {/* Live preview */}
                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium text-white shrink-0"
                   style={{ backgroundColor: form.color }}>
-                  {form.name || 'Preview'}
+                  {form.name || t('tag.preview')}
                 </span>
               </div>
             </div>
 
             {/* Description */}
             <div>
-              <label className="input-label">Mô tả <span className="text-[var(--text-3)] font-normal">(tuỳ chọn)</span></label>
-              <input className="input-field" placeholder="Mô tả ngắn về tag này..."
+              <label className="input-label">{t('tag.description')} <span className="text-[var(--text-3)] font-normal">{t('tag.descriptionOptional')}</span></label>
+              <input className="input-field" placeholder={t('tag.descriptionPlaceholder')}
                 value={form.description} onChange={e => setForm(f => ({...f, description: e.target.value}))} />
             </div>
 
             {/* Color picker */}
             <div>
-              <label className="input-label">Màu badge</label>
+              <label className="input-label">{t('tag.colorBadge')}</label>
               <div className="flex items-center gap-2 flex-wrap mt-2">
                 {PRESET_COLORS.map(c => (
                   <button key={c} type="button"
@@ -93,7 +95,7 @@ function TagFormModal({ tag, onClose, onSaved }) {
                   <input type="color" value={form.color}
                     onChange={e => setForm(f => ({...f, color: e.target.value}))}
                     className="w-7 h-7 rounded-full cursor-pointer border border-[var(--border-base)] p-0.5 bg-transparent"
-                    title="Chọn màu tuỳ chỉnh" />
+                    title={t('tag.customColor')} />
                 </div>
               </div>
             </div>
@@ -101,9 +103,9 @@ function TagFormModal({ tag, onClose, onSaved }) {
             {/* Actions */}
             <div className="flex gap-3 pt-2">
               <button type="submit" disabled={saving} className="btn-primary flex-1">
-                {saving ? 'Đang lưu...' : tag ? 'Lưu thay đổi' : 'Tạo tag'}
+                {saving ? t('tag.saving') : tag ? t('tag.saveChanges') : t('tag.createTag')}
               </button>
-              <button type="button" onClick={onClose} className="btn-secondary">Hủy</button>
+              <button type="button" onClick={onClose} className="btn-secondary">{t('tag.cancel')}</button>
             </div>
           </form>
         </div>
@@ -114,6 +116,8 @@ function TagFormModal({ tag, onClose, onSaved }) {
 
 // ── TagCard ───────────────────────────────────────────────
 function TagCard({ tag, onEdit, onDelete, deleting }) {
+  const { t } = useTranslation()
+  
   return (
     <div className="card flex items-center gap-4 hover:border-accent/20 transition-all">
       {/* Color dot */}
@@ -135,7 +139,7 @@ function TagCard({ tag, onEdit, onDelete, deleting }) {
       {/* Question count */}
       <div className="text-center shrink-0">
         <div className="text-sm font-semibold font-mono text-[var(--text-1)]">{tag.questionCount ?? 0}</div>
-        <div className="text-xs text-[var(--text-3)]">câu hỏi</div>
+        <div className="text-xs text-[var(--text-3)]">{t('tag.questions')}</div>
       </div>
 
       {/* Actions */}
@@ -156,6 +160,7 @@ function TagCard({ tag, onEdit, onDelete, deleting }) {
 
 // ── Main Page ─────────────────────────────────────────────
 export default function TagsPage() {
+  const { t } = useTranslation()
   const toast = useToast()
   const [confirmDialog, ConfirmDialogUI] = useConfirm()
   const { hasRole } = useAuth()
@@ -179,13 +184,18 @@ export default function TagsPage() {
   useEffect(() => { loadTags() }, [])
 
   const handleDelete = async (tag) => {
-    if (!(await confirmDialog({ title: `Xóa tag "${tag.name}"?`, message: "Tag sẽ bị gỡ khỏi tất cả câu hỏi liên quan.", danger: true, confirmLabel: "Xóa" }))) return
+    if (!(await confirmDialog({ 
+      title: t('tag.deleteConfirm', { name: tag.name }), 
+      message: t('tag.deleteMessage'), 
+      danger: true, 
+      confirmLabel: t('common.delete') 
+    }))) return
     setDeleting(tag.id)
     try {
       await tagApi.delete(tag.id)
       loadTags()
     } catch (err) {
-      toast.error(err?.response?.data?.message || 'Có lỗi xảy ra khi xóa tag')
+      toast.error(err?.response?.data?.message || t('tag.deleteError'))
     } finally { setDeleting(null) }
   }
 
@@ -202,14 +212,14 @@ export default function TagsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="page-title">Quản lý Tags</h1>
+          <h1 className="page-title">{t('tag.title')}</h1>
           <p className="text-[var(--text-2)] text-sm mt-1">
-            {tags.length} tags · {totalQuestions} câu hỏi được gắn tag
+            {tags.length} {t('tag.tagsCount')} · {totalQuestions} {t('tag.questionsTagged')}
           </p>
         </div>
         {isTeacherOrAdmin && (
           <button onClick={() => { setSelected(null); setModal('create') }} className="btn-primary flex items-center gap-2">
-            {Icon.plus} Tạo tag mới
+            {Icon.plus} {t('tag.createTag')}
           </button>
         )}
       </div>
@@ -222,7 +232,7 @@ export default function TagsPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
           </span>
-          <input className="input-field pl-9" placeholder="Tìm tag theo tên..."
+          <input className="input-field pl-9" placeholder={t('tag.searchPlaceholder')}
             value={keyword} onChange={e => setKeyword(e.target.value)} />
         </div>
 
@@ -252,13 +262,13 @@ export default function TagsPage() {
       ) : filtered.length === 0 ? (
         <div className="card text-center py-16">
           {keyword ? (
-            <p className="text-[var(--text-2)]">Không tìm thấy tag nào khớp với "{keyword}".</p>
+            <p className="text-[var(--text-2)]">{t('tag.noTagsFound', { keyword })}</p>
           ) : (
             <>
-              <p className="text-[var(--text-2)]">Chưa có tag nào.{isTeacherOrAdmin && ' Hãy tạo tag để phân loại câu hỏi!'}</p>
+              <p className="text-[var(--text-2)]">{t('tag.noTagsYet')}{isTeacherOrAdmin && ' ' + t('tag.createFirstTag')}</p>
               {isTeacherOrAdmin && (
                 <button onClick={() => { setSelected(null); setModal('create') }} className="btn-primary mt-4">
-                  {Icon.plus} Tạo tag đầu tiên
+                  {Icon.plus} {t('tag.createFirst')}
                 </button>
               )}
             </>
