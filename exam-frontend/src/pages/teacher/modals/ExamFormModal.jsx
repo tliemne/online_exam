@@ -29,6 +29,8 @@ export default function ExamFormModal({ exam, courses, onClose, onSaved }) {
     duration: 60,
     passScore: '',
     maxAttempts: 1,
+    maxTabViolations: 3,
+    maxExitAttempts: 1,
     shuffleQuestions: false,
     showResult: true,
     allowResume: false,
@@ -43,6 +45,8 @@ export default function ExamFormModal({ exam, courses, onClose, onSaved }) {
     duration: exam.duration || 60,
     passScore: exam.passScore ?? '',
     maxAttempts: exam.maxAttempts || 1,
+    maxTabViolations: exam.maxTabViolations || 3,
+    maxExitAttempts: exam.maxExitAttempts || 1,
     shuffleQuestions: exam.shuffleQuestions ?? false,
     showResult: exam.showResult ?? true,
     allowResume: exam.allowResume ?? false,
@@ -71,6 +75,8 @@ export default function ExamFormModal({ exam, courses, onClose, onSaved }) {
         durationMinutes: Number(form.duration),
         duration: Number(form.duration),
         maxAttempts: Number(form.maxAttempts),
+        maxTabViolations: Number(form.maxTabViolations),
+        maxExitAttempts: Number(form.maxExitAttempts),
         passScore: form.passScore ? Number(form.passScore) : null,
         randomizeQuestions: form.shuffleQuestions,
         allowResume: form.allowResume,
@@ -130,6 +136,28 @@ export default function ExamFormModal({ exam, courses, onClose, onSaved }) {
             <label className="input-label">Số lần thi tối đa</label>
             <input className="input-field" type="number" min={1} max={10}
               value={form.maxAttempts} onChange={f('maxAttempts')} />
+          </div>
+        </div>
+
+        {/* Giới hạn thoát + Vi phạm tab */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="input-label">Số lần thoát tối đa
+              <span className="ml-1 text-xs" style={{color:'var(--text-3)'}}>
+                (0 = không giới hạn)
+              </span>
+            </label>
+            <input className="input-field" type="number" min={0} max={10}
+              value={form.maxExitAttempts} onChange={f('maxExitAttempts')} />
+          </div>
+          <div>
+            <label className="input-label">Số lần chuyển tab tối đa
+              <span className="ml-1 text-xs" style={{color:'var(--text-3)'}}>
+                (trước khi kết thúc)
+              </span>
+            </label>
+            <input className="input-field" type="number" min={1} max={10}
+              value={form.maxTabViolations} onChange={f('maxTabViolations')} />
           </div>
         </div>
 

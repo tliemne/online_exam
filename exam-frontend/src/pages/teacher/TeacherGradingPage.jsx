@@ -209,7 +209,7 @@ function GradeModal({ attempt, onClose, onGraded }) {
                       {!isEssay && (
                         <span className="ml-auto text-xs font-medium"
                           style={{ color: a.isCorrect ? 'var(--success)' : 'var(--danger)' }}>
-                          {a.isCorrect ? `✓ ${t('grading.correct')}` : `✗ ${t('grading.incorrect')}`} · {a.score ?? 0}đ
+                          {a.isCorrect ? `✓ ${t('grading.correct')}` : `✗ ${t('grading.incorrect')}`} · {a.score ?? 0}/{a.maxScore ?? 1}đ
                         </span>
                       )}
                     </div>
@@ -270,12 +270,26 @@ function GradeModal({ attempt, onClose, onGraded }) {
 
                         <div className="flex gap-3 items-center">
                           <label className="text-xs w-16 shrink-0" style={{ color: 'var(--text-3)' }}>{t('grading.scoreLabel')}</label>
-                          <input type="number" min="0" step="0.5"
-                            value={g.score ?? ''}
-                            onChange={e => setGrade(a.id, 'score', e.target.value)}
+                          <div className="flex items-center gap-1.5 flex-1">
+                            <input type="number" min="0" max={a.maxScore || 10} step="0.5"
+                              value={g.score ?? ''}
+                              onChange={e => {
+                                const val = e.target.value
+                                const num = parseFloat(val)
+                                // Validate không vượt quá maxScore
+                                if (val !== '' && !isNaN(num) && a.maxScore && num > a.maxScore) {
+                                  toast.error(`Điểm tối đa cho câu này là ${a.maxScore}`)
+                                return
+                              }
+                              setGrade(a.id, 'score', val)
+                            }}
                             className="input-field py-1.5 w-24 text-sm"
                             placeholder={t('grading.scorePlaceholder')}
                           />
+                          <span className="text-xs" style={{ color: 'var(--text-3)' }}>
+                            / {a.maxScore || '—'}
+                          </span>
+                          </div>
                         </div>
                         <div className="flex gap-3 items-start">
                           <label className="text-xs w-16 shrink-0 mt-2" style={{ color: 'var(--text-3)' }}>{t('grading.commentLabel')}</label>
@@ -318,20 +332,63 @@ export default function TeacherGradingPage() {
   const { t } = useTranslation()
   const toast = useToast()
   const navigate = useNavigate()
+  const [courses,       setCourses]     = useState([])
+  const [selectedCourse, setSelCourse]  = useState(null)
+  const [coursePendingCounts, setCoursePendingCounts] = useState({}) // courseId → total pending count
   const [exams,         setExams]       = useState([])
   const [pendingCounts, setPendingCounts] = useState({}) // examId → count
   const [selectedExam,  setSelExam]     = useState(null)
   const [attempts,      setAttempts]    = useState([])
   const [loading,       setLoading]     = useState(false)
-  const [loadingExams,  setLoadingExams]= useState(true)
+  const [loadingCourses, setLoadingCourses] = useState(true)
+  const [loadingExams,  setLoadingExams]= useState(false)
   const [gradeModal,    setGradeModal]  = useState(null)
   const [filterStatus,  setFilter]      = useState('all')
   const [exporting,     setExporting]   = useState(false)
   const [resetting,     setResetting]   = useState(null)
   const [confirmReset,  setConfirmReset] = useState(null) // { id, studentName }
 
+  // Load courses
   useEffect(() => {
-    examApi.getAll()
+    api.get('/courses')
+      .then(async r => {
+        const list = r.data.data || []
+        setCourses(list)
+        
+        // Load pending count cho từng course
+        const courseCounts = {}
+        await Promise.all(list.map(async c => {
+          try {
+            // Get all exams in course
+            const examsRes = await api.get(`/exams?courseId=${c.id}`)
+            const exams = examsRes.data.data || []
+            
+            // Sum pending count from all exams
+            let totalPending = 0
+            await Promise.all(exams.map(async e => {
+              try {
+                const pendingRes = await api.get(`/attempts/grading/pending/${e.id}`)
+                totalPending += pendingRes.data.data || 0
+              } catch {}
+            }))
+            courseCounts[c.id] = totalPending
+          } catch {
+            courseCounts[c.id] = 0
+          }
+        }))
+        setCoursePendingCounts(courseCounts)
+      })
+      .finally(() => setLoadingCourses(false))
+  }, [])
+
+  // Load exams when course selected
+  useEffect(() => {
+    if (!selectedCourse) {
+      setExams([])
+      return
+    }
+    setLoadingExams(true)
+    api.get(`/exams?courseId=${selectedCourse.id}`)
       .then(async r => {
         const list = r.data.data || []
         setExams(list)
@@ -345,20 +402,84 @@ export default function TeacherGradingPage() {
         setPendingCounts(counts)
       })
       .finally(() => setLoadingExams(false))
-  }, [])
+  }, [selectedCourse])
 
   // Refresh pending count sau khi chấm xong
-  const refreshPendingCount = (examId) => {
+  const refreshPendingCount = async (examId) => {
+    // Refresh exam pending count
     api.get(`/attempts/grading/pending/${examId}`)
       .then(r => setPendingCounts(prev => ({ ...prev, [examId]: r.data.data || 0 })))
       .catch(() => {})
+    
+    // Refresh course pending count
+    if (selectedCourse) {
+      try {
+        const examsRes = await api.get(`/exams?courseId=${selectedCourse.id}`)
+        const exams = examsRes.data.data || []
+        let totalPending = 0
+        await Promise.all(exams.map(async e => {
+          try {
+            const pendingRes = await api.get(`/attempts/grading/pending/${e.id}`)
+            totalPending += pendingRes.data.data || 0
+          } catch {}
+        }))
+        setCoursePendingCounts(prev => ({ ...prev, [selectedCourse.id]: totalPending }))
+      } catch {}
+    }
   }
 
   const loadAttempts = (exam) => {
     setSelExam(exam)
     setLoading(true)
     api.get(`/attempts/exams/${exam.id}`)
-      .then(r => setAttempts(r.data.data || []))
+      .then(r => {
+        const allAttempts = r.data.data || []
+        
+        // Kiểm tra xem exam có câu tự luận không
+        const hasEssay = exam.examQuestions?.some(eq => eq.question?.type === 'ESSAY') || false
+        
+        // Group by studentId
+        const byStudent = {}
+        allAttempts.forEach(a => {
+          const sid = a.studentId
+          if (!byStudent[sid]) byStudent[sid] = []
+          byStudent[sid].push(a)
+        })
+        
+        // Logic hiển thị:
+        // - Nếu exam CÓ TỰ LUẬN:
+        //   + Hiển thị TẤT CẢ bài SUBMITTED (chờ chấm) - teacher cần chấm hết
+        //   + Nếu tất cả đã GRADED → chỉ hiển thị bài điểm cao nhất
+        // - Nếu exam KHÔNG CÓ TỰ LUẬN (chỉ trắc nghiệm):
+        //   + Nếu có bài SUBMITTED → hiển thị 1 bài mới nhất
+        //   + Nếu tất cả đã GRADED → chỉ hiển thị bài điểm cao nhất
+        const result = []
+        Object.values(byStudent).forEach(studentAttempts => {
+          const pending = studentAttempts.filter(a => a.status === 'SUBMITTED')
+          const graded = studentAttempts.filter(a => a.status === 'GRADED')
+          
+          if (pending.length > 0) {
+            if (hasEssay) {
+              // Có tự luận → hiển thị TẤT CẢ bài chờ chấm
+              result.push(...pending)
+            } else {
+              // Không có tự luận → chỉ hiển thị 1 bài mới nhất
+              const latest = pending.reduce((max, a) => 
+                new Date(a.submittedAt) > new Date(max.submittedAt) ? a : max
+              )
+              result.push(latest)
+            }
+          } else if (graded.length > 0) {
+            // Tất cả đã chấm → chỉ hiển thị bài điểm cao nhất
+            const best = graded.reduce((max, a) => 
+              (a.score || 0) > (max.score || 0) ? a : max
+            )
+            result.push(best)
+          }
+        })
+        
+        setAttempts(result)
+      })
       .catch(() => setAttempts([]))
       .finally(() => setLoading(false))
   }
@@ -417,43 +538,85 @@ export default function TeacherGradingPage() {
         <p className="page-subtitle">{t('grading.subtitle')}</p>
       </div>
 
-      {/* Exam selector */}
+      {/* Course selector */}
       <div className="card p-4">
-        <p className="text-xs uppercase tracking-wider mb-3 font-medium" style={{ color: 'var(--text-3)' }}>{t('grading.selectExam')}</p>
-        {loadingExams ? (
+        <p className="text-xs uppercase tracking-wider mb-3 font-medium" style={{ color: 'var(--text-3)' }}>
+          {t('grading.selectCourse') || 'Chọn lớp học'}
+        </p>
+        {loadingCourses ? (
           <div className="h-10 flex items-center">
             <div className="w-5 h-5 rounded-full border-2 animate-spin"
               style={{ borderColor: 'var(--border-strong)', borderTopColor: 'var(--accent)' }}/>
           </div>
         ) : (
           <div className="flex flex-wrap gap-2">
-            {exams.map(e => (
-              <button key={e.id} onClick={() => loadAttempts(e)}
-                className="px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2 w-full text-left"
-                style={selectedExam?.id === e.id
+            {courses.map(c => (
+              <button key={c.id} onClick={() => { setSelCourse(c); setSelExam(null); setAttempts([]) }}
+                className="px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2"
+                style={selectedCourse?.id === c.id
                   ? { background: 'var(--accent)', color: '#fff', border: '1px solid var(--accent)' }
                   : { background: 'var(--bg-elevated)', color: 'var(--text-2)',
                       border: '1px solid var(--border-base)' }}>
-                <span className="flex-1 truncate">
-                  {e.title}
-                  <span className="ml-2 text-xs opacity-60">{e.courseName}</span>
-                </span>
-                {pendingCounts[e.id] > 0 && (
+                <span className="truncate">{c.name}</span>
+                {coursePendingCounts[c.id] > 0 && (
                   <span className="shrink-0 px-1.5 py-0.5 rounded-full text-xs font-bold"
                     style={{
-                      background: selectedExam?.id === e.id ? 'rgba(255,255,255,0.25)' : '#f59e0b',
-                      color: selectedExam?.id === e.id ? '#fff' : '#fff',
+                      background: selectedCourse?.id === c.id ? 'rgba(255,255,255,0.25)' : '#f59e0b',
+                      color: '#fff',
                       minWidth: '1.25rem', textAlign: 'center'
                     }}>
-                    {pendingCounts[e.id]}
+                    {coursePendingCounts[c.id]}
                   </span>
                 )}
               </button>
             ))}
-            {exams.length === 0 && <p className="text-sm" style={{ color: 'var(--text-3)' }}>{t('grading.noExams')}</p>}
+            {courses.length === 0 && <p className="text-sm" style={{ color: 'var(--text-3)' }}>
+              {t('grading.noCourses') || 'Chưa có lớp học nào'}
+            </p>}
           </div>
         )}
       </div>
+
+      {/* Exam selector */}
+      {selectedCourse && (
+        <div className="card p-4">
+          <p className="text-xs uppercase tracking-wider mb-3 font-medium" style={{ color: 'var(--text-3)' }}>
+            {t('grading.selectExam')}
+          </p>
+          {loadingExams ? (
+            <div className="h-10 flex items-center">
+              <div className="w-5 h-5 rounded-full border-2 animate-spin"
+                style={{ borderColor: 'var(--border-strong)', borderTopColor: 'var(--accent)' }}/>
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {exams.map(e => (
+                <button key={e.id} onClick={() => loadAttempts(e)}
+                  className="px-4 py-2 rounded-xl text-sm font-medium transition-all flex items-center gap-2"
+                  style={selectedExam?.id === e.id
+                    ? { background: 'var(--accent)', color: '#fff', border: '1px solid var(--accent)' }
+                    : { background: 'var(--bg-elevated)', color: 'var(--text-2)',
+                        border: '1px solid var(--border-base)' }}>
+                  <span className="truncate">{e.title}</span>
+                  {pendingCounts[e.id] > 0 && (
+                    <span className="shrink-0 px-1.5 py-0.5 rounded-full text-xs font-bold"
+                      style={{
+                        background: selectedExam?.id === e.id ? 'rgba(255,255,255,0.25)' : '#f59e0b',
+                        color: '#fff',
+                        minWidth: '1.25rem', textAlign: 'center'
+                      }}>
+                      {pendingCounts[e.id]}
+                    </span>
+                  )}
+                </button>
+              ))}
+              {exams.length === 0 && <p className="text-sm" style={{ color: 'var(--text-3)' }}>
+                {t('grading.noExams')}
+              </p>}
+            </div>
+          )}
+        </div>
+      )}
 
       {selectedExam && (
         <>

@@ -687,6 +687,21 @@
     "exams": "考试",
     "attempts": "尝试",
     "passRate": "及格率",
-    "systemDescription": "管理考试、自动评分和跟踪学生学习进度。"
+    "systemDescription": "管理考试、自动评分和跟踪学生学习进度。",
+    "registerTitle": "注册",
+    "createNewAccount": "创建新账户",
+    "fullNameLabel": "全名",
+    "fullNamePlaceholder": "张三",
+    "emailLabel": "电子邮件",
+    "emailPlaceholder": "example@gmail.com",
+    "emailOptional": "（可选）",
+    "roleLabel": "角色",
+    "studentRole": "学生",
+    "teacherRole": "教师",
+    "createAccountButton": "创建账户",
+    "creatingAccount": "创建中...",
+    "registerFailed": "注册失败，请重试",
+    "alreadyHaveAccount": "已有账户？",
+    "loginLink": "登录"
   }
 }

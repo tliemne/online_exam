@@ -59,15 +59,6 @@ public class CourseLeaderboardService {
             int examsPassed = (int) studentAttempts.stream()
                     .filter(a -> Boolean.TRUE.equals(a.getPassed())).count();
 
-            // Điểm TB tính theo % (để so sánh công bằng giữa các đề khác thang điểm)
-            double avgPct = studentAttempts.stream()
-                    .mapToDouble(a -> {
-                        double max = a.getExam().getTotalScore() != null
-                                ? a.getExam().getTotalScore() : 10.0;
-                        return max > 0 ? a.getScore() / max * 100 : 0;
-                    })
-                    .average().orElse(0);
-
             // Bài thi điểm cao nhất (theo %)
             Attempt best = studentAttempts.stream()
                     .max(Comparator.comparingDouble(a -> {
@@ -78,6 +69,9 @@ public class CourseLeaderboardService {
 
             double bestScoreMax = best.getExam().getTotalScore() != null
                     ? best.getExam().getTotalScore() : 10.0;
+            
+            // Điểm TB chỉ tính từ điểm cao nhất (không phải trung bình tất cả lần)
+            double bestPct = bestScoreMax > 0 ? best.getScore() / bestScoreMax * 100 : 0;
 
             // Bài thi gần nhất
             String lastExamTitle = studentAttempts.stream()
@@ -95,7 +89,7 @@ public class CourseLeaderboardService {
                     .studentCode(studentCode)
                     .examsTaken(examsTaken)
                     .examsPasssed(examsPassed)
-                    .avgScore(Math.round(avgPct * 10.0) / 10.0)
+                    .avgScore(Math.round(bestPct * 10.0) / 10.0)
                     .bestScore(best.getScore())
                     .bestScoreMax(bestScoreMax)
                     .lastExamTitle(lastExamTitle)

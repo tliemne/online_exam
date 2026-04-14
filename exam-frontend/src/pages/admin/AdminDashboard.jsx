@@ -127,22 +127,57 @@ export default function AdminDashboard() {
       {/* Charts */}
       {stats && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Monthly Attempts Bar Chart */}
           <div className="card lg:col-span-2">
-            <p className="font-bold mb-0.5" style={{ color: 'var(--text-1)' }}>Thống kê hệ thống</p>
-            <p className="text-xs mb-4" style={{ color: 'var(--text-3)' }}>Tổng quan toàn bộ</p>
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { label: 'Điểm TB',     value: stats.avgScore?.toFixed(1) ?? '—', color: 'var(--accent)',  bg: 'var(--accent-subtle)'  },
-                { label: 'Tỉ lệ đạt',  value: `${stats.passRate ?? 0}%`,          color: 'var(--success)', bg: 'var(--success-subtle)' },
-                { label: 'Đề thi',      value: stats.totalExams ?? 0,              color: 'var(--purple)',  bg: 'var(--purple-subtle)'  },
-              ].map(s => (
-                <div key={s.label} className="rounded-2xl p-4 text-center" style={{ background: s.bg }}>
-                  <p className="font-bold text-2xl" style={{ color: s.color }}>{s.value}</p>
-                  <p className="text-xs mt-1" style={{ color: 'var(--text-3)' }}>{s.label}</p>
-                </div>
-              ))}
-            </div>
+            <p className="font-bold mb-0.5" style={{ color: 'var(--text-1)' }}>Lượt thi theo tháng</p>
+            <p className="text-xs mb-4" style={{ color: 'var(--text-3)' }}>6 tháng gần nhất</p>
+            {stats.monthlyAttempts && stats.monthlyAttempts.length > 0 ? (
+              <ReactApexChart type="bar" height={200}
+                series={[{
+                  name: 'Lượt thi',
+                  data: stats.monthlyAttempts.map(m => m.count)
+                }]}
+                options={{
+                  chart: { 
+                    background: 'transparent',
+                    toolbar: { show: false }
+                  },
+                  theme: { mode: document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark' },
+                  xaxis: {
+                    categories: stats.monthlyAttempts.map(m => m.month),
+                    labels: { 
+                      style: { colors: 'var(--text-3)', fontSize: '11px' },
+                      rotate: -45,
+                      rotateAlways: true
+                    }
+                  },
+                  yaxis: {
+                    labels: { style: { colors: 'var(--text-3)' } }
+                  },
+                  colors: ['var(--accent)'],
+                  plotOptions: {
+                    bar: {
+                      borderRadius: 6,
+                      columnWidth: '60%'
+                    }
+                  },
+                  dataLabels: { enabled: false },
+                  grid: {
+                    borderColor: 'var(--border-base)',
+                    strokeDashArray: 3
+                  },
+                  tooltip: {
+                    theme: 'dark',
+                    y: { formatter: (val) => `${val} lượt` }
+                  }
+                }}
+              />
+            ) : (
+              <p className="text-center py-10 text-sm" style={{ color: 'var(--text-3)' }}>Chưa có dữ liệu</p>
+            )}
           </div>
+
+          {/* User Distribution Donut */}
           <div className="card flex flex-col items-center justify-center">
             <p className="font-bold mb-0.5 self-start" style={{ color: 'var(--text-1)' }}>Người dùng</p>
             <p className="text-xs mb-3 self-start" style={{ color: 'var(--text-3)' }}>Phân bổ vai trò</p>
@@ -165,6 +200,62 @@ export default function AdminDashboard() {
                 <div key={l} className="flex items-center gap-1.5">
                   <div className="w-2 h-2 rounded-full" style={{background:c}}/>
                   <span className="text-xs" style={{color:'var(--text-3)'}}>{l}: {v}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Score Distribution Chart */}
+      {stats && stats.scoreDistribution && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="card">
+            <p className="font-bold mb-0.5" style={{ color: 'var(--text-1)' }}>Phân bố điểm</p>
+            <p className="text-xs mb-4" style={{ color: 'var(--text-3)' }}>Theo thang điểm 10</p>
+            <ReactApexChart type="pie" height={280}
+              series={[
+                stats.scoreDistribution.excellent,
+                stats.scoreDistribution.good,
+                stats.scoreDistribution.fair,
+                stats.scoreDistribution.average,
+                stats.scoreDistribution.poor
+              ]}
+              options={{
+                chart: { background: 'transparent' },
+                theme: { mode: document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark' },
+                labels: ['Xuất sắc (9-10)', 'Giỏi (8-9)', 'Khá (7-8)', 'Trung bình (5-7)', 'Yếu (<5)'],
+                colors: ['#16a34a', '#0891b2', '#d97706', '#f59e0b', '#dc2626'],
+                legend: {
+                  position: 'bottom',
+                  labels: { colors: 'var(--text-2)' }
+                },
+                dataLabels: {
+                  enabled: true,
+                  formatter: (val) => `${val.toFixed(1)}%`
+                },
+                stroke: { width: 0 },
+                tooltip: {
+                  theme: 'dark',
+                  y: { formatter: (val) => `${val} bài` }
+                }
+              }}
+            />
+          </div>
+
+          <div className="card">
+            <p className="font-bold mb-0.5" style={{ color: 'var(--text-1)' }}>Thống kê hệ thống</p>
+            <p className="text-xs mb-4" style={{ color: 'var(--text-3)' }}>Tổng quan toàn bộ</p>
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { label: 'Điểm TB',     value: stats.avgScore?.toFixed(1) ?? '—', color: 'var(--accent)',  bg: 'var(--accent-subtle)'  },
+                { label: 'Tỉ lệ đạt',  value: `${stats.passRate ?? 0}%`,          color: 'var(--success)', bg: 'var(--success-subtle)' },
+                { label: 'Đề thi',      value: stats.totalExams ?? 0,              color: 'var(--purple)',  bg: 'var(--purple-subtle)'  },
+                { label: 'Lượt thi',    value: stats.totalAttempts ?? 0,           color: 'var(--text-2)',  bg: 'var(--bg-elevated)'    },
+              ].map(s => (
+                <div key={s.label} className="rounded-2xl p-4 text-center" style={{ background: s.bg }}>
+                  <p className="font-bold text-2xl" style={{ color: s.color }}>{s.value}</p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--text-3)' }}>{s.label}</p>
                 </div>
               ))}
             </div>

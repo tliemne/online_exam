@@ -208,7 +208,69 @@ export default function TeacherDashboard() {
         </div>
       )}
 
-      {/* Charts row 2 */}
+      {/* Charts row 2 - Monthly + Score Distribution */}
+      {!loading && stats && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Monthly Attempts */}
+          <div className="card">
+            <p className="font-bold" style={{ color:'var(--text-1)' }}>Lượt thi theo tháng</p>
+            <p className="text-xs mt-0.5 mb-3" style={{ color:'var(--text-3)' }}>6 tháng gần nhất</p>
+            {stats.monthlyAttempts && stats.monthlyAttempts.length > 0 ? (
+              <ReactApexChart type="bar" height={180}
+                series={[{ name: 'Lượt thi', data: stats.monthlyAttempts.map(m => m.count) }]}
+                options={{
+                  chart: { toolbar: { show: false }, background: 'transparent' },
+                  theme: { mode: getTheme() },
+                  xaxis: {
+                    categories: stats.monthlyAttempts.map(m => m.month),
+                    labels: { style: { colors: LC, fontSize: '11px' }, rotate: -45 }
+                  },
+                  yaxis: { labels: { style: { colors: LC } } },
+                  colors: ['var(--accent)'],
+                  plotOptions: { bar: { borderRadius: 6, columnWidth: '60%' } },
+                  dataLabels: { enabled: false },
+                  grid: { borderColor: 'rgba(163,174,208,0.12)', strokeDashArray: 3 },
+                  tooltip: { theme: getTheme(), y: { formatter: (val) => `${val} lượt` } }
+                }}
+              />
+            ) : (
+              <p className="text-center py-10 text-sm" style={{ color: 'var(--text-3)' }}>Chưa có dữ liệu</p>
+            )}
+          </div>
+
+          {/* Score Distribution */}
+          <div className="card">
+            <p className="font-bold" style={{ color:'var(--text-1)' }}>Phân bố điểm</p>
+            <p className="text-xs mt-0.5 mb-3" style={{ color:'var(--text-3)' }}>Theo thang điểm 10</p>
+            {stats.scoreDistribution ? (
+              <ReactApexChart type="donut" height={180}
+                series={[
+                  stats.scoreDistribution.excellent,
+                  stats.scoreDistribution.good,
+                  stats.scoreDistribution.fair,
+                  stats.scoreDistribution.average,
+                  stats.scoreDistribution.poor
+                ]}
+                options={{
+                  chart: { background: 'transparent' },
+                  theme: { mode: getTheme() },
+                  labels: ['Xuất sắc (9-10)', 'Giỏi (8-9)', 'Khá (7-8)', 'TB (5-7)', 'Yếu (<5)'],
+                  colors: ['#16a34a', '#0891b2', '#d97706', '#f59e0b', '#dc2626'],
+                  legend: { position: 'bottom', labels: { colors: LC }, fontSize: '11px' },
+                  dataLabels: { enabled: true, formatter: (val) => `${val.toFixed(0)}%`, style: { fontSize: '11px' } },
+                  stroke: { width: 0 },
+                  plotOptions: { pie: { donut: { size: '65%' } } },
+                  tooltip: { theme: getTheme(), y: { formatter: (val) => `${val} bài` } }
+                }}
+              />
+            ) : (
+              <p className="text-center py-10 text-sm" style={{ color: 'var(--text-3)' }}>Chưa có dữ liệu</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Charts row 3 */}
       {!loading && hasCourseStats && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="card">

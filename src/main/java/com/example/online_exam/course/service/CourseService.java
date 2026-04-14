@@ -330,9 +330,23 @@ public class CourseService {
         Course course = courseRepository.findById(courseId)
                 .orElseThrow(() -> new AppException(ErrorCode.COURSE_NOT_FOUND));
 
-        // Chỉ người tạo lớp mới có quyền xóa giáo viên
-        if (!course.getCreatedBy().getId().equals(currentUser.getId())) {
+        // Chỉ người tạo lớp hoặc admin mới có quyền xóa giáo viên
+        boolean isAdmin = currentUser.getRoles().stream()
+                .anyMatch(r -> r.getName() == RoleName.ADMIN);
+        boolean isCreator = course.getCreatedBy().getId().equals(currentUser.getId());
+        
+        if (!isAdmin && !isCreator) {
             throw new AppException(ErrorCode.FORBIDDEN);
+        }
+
+        // Ngăn xóa người tạo lớp (chỉ admin mới được xóa creator)
+        if (teacherId.equals(course.getCreatedBy().getId()) && !isAdmin) {
+            throw new AppException(ErrorCode.INVALID_REQUEST, "Không thể xóa giáo viên tạo lớp");
+        }
+
+        // Ngăn xóa giáo viên cuối cùng
+        if (course.getTeachers().size() <= 1) {
+            throw new AppException(ErrorCode.INVALID_REQUEST, "Lớp phải có ít nhất 1 giáo viên quản lý");
         }
 
         User teacher = userRepository.findById(teacherId)

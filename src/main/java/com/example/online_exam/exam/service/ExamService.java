@@ -18,6 +18,7 @@ public interface ExamService {
     ExamResponse addQuestion(Long examId, ExamQuestionItem item);
     ExamResponse addQuestions(Long examId, List<ExamQuestionItem> items);
     ExamResponse removeQuestion(Long examId, Long questionId);
+    ExamResponse updateQuestionScore(Long examId, Long questionId, Double score);
     ExamResponse reorderQuestions(Long examId, List<ExamQuestionItem> items);
     ExamResponse randomQuestions(Long examId, RandomQuestionRequest request);
 

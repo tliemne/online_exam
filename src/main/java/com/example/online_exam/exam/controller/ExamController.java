@@ -111,6 +111,16 @@ public class ExamController {
         return ok(examService.removeQuestion(id, questionId));
     }
 
+    // PUT /exams/{id}/questions/{questionId}   — update điểm câu hỏi
+    @PutMapping("/{id}/questions/{questionId}")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    public BaseResponse<ExamResponse> updateQuestionScore(
+            @PathVariable Long id,
+            @PathVariable Long questionId,
+            @RequestBody ExamQuestionItem item) {
+        return ok(examService.updateQuestionScore(id, questionId, item.getScore()));
+    }
+
     // PUT /exams/{id}/questions/reorder  — sắp xếp lại thứ tự câu
     @PutMapping("/{id}/questions/reorder")
     @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")

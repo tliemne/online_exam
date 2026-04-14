@@ -41,6 +41,9 @@ public interface AttemptService {
     void heartbeat(Long attemptId, int timeRemainingSeconds, int tabViolationCount,
                    java.util.List<SubmitAnswerItem> answers);
 
+    // Lấy AttemptResponse (dùng cho heartbeat để frontend biết trạng thái)
+    AttemptResponse getAttemptResponse(Long attemptId);
+
     // Student thoát ra khỏi bài thi (không submit)
     void exitExam(Long attemptId);
 }

@@ -26,6 +26,8 @@ public class DashboardResponse {
         private double avgScore;          // trung bình điểm toàn hệ thống
         private double passRate;          // % bài đạt / tổng bài đã chấm
         private List<RecentAttempt> recentAttempts;
+        private List<MonthlyAttempt> monthlyAttempts; // Số bài thi theo tháng
+        private ScoreDistribution scoreDistribution;   // Phân bố điểm
     }
 
     // ── Teacher ──────────────────────────────────────────
@@ -39,6 +41,8 @@ public class DashboardResponse {
         private double avgScore;
         private double passRate;
         private List<CourseStats> courseStats;
+        private List<MonthlyAttempt> monthlyAttempts; // Số bài thi theo tháng
+        private ScoreDistribution scoreDistribution;   // Phân bố điểm
     }
 
     @Builder @NoArgsConstructor @AllArgsConstructor
@@ -80,6 +84,8 @@ public class DashboardResponse {
         private long passedAttempts;
         private Double avgScore;         // null nếu chưa thi lần nào
         private List<RecentAttempt> recentAttempts;
+        private List<MonthlyAttempt> monthlyAttempts; // Số bài thi theo tháng
+        private ScoreDistribution scoreDistribution;   // Phân bố điểm
     }
 
     // ── Shared ───────────────────────────────────────────
@@ -94,5 +100,21 @@ public class DashboardResponse {
         private Boolean passed;
         private String status;
         private String submittedAt;
+    }
+
+    // ── Chart Data ───────────────────────────────────────
+    @Data @Builder
+    public static class MonthlyAttempt {
+        private String month;  // Format: "2026-04" or "Tháng 4/2026"
+        private int count;
+    }
+
+    @Data @Builder
+    public static class ScoreDistribution {
+        private int excellent;  // 9-10
+        private int good;       // 8-9
+        private int fair;       // 7-8
+        private int average;    // 5-7
+        private int poor;       // <5
     }
 }

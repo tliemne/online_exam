@@ -60,13 +60,24 @@ public class ExamStatsServiceImpl implements ExamStatsService {
         double passRate = attempts.isEmpty() ? 0 :
                 Math.round(passCount * 1000.0 / attempts.size()) / 10.0;
 
-        // ── Leaderboard Top 10 (đã sort desc theo score) ────────────────────
+        // ── Leaderboard Top 10 (chỉ lấy điểm cao nhất của mỗi sinh viên) ────
+        // Group attempts theo studentId, lấy điểm cao nhất
+        Map<Long, Attempt> bestByStudent = new HashMap<>();
+        for (Attempt a : attempts) {
+            if (a.getScore() == null) continue; // Skip essay not graded yet
+            bestByStudent.merge(a.getStudent().getId(), a, (existing, current) ->
+                    current.getScore() > existing.getScore() ? current : existing);
+        }
+        
+        // Sort theo score DESC
+        List<Attempt> topAttempts = bestByStudent.values().stream()
+                .sorted(Comparator.comparingDouble((Attempt a) -> a.getScore() != null ? a.getScore() : 0).reversed())
+                .limit(10)
+                .collect(Collectors.toList());
+        
         List<LeaderboardEntry> leaderboard = new ArrayList<>();
         int rank = 1;
-        for (Attempt a : attempts.subList(0, Math.min(10, attempts.size()))) {
-            // ✅ FIX: Skip attempts with null score (essay not graded yet)
-            if (a.getScore() == null) continue;
-            
+        for (Attempt a : topAttempts) {
             Double score = a.getScore();
             String code = a.getStudent().getStudentProfile() != null
                     ? a.getStudent().getStudentProfile().getStudentCode() : "";

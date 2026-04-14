@@ -100,11 +100,12 @@ public class AttemptController {
     @PatchMapping("/{id}/heartbeat")
     @PostMapping("/{id}/heartbeat")
     @PreAuthorize("hasRole('STUDENT')")
-    public BaseResponse<Void> heartbeat(
+    public BaseResponse<AttemptResponse> heartbeat(
             @PathVariable Long id,
             @RequestBody HeartbeatRequest req) {
         attemptService.heartbeat(id, req.getTimeRemainingSeconds(), req.getTabViolationCount(), req.getAnswers());
-        return ok(null);
+        AttemptResponse response = attemptService.getAttemptResponse(id);
+        return ok(response);
     }
 
     // DELETE /attempts/{id}/reset  — teacher/admin reset bài thi của student

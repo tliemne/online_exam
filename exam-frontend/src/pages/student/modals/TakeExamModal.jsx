@@ -33,6 +33,7 @@ export default function TakeExamModal({ exam, onClose, onSubmitted }) {
   const [tabWarning, setTabWarning] = useState(0)
   const [showTabAlert, setShowTabAlert] = useState(false)
   const [attemptId, setAttemptId]   = useState(null)  // lưu attemptId để heartbeat
+  const [autoSubmitted, setAutoSubmitted] = useState(false) // flag để ngăn thoát khi đã auto-submit
 
   // Load câu hỏi + start/resume attempt
   useEffect(() => {
@@ -141,8 +142,24 @@ export default function TakeExamModal({ exam, onClose, onSubmitted }) {
       answers: answerList,
     }
     api.patch(`/attempts/${attemptIdRef.current}/heartbeat`, payload)
+      .then(async res => {
+        // Kiểm tra xem bài đã nộp chưa (backend tự động nộp vì vi phạm)
+        const attempt = res.data.data
+        if (attempt?.status === 'SUBMITTED' && !autoSubmitted) {
+          console.log('Exam auto-submitted by backend due to violations')
+          setAutoSubmitted(true)
+          setShowTabAlert(false) // Đóng alert nếu đang hiển thị
+          toast.warning('Bài thi đã được nộp tự động do vi phạm quá nhiều lần')
+          
+          // Đóng modal và refresh danh sách sau 1 giây
+          setTimeout(() => {
+            onSubmitted()
+            onClose()
+          }, 1000)
+        }
+      })
       .catch(e => console.error('[heartbeat] ERROR', e?.response?.status))
-  }, [])
+  }, [toast, autoSubmitted, onSubmitted, onClose])
 
   // Heartbeat định kỳ mỗi 10 giây
   useEffect(() => {
@@ -333,6 +350,11 @@ export default function TakeExamModal({ exam, onClose, onSubmitted }) {
   )
 
   const handleExit = async () => {
+    // Nếu đã auto-submit, không cho thoát nữa
+    if (autoSubmitted || submitted) {
+      return
+    }
+    
     const ok = await confirmDialog({
       title: 'Thoát khỏi bài thi?',
       message: 'Tiến trình sẽ được lưu nếu bạn đã bật tính năng lưu tiến trình.',
@@ -343,9 +365,46 @@ export default function TakeExamModal({ exam, onClose, onSubmitted }) {
       saveProgress()
       // Gọi API để track exit
       if (attemptIdRef.current) {
-        api.post(`/attempts/${attemptIdRef.current}/exit`).catch(e => console.error('Exit error:', e))
+        try {
+          await api.post(`/attempts/${attemptIdRef.current}/exit`)
+          onClose()
+        } catch (err) {
+          const msg = err?.response?.data?.message || ''
+          // Nếu bài đã nộp (vì vượt maxExitAttempts), hiển thị màn hình kết quả
+          if (msg.includes('đã được nộp') || msg.includes('already')) {
+            console.log('Exam already submitted, showing result')
+            setAutoSubmitted(true)
+            toast.warning('Bài thi đã được nộp tự động do thoát quá nhiều lần')
+            
+            // Fetch kết quả để hiển thị màn hình kết quả
+            try {
+              const resultRes = await api.get(`/attempts/${attemptIdRef.current}`)
+              const data = resultRes.data.data
+              setResult({
+                totalQuestions: data.totalQuestions || questions.length,
+                answered:       Object.keys(answers).length,
+                score:          data.score,
+                totalScore:     data.totalScore,
+                passed:         data.passed,
+                status:         data.status,
+                correctCount:   data.correctCount,
+                submitted:      true,
+              })
+              setSubmitted(true)
+            } catch (fetchErr) {
+              console.error('Failed to fetch result:', fetchErr)
+              // Nếu không fetch được, đóng modal
+              onSubmitted()
+              onClose()
+            }
+            return
+          }
+          console.error('Exit error:', err)
+          onClose()
+        }
+      } else {
+        onClose()
       }
-      onClose() 
     }
   }
 
@@ -511,13 +570,20 @@ export default function TakeExamModal({ exam, onClose, onSubmitted }) {
             {tabWarning >= MAX_WARNINGS ? (
               <div>
                 <p className="text-sm mb-4 font-medium" style={{ color: 'var(--danger)' }}>
-                  Bạn đã vi phạm quá số lần cho phép. Bài thi sẽ được nộp ngay!
+                  Bạn đã vi phạm quá số lần cho phép. Bài thi đã được nộp tự động!
                 </p>
                 <button
-                  onClick={() => { setShowTabAlert(false); handleSubmit(true) }}
+                  onClick={() => { 
+                    setShowTabAlert(false)
+                    // Đóng modal và refresh danh sách
+                    setTimeout(() => {
+                      onSubmitted()
+                      onClose()
+                    }, 500)
+                  }}
                   className="w-full py-2 rounded-xl text-sm font-medium text-white"
                   style={{ background: 'var(--danger)' }}>
-                  Nộp bài ngay
+                  Đóng
                 </button>
               </div>
             ) : (

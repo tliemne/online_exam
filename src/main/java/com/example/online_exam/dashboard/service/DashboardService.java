@@ -20,8 +20,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.format.DateTimeFormatter;
+import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -71,6 +75,12 @@ public class DashboardService {
                 .map(this::toRecentAttempt)
                 .collect(Collectors.toList());
 
+        // ── Monthly Attempts Chart (6 tháng gần nhất) ──
+        List<DashboardResponse.MonthlyAttempt> monthlyAttempts = calculateMonthlyAttempts(allAttempts);
+
+        // ── Score Distribution Chart ──
+        DashboardResponse.ScoreDistribution scoreDistribution = calculateScoreDistribution(graded);
+
         return DashboardResponse.Admin.builder()
                 .totalUsers(allUsers.size())
                 .totalStudents(students)
@@ -82,6 +92,64 @@ public class DashboardService {
                 .avgScore(Math.round(avgScore * 10.0) / 10.0)
                 .passRate(passRate)
                 .recentAttempts(recent)
+                .monthlyAttempts(monthlyAttempts)
+                .scoreDistribution(scoreDistribution)
+                .build();
+    }
+
+    // ── Calculate Monthly Attempts (6 months) ──
+    private List<DashboardResponse.MonthlyAttempt> calculateMonthlyAttempts(List<Attempt> attempts) {
+        // Lấy 6 tháng gần nhất
+        YearMonth now = YearMonth.now();
+        List<YearMonth> last6Months = new ArrayList<>();
+        for (int i = 5; i >= 0; i--) {
+            last6Months.add(now.minusMonths(i));
+        }
+
+        // Đếm số bài thi theo tháng
+        Map<YearMonth, Long> countByMonth = attempts.stream()
+                .filter(a -> a.getSubmittedAt() != null)
+                .collect(Collectors.groupingBy(
+                        a -> YearMonth.from(a.getSubmittedAt()),
+                        Collectors.counting()
+                ));
+
+        // Tạo kết quả với format "Tháng X/YYYY"
+        return last6Months.stream()
+                .map(ym -> DashboardResponse.MonthlyAttempt.builder()
+                        .month("Tháng " + ym.getMonthValue() + "/" + ym.getYear())
+                        .count(countByMonth.getOrDefault(ym, 0L).intValue())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    // ── Calculate Score Distribution ──
+    private DashboardResponse.ScoreDistribution calculateScoreDistribution(List<Attempt> gradedAttempts) {
+        int excellent = 0;  // 9-10
+        int good = 0;       // 8-9
+        int fair = 0;       // 7-8
+        int average = 0;    // 5-7
+        int poor = 0;       // <5
+
+        for (Attempt a : gradedAttempts) {
+            if (a.getScore() == null || a.getTotalScore() == null || a.getTotalScore() == 0) continue;
+            
+            // Chuẩn hóa điểm về thang 10
+            double normalizedScore = (a.getScore() / a.getTotalScore()) * 10.0;
+            
+            if (normalizedScore >= 9.0) excellent++;
+            else if (normalizedScore >= 8.0) good++;
+            else if (normalizedScore >= 7.0) fair++;
+            else if (normalizedScore >= 5.0) average++;
+            else poor++;
+        }
+
+        return DashboardResponse.ScoreDistribution.builder()
+                .excellent(excellent)
+                .good(good)
+                .fair(fair)
+                .average(average)
+                .poor(poor)
                 .build();
     }
 
@@ -165,6 +233,12 @@ public class DashboardService {
                     .build();
         }).collect(Collectors.toList());
 
+        // ── Monthly Attempts Chart (6 tháng gần nhất) ──
+        List<DashboardResponse.MonthlyAttempt> monthlyAttempts = calculateMonthlyAttempts(myAttempts);
+
+        // ── Score Distribution Chart ──
+        DashboardResponse.ScoreDistribution scoreDistribution = calculateScoreDistribution(graded);
+
         log.info("[Dashboard] ===== END teacherStats =====");
         DashboardResponse.Teacher response = DashboardResponse.Teacher.builder()
                 .myCourses(courses.size())
@@ -175,6 +249,8 @@ public class DashboardService {
                 .avgScore(Math.round(avg * 10.0) / 10.0)
                 .passRate(passRate)
                 .courseStats(courseStats)
+                .monthlyAttempts(monthlyAttempts)
+                .scoreDistribution(scoreDistribution)
                 .build();
         log.info("[Dashboard] Response courseStats: {}", courseStats.stream()
                 .map(c -> c.getCourseName() + "=" + c.getAttemptCount())
@@ -205,6 +281,12 @@ public class DashboardService {
                 .map(this::toRecentAttempt)
                 .collect(Collectors.toList());
 
+        // ── Monthly Attempts Chart (6 tháng gần nhất) ──
+        List<DashboardResponse.MonthlyAttempt> monthlyAttempts = calculateMonthlyAttempts(attempts);
+
+        // ── Score Distribution Chart ──
+        DashboardResponse.ScoreDistribution scoreDistribution = calculateScoreDistribution(graded);
+
         return DashboardResponse.Student.builder()
                 .enrolledCourses(courses.size())
                 .availableExams(exams.size())
@@ -212,6 +294,8 @@ public class DashboardService {
                 .passedAttempts(passed)
                 .avgScore(avg)
                 .recentAttempts(recent)
+                .monthlyAttempts(monthlyAttempts)
+                .scoreDistribution(scoreDistribution)
                 .build();
     }
 

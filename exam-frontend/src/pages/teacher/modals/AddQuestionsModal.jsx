@@ -39,6 +39,7 @@ export default function AddQuestionsModal({ exam, onClose, onSaved }) {
   const toast = useToast()
   const [questions, setQuestions] = useState([])
   const [selected, setSelected] = useState(new Set((exam.questions || []).map(q => q.questionId || q.id)))
+  const [scores, setScores] = useState({}) // questionId → score (null = auto calculate)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('ALL')
@@ -59,7 +60,15 @@ export default function AddQuestionsModal({ exam, onClose, onSaved }) {
       return
     }
     questionApi.getAll(exam.courseId, {})
-      .then(r => setQuestions(r.data.data || []))
+      .then(r => {
+        setQuestions(r.data.data || [])
+        // Load điểm hiện tại từ exam.questions
+        const scoreMap = {}
+        ;(exam.questions || []).forEach(q => {
+          scoreMap[q.questionId || q.id] = q.score
+        })
+        setScores(scoreMap)
+      })
       .catch((err) => {
         console.error('Load questions error:', err?.response?.status, err?.response?.data)
         setQuestions([])
@@ -105,13 +114,30 @@ export default function AddQuestionsModal({ exam, onClose, onSaved }) {
 
       // Thêm câu hỏi mới — dùng POST /exams/{id}/questions
       if (toAdd.length > 0) {
-        const items = toAdd.map((qId, i) => ({ questionId: qId, score: 1.0, orderIndex: i + 1 }))
+        const items = toAdd.map((qId, i) => ({ 
+          questionId: qId, 
+          score: scores[qId] || null, // null = backend tự tính
+          orderIndex: i + 1 
+        }))
         // Gọi trực tiếp axios nếu examApi.addQuestions chưa có
         if (typeof examApi.addQuestions === 'function') {
           await examApi.addQuestions(exam.id, items)
         } else {
           const { default: api } = await import('../../../api/client')
           await api.post(`/exams/${exam.id}/questions`, items)
+        }
+      }
+
+      // Cập nhật điểm cho câu hỏi đã có (nếu thay đổi)
+      for (const qId of currentIds) {
+        if (selected.has(qId)) {
+          const oldScore = (exam.questions || []).find(q => (q.questionId || q.id) === qId)?.score
+          const newScore = scores[qId]
+          if (oldScore !== newScore) {
+            // Cập nhật điểm
+            const { default: api } = await import('../../../api/client')
+            await api.put(`/exams/${exam.id}/questions/${qId}`, { score: newScore || null })
+          }
         }
       }
 
@@ -188,18 +214,19 @@ export default function AddQuestionsModal({ exam, onClose, onSaved }) {
           <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
             {filtered.map((q, i) => (
               <div key={q.id}
-                onClick={() => toggle(q.id)}
-                className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${
                   selected.has(q.id)
                     ? 'border-accent bg-accent/8'
-                    : 'border-[var(--border-base)] bg-[var(--bg-elevated)] hover:border-[var(--accent)] hover:shadow-sm'
+                    : 'border-[var(--border-base)] bg-[var(--bg-elevated)]'
                 }`}>
-                <div className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors ${
-                  selected.has(q.id) ? 'bg-accent border-accent' : 'border-[var(--border-strong)]'
-                }`}>
+                <div 
+                  onClick={() => toggle(q.id)}
+                  className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors cursor-pointer ${
+                    selected.has(q.id) ? 'bg-accent border-accent' : 'border-[var(--border-strong)]'
+                  }`}>
                   {selected.has(q.id) && <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/></svg>}
                 </div>
-                <div className="flex-1 min-w-0">
+                <div className="flex-1 min-w-0" onClick={() => toggle(q.id)} style={{ cursor: 'pointer' }}>
                   <p className="text-[var(--text-1)] text-sm line-clamp-2">{i + 1}. {q.content}</p>
                   <div className="flex flex-wrap gap-2 mt-1.5 items-center">
                     <span className="text-xs text-[var(--text-3)]">{TYPE_META[q.type] || q.type}</span>
@@ -216,6 +243,21 @@ export default function AddQuestionsModal({ exam, onClose, onSaved }) {
                     ))}
                   </div>
                 </div>
+                {selected.has(q.id) && (
+                  <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <input 
+                      type="number" 
+                      min="0" 
+                      step="0.5"
+                      placeholder="Auto"
+                      value={scores[q.id] ?? ''}
+                      onChange={(e) => setScores(prev => ({ ...prev, [q.id]: e.target.value ? parseFloat(e.target.value) : null }))}
+                      className="input-field w-16 text-sm py-1 px-2 text-center"
+                      title="Để trống = tự động tính điểm"
+                    />
+                    <span className="text-xs text-[var(--text-3)]">đ</span>
+                  </div>
+                )}
               </div>
             ))}
           </div>

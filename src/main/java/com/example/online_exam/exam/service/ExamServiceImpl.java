@@ -242,6 +242,21 @@ public class ExamServiceImpl implements ExamService {
     }
 
     @Override
+    public ExamResponse updateQuestionScore(Long examId, Long questionId, Double score) {
+        Exam exam = findExam(examId);
+        User caller = currentUser();
+        if (isTeacher(caller)) checkOwnership(exam, caller);
+        
+        ExamQuestion eq = examQRepo.findByExamIdAndQuestionId(examId, questionId)
+                .orElseThrow(() -> new AppException(ErrorCode.QUESTION_NOT_FOUND));
+        eq.setScore(score != null ? score : 1.0);
+        examQRepo.save(eq);
+        
+        examCacheService.evict(examId);
+        return toResponse(findExam(examId), true, false);
+    }
+
+    @Override
     public ExamResponse reorderQuestions(Long examId, List<ExamQuestionItem> items) {
         Exam exam = findExam(examId);
         User caller = currentUser();
@@ -309,6 +324,7 @@ public class ExamServiceImpl implements ExamService {
     }
 
     // ── Helpers ───────────────────────────────────────────
+    
     private void checkOwnership(Exam exam, User caller) {
         // Cho phép: người tạo đề HOẶC giáo viên phụ trách lớp chứa đề
         boolean isCreator = exam.getCreatedBy() != null
@@ -401,6 +417,7 @@ public class ExamServiceImpl implements ExamService {
                     .orElseThrow(() -> new AppException(ErrorCode.QUESTION_NOT_FOUND));
             ExamQuestion eq = new ExamQuestion();
             eq.setExam(exam); eq.setQuestion(q);
+            // Điểm mặc định = 1.0, sẽ tính lại khi submit
             eq.setScore(item.getScore() != null ? item.getScore() : 1.0);
             eq.setOrderIndex(item.getOrderIndex() != null ? item.getOrderIndex() : currentMax + i);
             toAdd.add(eq);

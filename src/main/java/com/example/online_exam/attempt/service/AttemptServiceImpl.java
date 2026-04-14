@@ -7,6 +7,7 @@ import com.example.online_exam.attempt.repository.*;
 import com.example.online_exam.exam.entity.Exam;
 import com.example.online_exam.exam.entity.ExamQuestion;
 import com.example.online_exam.exam.repository.ExamRepository;
+import com.example.online_exam.exam.repository.ExamQuestionRepository;
 import com.example.online_exam.exception.AppException;
 import com.example.online_exam.exception.ErrorCode;
 import com.example.online_exam.question.entity.Answer;
@@ -42,6 +43,7 @@ public class AttemptServiceImpl implements AttemptService {
     @PersistenceContext
     private EntityManager em;
     private final ExamRepository          examRepo;
+    private final ExamQuestionRepository  examQRepo;
     private final QuestionRepository      questionRepo;
     private final CurrentUserService      currentUserService;
     private final EmailService            emailService;
@@ -145,6 +147,16 @@ public class AttemptServiceImpl implements AttemptService {
         final Long studentId = student.getId();
 
         Exam exam = attempt.getExam();
+        
+        // Tính điểm tự động: totalScore / số câu hỏi
+        int questionCount = exam.getExamQuestions().size();
+        double scorePerQuestion = questionCount > 0 
+                ? Math.round((exam.getTotalScore() / questionCount) * 100.0) / 100.0 
+                : 1.0;
+        
+        log.info("[Submit] Auto score: totalScore={}, questionCount={}, scorePerQuestion={}", 
+                exam.getTotalScore(), questionCount, scorePerQuestion);
+        
         Map<Long, ExamQuestion> examQMap = exam.getExamQuestions().stream()
                 .collect(Collectors.toMap(eq -> eq.getQuestion().getId(), eq -> eq));
 
@@ -161,7 +173,8 @@ public class AttemptServiceImpl implements AttemptService {
             aa.setQuestion(q);
 
             ExamQuestion eq = examQMap.get(q.getId());
-            double qScore   = eq != null ? (eq.getScore() != null ? eq.getScore() : 1.0) : 1.0;
+            // Dùng điểm tự động thay vì điểm từ DB
+            double qScore = scorePerQuestion;
 
             if (q.getType().name().equals("ESSAY")) {
                 aa.setTextAnswer(item.getTextAnswer());
@@ -202,11 +215,8 @@ public class AttemptServiceImpl implements AttemptService {
 
         boolean autoGraded = false;
         if (!hasEssay) {
-            double maxEarnable = exam.getExamQuestions().stream()
-                    .mapToDouble(eq -> eq.getScore() != null ? eq.getScore() : 1.0).sum();
-            double finalScore = maxEarnable > 0
-                    ? Math.round((totalEarned / maxEarnable) * attempt.getTotalScore() * 10.0) / 10.0
-                    : 0.0;
+            // Điểm cuối = tổng điểm đạt được (không cần chuẩn hóa)
+            double finalScore = Math.round(totalEarned * 100.0) / 100.0;
             attempt.setScore(finalScore);
             attempt.setPassed(exam.getPassScore() == null || finalScore >= exam.getPassScore());
             attempt.setStatus(AttemptStatus.GRADED);
@@ -292,7 +302,10 @@ public class AttemptServiceImpl implements AttemptService {
     public List<AttemptResponse> getMyAttemptsByExam(Long examId) {
         User student = currentUserService.requireCurrentUser();
         return attemptRepo.findByExamIdAndStudentIdOrderByStartedAtDesc(examId, student.getId())
-                .stream().map(a -> toResponse(a, false)).collect(Collectors.toList());
+                .stream()
+                .filter(a -> a.getStatus() == AttemptStatus.SUBMITTED || a.getStatus() == AttemptStatus.GRADED)
+                .map(a -> toResponse(a, false))
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -340,23 +353,47 @@ public class AttemptServiceImpl implements AttemptService {
         User caller = currentUserService.requireCurrentUser();
         if (isTeacher(caller)) checkExamOwnership(attempt.getExam(), caller);
 
+        // Tính điểm tự động: totalScore / số câu hỏi
+        int questionCount = attempt.getExam().getExamQuestions().size();
+        double scorePerQuestion = questionCount > 0 
+                ? Math.round((attempt.getExam().getTotalScore() / questionCount) * 100.0) / 100.0 
+                : 1.0;
+        
+        log.info("[Grade] Auto score: totalScore={}, questionCount={}, scorePerQuestion={}", 
+                attempt.getExam().getTotalScore(), questionCount, scorePerQuestion);
+
         for (GradeRequest.AnswerGrade ag : req.getAnswers()) {
             attempt.getAnswers().stream()
                     .filter(aa -> aa.getId().equals(ag.getAttemptAnswerId()))
                     .findFirst().ifPresent(aa -> {
-                        if (ag.getScore()          != null) aa.setScore(ag.getScore());
+                        // Giới hạn điểm không vượt quá maxScore của câu
+                        if (ag.getScore() != null) {
+                            if (ag.getScore() > scorePerQuestion) {
+                                log.warn("Grade score {} exceeds max {} for question {}, capping to max",
+                                        ag.getScore(), scorePerQuestion, aa.getQuestion().getId());
+                                aa.setScore(scorePerQuestion);
+                            } else {
+                                aa.setScore(ag.getScore());
+                            }
+                        }
                         if (ag.getIsCorrect()      != null) aa.setIsCorrect(ag.getIsCorrect());
                         if (ag.getTeacherComment() != null) aa.setTeacherComment(ag.getTeacherComment());
                     });
         }
 
-        double total       = attempt.getAnswers().stream()
+        double total = attempt.getAnswers().stream()
                 .mapToDouble(aa -> aa.getScore() != null ? aa.getScore() : 0.0).sum();
-        double maxScore    = attempt.getTotalScore() != null ? attempt.getTotalScore() : 10.0;
-        double maxEarnable = attempt.getExam().getExamQuestions().stream()
-                .mapToDouble(eq -> eq.getScore() != null ? eq.getScore() : 1.0).sum();
-        double finalScore  = maxEarnable > 0
-                ? Math.round((total / maxEarnable) * maxScore * 10.0) / 10.0 : 0.0;
+        
+        log.info("[Grade] Total score calculation:");
+        for (AttemptAnswer aa : attempt.getAnswers()) {
+            log.info("[Grade]   Q={}: score={}", aa.getQuestion().getId(), aa.getScore());
+        }
+        log.info("[Grade] Total earned: {}", total);
+        
+        // Điểm cuối = tổng điểm đạt được
+        double finalScore = Math.round(total * 100.0) / 100.0;
+        
+        log.info("[Grade] Final score: {}", finalScore);
 
         attempt.setScore(finalScore);
         attempt.setPassed(attempt.getExam().getPassScore() == null
@@ -416,8 +453,10 @@ public class AttemptServiceImpl implements AttemptService {
         if (tabViolationCount >= maxViolations) {
             log.info("heartbeat: attemptId={}, tabViolationCount={} >= maxViolations={}, auto-submitting",
                     attemptId, tabViolationCount, maxViolations);
-            // Tự động submit bài
+            // Tự động submit bài - doSubmit sẽ save attempt với status SUBMITTED
             doSubmit(attempt, items, attempt.getStudent());
+            // Sau khi submit, attempt đã được save với status SUBMITTED
+            // Frontend sẽ nhận được status này qua getAttemptResponse
             return;
         }
         
@@ -463,7 +502,14 @@ public class AttemptServiceImpl implements AttemptService {
                 .orElseThrow(() -> new AppException(ErrorCode.ATTEMPT_NOT_FOUND));
         User caller = currentUserService.requireCurrentUser();
         if (isTeacher(caller)) checkExamOwnership(attempt.getExam(), caller);
-        attemptRepo.delete(attempt);
+        
+        // Xóa TẤT CẢ attempts của sinh viên này cho exam này
+        Long examId = attempt.getExam().getId();
+        Long studentId = attempt.getStudent().getId();
+        List<Attempt> allAttempts = attemptRepo.findByExamIdAndStudentIdOrderByStartedAtDesc(examId, studentId);
+        attemptRepo.deleteAll(allAttempts);
+        
+        log.info("Reset all {} attempts for student {} in exam {}", allAttempts.size(), studentId, examId);
     }
 
     // ── Exit exam (track exit count) ────────────────────────────────────────
@@ -526,6 +572,12 @@ public class AttemptServiceImpl implements AttemptService {
         return attempt;
     }
 
+    // Public method để frontend lấy trạng thái attempt (dùng cho heartbeat)
+    public AttemptResponse getAttemptResponse(Long attemptId) {
+        Attempt attempt = findAttempt(attemptId);
+        return toResponse(attempt, false);
+    }
+
     private AttemptResponse toResponse(Attempt a, boolean includeAnswers) {
         AttemptResponse r = new AttemptResponse();
         r.setId(a.getId());
@@ -561,6 +613,12 @@ public class AttemptServiceImpl implements AttemptService {
         r.setTotalQuestions(a.getAnswers().size());
 
         if (includeAnswers) {
+            // Tính điểm tự động: totalScore / số câu hỏi
+            int questionCount = a.getExam().getExamQuestions().size();
+            double scorePerQuestion = questionCount > 0 
+                    ? Math.round((a.getExam().getTotalScore() / questionCount) * 100.0) / 100.0 
+                    : 1.0;
+            
             r.setAnswers(a.getAnswers().stream().map(aa -> {
                 AttemptResponse.AttemptAnswerDetail d = new AttemptResponse.AttemptAnswerDetail();
                 d.setId(aa.getId());
@@ -568,6 +626,8 @@ public class AttemptServiceImpl implements AttemptService {
                     d.setQuestionId(aa.getQuestion().getId());
                     d.setQuestionContent(aa.getQuestion().getContent());
                     d.setQuestionType(aa.getQuestion().getType().name());
+                    // Set maxScore = điểm tự động
+                    d.setMaxScore(scorePerQuestion);
                     aa.getQuestion().getAnswers().stream()
                             .filter(Answer::isCorrect).findFirst().ifPresent(ca -> {
                                 d.setCorrectAnswerId(ca.getId());

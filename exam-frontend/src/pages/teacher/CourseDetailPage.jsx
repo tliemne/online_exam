@@ -60,8 +60,14 @@ function ManageTeachersModal({ course, onClose, onSaved, allUsers, currentUser, 
   }
 
   const handleRemoveTeacher = async (teacherId) => {
+    // Ngăn xóa giáo viên cuối cùng
     if (teachers.length === 1) {
       setError(t('course.minOneTeacher'))
+      return
+    }
+    // Ngăn creator tự xóa mình
+    if (teacherId === course.createdById) {
+      setError('Không thể xóa giáo viên tạo lớp. Chỉ admin mới có thể thực hiện.')
       return
     }
     setLoading(true)
@@ -92,20 +98,31 @@ function ManageTeachersModal({ course, onClose, onSaved, allUsers, currentUser, 
             <div className="space-y-2 max-h-48 overflow-y-auto">
               {teachers.length === 0 ? (
                 <p className="text-[var(--text-3)] text-sm py-3">{t('course.noTeachers')}</p>
-              ) : teachers.map(teacher => (
-                <div key={teacher.id} className="flex items-center justify-between p-3 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-base)]">
-                  <div>
-                    <p className="text-[var(--text-1)] text-sm font-medium">{teacher.fullName || teacher.username}</p>
-                    <p className="text-[var(--text-3)] text-xs">@{teacher.username}</p>
+              ) : teachers.map(teacher => {
+                const isCreator = teacher.id === course.createdById
+                const canRemove = teachers.length > 1 && !isCreator
+                return (
+                  <div key={teacher.id} className="flex items-center justify-between p-3 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-base)]">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-[var(--text-1)] text-sm font-medium">{teacher.fullName || teacher.username}</p>
+                        {isCreator && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-accent/15 border border-accent/25 text-accent font-medium">
+                            Người tạo
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[var(--text-3)] text-xs">@{teacher.username}</p>
+                    </div>
+                    {canRemove && (
+                      <button onClick={() => handleRemoveTeacher(teacher.id)} disabled={loading}
+                        className="btn-ghost text-danger/70 hover:text-danger hover:bg-danger/10 px-2 py-1 text-xs">
+                        {t('common.delete')}
+                      </button>
+                    )}
                   </div>
-                  {teachers.length > 1 && (
-                    <button onClick={() => handleRemoveTeacher(teacher.id)} disabled={loading}
-                      className="btn-ghost text-danger/70 hover:text-danger hover:bg-danger/10 px-2 py-1 text-xs">
-                      {t('common.delete')}
-                    </button>
-                  )}
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
 

@@ -51,6 +51,7 @@ public class AttemptResponse {
 
         private Boolean isCorrect;
         private Double score;
+        private Double maxScore;  // Điểm tối đa của câu này (từ ExamQuestion)
         private String teacherComment;
 
         // Đáp án đúng (chỉ trả khi đã submit)

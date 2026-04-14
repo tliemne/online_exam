@@ -13,6 +13,9 @@ public interface ExamQuestionRepository extends JpaRepository<ExamQuestion, Long
     boolean existsByExamIdAndQuestionId(Long examId, Long questionId);
     long countByQuestionId(Long questionId);
     int countByExamId(Long examId);
+    
+    @Query("SELECT eq FROM ExamQuestion eq WHERE eq.exam.id = :examId AND eq.question.id = :questionId")
+    java.util.Optional<ExamQuestion> findByExamIdAndQuestionId(@Param("examId") Long examId, @Param("questionId") Long questionId);
 
     @Modifying
     @Query(value = "DELETE FROM exam_questions WHERE exam_id = :examId AND question_id = :questionId", nativeQuery = true)

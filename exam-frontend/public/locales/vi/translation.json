@@ -807,6 +807,21 @@
     "exams": "Đề thi",
     "attempts": "Lượt thi",
     "passRate": "Tỉ lệ đạt",
-    "systemDescription": "Quản lý đề thi, chấm điểm tự động và theo dõi tiến độ học tập của sinh viên."
+    "systemDescription": "Quản lý đề thi, chấm điểm tự động và theo dõi tiến độ học tập của sinh viên.",
+    "registerTitle": "Đăng ký",
+    "createNewAccount": "Tạo tài khoản mới",
+    "fullNameLabel": "Họ và tên",
+    "fullNamePlaceholder": "Nguyễn Văn A",
+    "emailLabel": "Email",
+    "emailPlaceholder": "example@gmail.com",
+    "emailOptional": "(tuỳ chọn)",
+    "roleLabel": "Vai trò",
+    "studentRole": "Sinh viên",
+    "teacherRole": "Giảng viên",
+    "createAccountButton": "Tạo tài khoản",
+    "creatingAccount": "Đang tạo...",
+    "registerFailed": "Đăng ký thất bại, thử lại",
+    "alreadyHaveAccount": "Đã có tài khoản?",
+    "loginLink": "Đăng nhập"
   }
 }
