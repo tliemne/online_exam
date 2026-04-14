@@ -19,6 +19,8 @@ public class ExamResponse {
     private Boolean randomizeQuestions;
     private Integer maxAttempts;
     private Boolean allowResume;
+    private Integer maxTabViolations;
+    private Integer maxExitAttempts;
     private ExamStatus status;
 
     // Course info

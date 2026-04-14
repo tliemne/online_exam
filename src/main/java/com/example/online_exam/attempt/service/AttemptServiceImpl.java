@@ -101,6 +101,12 @@ public class AttemptServiceImpl implements AttemptService {
         attempt.setTabViolationCount(0);
         attempt.setTimeRemainingSeconds(exam.getDurationMinutes() != null
                 ? exam.getDurationMinutes() * 60 : 3600);
+        
+        // Xáo trộn câu hỏi nếu exam có randomizeQuestions = true
+        if (Boolean.TRUE.equals(exam.getRandomizeQuestions())) {
+            attempt.setQuestionOrder(generateRandomizedQuestionOrder(examId));
+        }
+        
         Attempt saved = attemptRepo.save(attempt);
         // Fetch lại với exam để tránh LazyInitializationException
         return toResponse(attemptRepo.findByIdWithExam(saved.getId()).orElse(saved), false);
@@ -403,6 +409,18 @@ public class AttemptServiceImpl implements AttemptService {
 
         attempt.setTimeRemainingSeconds(timeRemainingSeconds);
         attempt.setTabViolationCount(tabViolationCount);
+        
+        // Kiểm tra nếu vi phạm quá nhiều → tự động submit
+        Integer maxViolations = attempt.getExam().getMaxTabViolations() != null 
+                ? attempt.getExam().getMaxTabViolations() : 3;
+        if (tabViolationCount >= maxViolations) {
+            log.info("heartbeat: attemptId={}, tabViolationCount={} >= maxViolations={}, auto-submitting",
+                    attemptId, tabViolationCount, maxViolations);
+            // Tự động submit bài
+            doSubmit(attempt, items, attempt.getStudent());
+            return;
+        }
+        
         attemptRepo.save(attempt);
 
         // Lưu answers tạm — upsert từng câu đã trả lời
@@ -446,6 +464,30 @@ public class AttemptServiceImpl implements AttemptService {
         User caller = currentUserService.requireCurrentUser();
         if (isTeacher(caller)) checkExamOwnership(attempt.getExam(), caller);
         attemptRepo.delete(attempt);
+    }
+
+    // ── Exit exam (track exit count) ────────────────────────────────────────
+    @Override
+    public void exitExam(Long attemptId) {
+        Attempt attempt = attemptRepo.findById(attemptId)
+                .orElseThrow(() -> new AppException(ErrorCode.ATTEMPT_NOT_FOUND));
+        if (attempt.getStatus() != AttemptStatus.IN_PROGRESS) return;
+
+        // Tăng exitCount
+        Integer exitCount = attempt.getExitCount() != null ? attempt.getExitCount() : 0;
+        attempt.setExitCount(exitCount + 1);
+        
+        // Kiểm tra nếu vượt quá giới hạn → tự động submit
+        Integer maxExits = attempt.getExam().getMaxExitAttempts() != null 
+                ? attempt.getExam().getMaxExitAttempts() : 1;
+        if (maxExits > 0 && attempt.getExitCount() >= maxExits) {
+            log.info("exitExam: attemptId={}, exitCount={} >= maxExitAttempts={}, auto-submitting",
+                    attemptId, attempt.getExitCount(), maxExits);
+            // Tự động submit bài
+            doSubmit(attempt, new ArrayList<>(), attempt.getStudent());
+        } else {
+            attemptRepo.save(attempt);
+        }
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────
@@ -495,6 +537,8 @@ public class AttemptServiceImpl implements AttemptService {
         r.setSubmittedAt(a.getSubmittedAt());
         r.setTimeRemainingSeconds(a.getTimeRemainingSeconds());
         r.setTabViolationCount(a.getTabViolationCount() != null ? a.getTabViolationCount() : 0);
+        r.setQuestionOrder(a.getQuestionOrder()); // Thứ tự xáo trộn
+        r.setExitCount(a.getExitCount() != null ? a.getExitCount() : 0);
 
         if (a.getExam() != null) {
             r.setExamId(a.getExam().getId());
@@ -542,5 +586,29 @@ public class AttemptServiceImpl implements AttemptService {
             }).collect(Collectors.toList()));
         }
         return r;
+    }
+
+    // ── Generate randomized question order ──────────────────────────────────
+    private String generateRandomizedQuestionOrder(Long examId) {
+        // Lấy tất cả câu hỏi của đề thi theo thứ tự
+        List<ExamQuestion> examQuestions = examRepo.findById(examId)
+                .map(exam -> em.createQuery(
+                        "SELECT eq FROM ExamQuestion eq WHERE eq.exam.id = :examId ORDER BY eq.orderIndex",
+                        ExamQuestion.class)
+                        .setParameter("examId", examId)
+                        .getResultList())
+                .orElse(new ArrayList<>());
+
+        // Lấy danh sách ID câu hỏi
+        List<Long> questionIds = examQuestions.stream()
+                .map(eq -> eq.getQuestion().getId())
+                .collect(Collectors.toList());
+
+        // Xáo trộn
+        Collections.shuffle(questionIds);
+
+        // Chuyển thành JSON string: [id1, id2, id3, ...]
+        return "[" + String.join(",", questionIds.stream()
+                .map(String::valueOf).collect(Collectors.toList())) + "]";
     }
 }

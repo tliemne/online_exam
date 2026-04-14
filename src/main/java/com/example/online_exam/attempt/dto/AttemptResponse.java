@@ -28,6 +28,8 @@ public class AttemptResponse {
     private Integer timeRemainingSeconds;
     private Integer tabViolationCount;
     private Boolean allowResume;
+    private String questionOrder; // JSON: [id1, id2, id3, ...] — thứ tự xáo trộn
+    private Integer exitCount; // Số lần thoát ra
 
 
     private Integer correctCount;

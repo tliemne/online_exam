@@ -23,6 +23,7 @@ import com.example.online_exam.user.entity.User;
 import com.example.online_exam.user.enums.RoleName;
 import com.example.online_exam.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +38,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 @Transactional
 public class ExamServiceImpl implements ExamService {
 
@@ -416,6 +418,8 @@ public class ExamServiceImpl implements ExamService {
         r.setRandomizeQuestions(exam.getRandomizeQuestions());
         r.setMaxAttempts(exam.getMaxAttempts());
         r.setAllowResume(exam.getAllowResume() != null ? exam.getAllowResume() : false);
+        r.setMaxTabViolations(exam.getMaxTabViolations() != null ? exam.getMaxTabViolations() : 3);
+        r.setMaxExitAttempts(exam.getMaxExitAttempts() != null ? exam.getMaxExitAttempts() : 1);
         r.setStatus(exam.getStatus()); r.setCreatedAt(exam.getCreatedAt());
         if (exam.getCourse() != null) {
             r.setCourseId(exam.getCourse().getId());
@@ -423,9 +427,14 @@ public class ExamServiceImpl implements ExamService {
         }
         if (exam.getCreatedBy() != null) r.setCreatedByName(exam.getCreatedBy().getFullName());
         r.setQuestionCount(exam.getExamQuestions().size());
+        
+        log.info("toResponse: examId={}, includeQuestions={}, questionCount={}, status={}", 
+                exam.getId(), includeQuestions, exam.getExamQuestions().size(), exam.getStatus());
+        
         if (includeQuestions) {
             r.setQuestions(exam.getExamQuestions().stream()
                     .map(eq -> toExamQResponse(eq, hideCorrect)).collect(Collectors.toList()));
+            log.info("toResponse: returning {} questions", r.getQuestions().size());
         }
         return r;
     }

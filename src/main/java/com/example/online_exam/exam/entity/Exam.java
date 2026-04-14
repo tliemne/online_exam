@@ -38,6 +38,8 @@ public class Exam extends BaseEntity {
     private Boolean randomizeQuestions = false;
     private Integer maxAttempts = 1;
     private Boolean allowResume = false; // Lưu tiến trình khi thoát (false = reset khi vào lại)
+    private Integer maxTabViolations = 3; // Số lần chuyển tab tối đa trước khi kết thúc bài
+    private Integer maxExitAttempts = 1; // Số lần thoát ra tối đa (0 = không giới hạn)
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

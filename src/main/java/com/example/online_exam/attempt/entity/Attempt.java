@@ -50,8 +50,13 @@ public class Attempt {
     private LocalDateTime submittedAt;
     private Integer timeRemainingSeconds; // Thời gian còn lại (giây) — lưu khi thoát
     private Integer tabViolationCount = 0; // Số lần chuyển tab vi phạm
+    private Integer exitCount = 0; // Số lần thoát ra khỏi bài thi
 
     // Câu trả lời
     @OneToMany(mappedBy = "attempt", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<AttemptAnswer> answers = new ArrayList<>();
+
+    // Thứ tự câu hỏi xáo trộn (JSON: [questionId1, questionId2, ...])
+    @Column(columnDefinition = "TEXT")
+    private String questionOrder;
 }

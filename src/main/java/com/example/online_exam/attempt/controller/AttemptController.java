@@ -117,6 +117,14 @@ public class AttemptController {
                 .timestamp(java.time.LocalDateTime.now()).build();
     }
 
+    // POST /attempts/{id}/exit  — student thoát ra khỏi bài thi
+    @PostMapping("/{id}/exit")
+    @PreAuthorize("hasRole('STUDENT')")
+    public BaseResponse<Void> exitExam(@PathVariable Long id) {
+        attemptService.exitExam(id);
+        return ok(null);
+    }
+
     // GET /attempts/exams/{examId}/export  — teacher xuất Excel
     // GET /attempts/grading/pending/{examId} — số bài chờ chấm (tránh static resource conflict)
     @GetMapping("/grading/pending/{examId}")

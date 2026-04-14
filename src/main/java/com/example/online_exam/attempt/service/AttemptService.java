@@ -40,4 +40,7 @@ public interface AttemptService {
     // Student gửi heartbeat — lưu thời gian + tab + answers tạm
     void heartbeat(Long attemptId, int timeRemainingSeconds, int tabViolationCount,
                    java.util.List<SubmitAnswerItem> answers);
+
+    // Student thoát ra khỏi bài thi (không submit)
+    void exitExam(Long attemptId);
 }

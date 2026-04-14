@@ -39,15 +39,41 @@ export default function TakeExamModal({ exam, onClose, onSubmitted }) {
     const load = async () => {
       try {
         // 1. Gọi /start → backend trả về attempt IN_PROGRESS (tạo mới hoặc resume)
+        console.log('TakeExamModal: Loading exam', exam.id)
         const [examRes, startRes] = await Promise.all([
           api.get(`/exams/${exam.id}`, { params: { includeQuestions: true, hideCorrect: true } }),
           api.post(`/attempts/exams/${exam.id}/start`)
         ])
-        setQuestions(examRes.data.data?.questions || [])
+        let examQuestions = examRes.data.data?.questions || []
+        
+        console.log('Exam response:', examRes.data.data)
+        console.log('Questions loaded:', examQuestions.length)
 
         const attempt = startRes.data.data
         setAttemptId(attempt.id)
         setTabWarning(attempt.tabViolationCount || 0)
+
+        // Nếu có questionOrder (xáo trộn), sắp xếp lại câu hỏi theo thứ tự đó
+        if (attempt.questionOrder) {
+          try {
+            const order = JSON.parse(attempt.questionOrder) // [questionId1, questionId2, ...]
+            console.log('Question order:', order)
+            const qMap = {}
+            examQuestions.forEach(q => { 
+              console.log('Question ID:', q.questionId, 'Question:', q)
+              qMap[q.questionId] = q 
+            })
+            console.log('Question map:', qMap)
+            examQuestions = order.map(id => {
+              console.log('Looking for ID:', id, 'Found:', qMap[id])
+              return qMap[id]
+            }).filter(q => q)
+            console.log('Questions after randomization:', examQuestions.length)
+          } catch (e) {
+            console.warn('Failed to parse questionOrder:', e)
+          }
+        }
+        setQuestions(examQuestions)
 
         // Resume timer: nếu allowResume=true thì dùng timeRemainingSeconds từ server
         if (attempt.allowResume !== false && attempt.timeRemainingSeconds != null) {
@@ -175,7 +201,7 @@ export default function TakeExamModal({ exam, onClose, onSubmitted }) {
 
   const fmt = (s) => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`
   const urgent = timeLeft < 300 // < 5 phút
-  const MAX_WARNINGS = 3
+  const MAX_WARNINGS = exam.maxTabViolations ?? 3
 
   const handleAnswer = (questionId, value) => {
     setAnswers(p => ({ ...p, [questionId]: value }))
@@ -313,7 +339,14 @@ export default function TakeExamModal({ exam, onClose, onSubmitted }) {
       danger: false,
       confirmLabel: 'Thoát'
     })
-    if (ok) { saveProgress(); onClose() }
+    if (ok) { 
+      saveProgress()
+      // Gọi API để track exit
+      if (attemptIdRef.current) {
+        api.post(`/attempts/${attemptIdRef.current}/exit`).catch(e => console.error('Exit error:', e))
+      }
+      onClose() 
+    }
   }
 
   return (
