@@ -16,6 +16,10 @@ const IcoPassed   = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentCo
 const IcoScore    = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z"/></svg>
 const IcoSchedule = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>
 const IcoRanking  = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0"/></svg>
+const IcoPost = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"/></svg>
+const IcoReply = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 011.037-.443 48.282 48.282 0 005.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"/></svg>
+const IcoLike = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M6.633 10.5c.806 0 1.533-.446 2.031-1.08a9.041 9.041 0 012.861-2.4c.723-.384 1.35-.956 1.653-1.715a4.498 4.498 0 00.322-1.672V3a.75.75 0 01.75-.75A2.25 2.25 0 0116.5 4.5c0 1.152-.26 2.243-.723 3.218-.266.558.107 1.282.725 1.282h3.126c1.026 0 1.945.694 2.054 1.715.045.422.068.85.068 1.285a11.95 11.95 0 01-2.649 7.521c-.388.482-.987.729-1.605.729H13.48c-.483 0-.964-.078-1.423-.23l-3.114-1.04a4.501 4.501 0 00-1.423-.23H5.904M14.25 9h2.25M5.904 18.75c.083.205.173.405.27.602.197.4-.078.898-.523.898h-.908c-.889 0-1.713-.518-1.972-1.368a12 12 0 01-.521-3.507c0-1.553.295-3.036.831-4.398C3.387 10.203 4.167 9.75 5 9.75h1.053c.472 0 .745.556.5.96a8.958 8.958 0 00-1.302 4.665c0 1.194.232 2.333.654 3.375z"/></svg>
+const IcoTrophy = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 007.73 9.728M5.25 4.236V4.5c0 2.108.966 3.99 2.48 5.228M5.25 4.236V2.721C7.456 2.41 9.71 2.25 12 2.25c2.291 0 4.545.16 6.75.47v1.516M7.73 9.728a6.726 6.726 0 002.748 1.35m8.272-6.842V4.5c0 2.108-.966 3.99-2.48 5.228m2.48-5.492a46.32 46.32 0 012.916.52 6.003 6.003 0 01-5.395 4.972m0 0a6.726 6.726 0 01-2.749 1.35m0 0a6.772 6.772 0 01-3.044 0"/></svg>
 
 // ── Skeleton ──────────────────────────────────────────────
 function Sk({ h='h-8', w='w-full' }) {
@@ -591,12 +595,20 @@ export default function StudentDashboard() {
   const [stats, setStats]     = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState(null)
+  const [discussionStats, setDiscussionStats] = useState(null)
+  const [discussionLoading, setDiscussionLoading] = useState(true)
 
   useEffect(() => {
     api.get('/dashboard/student')
       .then(r => setStats(r.data.data))
       .catch(e => setError(e?.response?.data?.message || t('messages.loadingFailed')))
       .finally(() => setLoading(false))
+    
+    // Load discussion stats
+    api.get('/dashboard/discussion/student')
+      .then(r => setDiscussionStats(r.data.data))
+      .catch(e => console.error('Failed to load discussion stats:', e))
+      .finally(() => setDiscussionLoading(false))
   }, [])
 
   const passRate = stats?.completedAttempts > 0
@@ -630,6 +642,79 @@ export default function StudentDashboard() {
           { label:t('attempt.passed'),        value:stats?.passedAttempts,    icon:<IcoPassed/>,   color:'var(--success)' },
         ].map(s => <StatCard key={s.label} {...s} loading={loading}/>)}
       </div>
+
+      {/* Discussion Activity Section - Gamification */}
+      {!discussionLoading && discussionStats && (
+        <div>
+          <p className="text-xs font-semibold mb-3 px-1" style={{ color: 'var(--text-3)' }}>
+            💬 HOẠT ĐỘNG THẢO LUẬN
+          </p>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { 
+                label: 'Bài viết của tôi', 
+                value: discussionStats.myPosts, 
+                icon: <IcoPost/>, 
+                color: '#7551FF',
+                sub: `Bạn đã đóng góp ${discussionStats.myPosts} câu hỏi`,
+                gradient: 'linear-gradient(135deg, #7551FF 0%, #9575FF 100%)'
+              },
+              { 
+                label: 'Phản hồi của tôi', 
+                value: discussionStats.myReplies, 
+                icon: <IcoReply/>, 
+                color: '#16a34a',
+                sub: `Bạn đã giúp đỡ ${discussionStats.myReplies} lần`,
+                gradient: 'linear-gradient(135deg, #16a34a 0%, #22c55e 100%)'
+              },
+              { 
+                label: 'Likes nhận được', 
+                value: discussionStats.totalLikes, 
+                icon: <IcoLike/>, 
+                color: '#ec4899',
+                sub: `Cộng đồng đánh giá cao ${discussionStats.totalLikes} đóng góp`,
+                gradient: 'linear-gradient(135deg, #ec4899 0%, #f472b6 100%)'
+              },
+              { 
+                label: 'Xếp hạng của bạn', 
+                value: `#${discussionStats.myRank}`, 
+                icon: <IcoTrophy/>, 
+                color: '#d97706',
+                sub: `Top ${discussionStats.percentage}% / ${discussionStats.totalStudents} sinh viên`,
+                gradient: 'linear-gradient(135deg, #d97706 0%, #f59e0b 100%)',
+                isRank: true
+              },
+            ].map(s => (
+              <div key={s.label} 
+                className="card p-5 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
+                {/* Gradient background on hover */}
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity duration-300"
+                  style={{ background: s.gradient }}/>
+                
+                <div className="relative z-10">
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center mb-3"
+                    style={{ background: s.gradient }}>
+                    <span className="text-white">{s.icon}</span>
+                  </div>
+                  <p className="font-bold text-3xl tracking-tight mb-1"
+                    style={{ color: 'var(--text-1)' }}>
+                    {s.value ?? 0}
+                  </p>
+                  <p className="text-sm font-semibold mb-1" style={{ color: 'var(--text-2)' }}>{s.label}</p>
+                  <p className="text-xs leading-relaxed" style={{ color: 'var(--text-3)' }}>{s.sub}</p>
+                  
+                  {s.isRank && discussionStats.myRank <= 10 && (
+                    <div className="mt-2 px-2 py-1 rounded-full inline-block text-xs font-bold"
+                      style={{ background: s.color + '20', color: s.color }}>
+                      🏆 Top 10!
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Score line + Donut */}
       {!loading && stats && (

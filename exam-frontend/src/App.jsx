@@ -35,6 +35,7 @@ import TeacherStatsPage from './pages/teacher/TeacherStatsPage'
 import TagsPage from './pages/teacher/TagsPage'
 import QuestionStatPage from './pages/teacher/QuestionStatPage'
 import CourseLeaderboardPage from './pages/shared/CourseLeaderboardPage'
+import DiscussionForumPage from './pages/shared/DiscussionForumPage'
 
 import {
   UnauthorizedPage,
@@ -86,6 +87,11 @@ export default function App() {
           <Route path="/teacher/courses/:courseId/leaderboard" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><CourseLeaderboardPage /></WithLayout></ProtectedRoute>} />
           <Route path="/admin/courses/:courseId/leaderboard" element={<ProtectedRoute roles={['ADMIN']}><WithLayout><CourseLeaderboardPage /></WithLayout></ProtectedRoute>} />
           <Route path="/student/courses/:courseId/leaderboard" element={<ProtectedRoute roles={['STUDENT']}><WithLayout><CourseLeaderboardPage /></WithLayout></ProtectedRoute>} />
+          
+          {/* Discussion Forum */}
+          <Route path="/teacher/courses/:courseId/discussions" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><DiscussionForumPage /></WithLayout></ProtectedRoute>} />
+          <Route path="/admin/courses/:courseId/discussions" element={<ProtectedRoute roles={['ADMIN']}><WithLayout><DiscussionForumPage /></WithLayout></ProtectedRoute>} />
+          <Route path="/student/courses/:courseId/discussions" element={<ProtectedRoute roles={['STUDENT']}><WithLayout><DiscussionForumPage /></WithLayout></ProtectedRoute>} />
 
           {/* Student */}
           <Route path="/teacher/stats" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><TeacherStatsPage /></WithLayout></ProtectedRoute>} />

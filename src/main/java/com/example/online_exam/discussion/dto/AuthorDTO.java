@@ -1,0 +1,11 @@
+package com.example.online_exam.discussion.dto;
+
+import lombok.Data;
+
+@Data
+public class AuthorDTO {
+    private Long id;
+    private String username;
+    private String fullName;
+    private String avatarUrl;
+}

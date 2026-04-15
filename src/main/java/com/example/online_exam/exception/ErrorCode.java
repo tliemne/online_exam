@@ -52,7 +52,16 @@ public enum ErrorCode {
     // ===== GENERIC =====
     NOT_FOUND(HttpStatus.NOT_FOUND, "Không tìm thấy"),
 
-    AI_QUOTA_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "Quota AI đã hết cho hôm nay. Vui lòng thử lại vào ngày mai hoặc đổi API key.");
+    AI_QUOTA_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "Quota AI đã hết cho hôm nay. Vui lòng thử lại vào ngày mai hoặc đổi API key."),
+
+    // ===== FILE UPLOAD =====
+    FILE_EMPTY(HttpStatus.BAD_REQUEST, "File không được để trống"),
+    INVALID_FILE(HttpStatus.BAD_REQUEST, "File không hợp lệ"),
+    INVALID_FILE_TYPE(HttpStatus.BAD_REQUEST, "Loại file không được hỗ trợ"),
+    FILE_TOO_LARGE(HttpStatus.BAD_REQUEST, "File quá lớn"),
+    FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "Upload file thất bại"),
+    FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "File không tồn tại"),
+    TOO_MANY_ATTACHMENTS(HttpStatus.BAD_REQUEST, "Quá nhiều file đính kèm");
 
     private final HttpStatus status;
     private final String message;

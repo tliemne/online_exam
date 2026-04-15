@@ -12,6 +12,198 @@ const IcoPending = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentCol
 const IcoGrading = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zm9.75-4.5c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zm-6.75 7.5c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v3.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125v-3.75z"/></svg>
 const IcoQuestions = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"/></svg>
 const IcoWarn = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-4 h-4"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.008v.008H12v-.008z"/></svg>
+const IcoPost = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"/></svg>
+const IcoReply = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.76c0 1.6 1.123 2.994 2.707 3.227 1.087.16 2.185.283 3.293.369V21l4.076-4.076a1.526 1.526 0 011.037-.443 48.282 48.282 0 005.68-.494c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z"/></svg>
+const IcoCheck = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z"/></svg>
+const IcoUser = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/></svg>
+
+// Component hiển thị top contributors
+function TopContributors({ teacherId }) {
+  const [contributors, setContributors] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  useEffect(() => {
+    // Lấy tất cả courses của teacher (endpoint /courses tự động filter theo role)
+    api.get('/courses')
+      .then(async (r) => {
+        console.log('[TopContributors] Courses:', r.data.data)
+        const courses = r.data.data || []
+        if (courses.length === 0) {
+          setError('Bạn chưa có khóa học nào')
+          setLoading(false)
+          return
+        }
+
+        // Lấy forum stats cho tất cả courses
+        const statsPromises = courses.map(c => 
+          api.get(`/api/courses/${c.id}/discussions/stats`)
+            .then(r => {
+              console.log(`[TopContributors] Stats for course ${c.id}:`, r.data.data)
+              return { courseId: c.id, courseName: c.name, stats: r.data.data }
+            })
+            .catch(err => {
+              console.error(`[TopContributors] Failed to load stats for course ${c.id}:`, err)
+              return null
+            })
+        )
+        
+        const allStats = await Promise.all(statsPromises)
+        const validStats = allStats.filter(s => s !== null)
+        
+        console.log('[TopContributors] Valid stats:', validStats)
+        
+        if (validStats.length === 0) {
+          setError('Chưa có dữ liệu thảo luận')
+          setLoading(false)
+          return
+        }
+
+        // Merge tất cả contributors từ các courses
+        const contributorMap = new Map()
+        validStats.forEach(({ stats }) => {
+          stats.mostActiveStudents?.forEach(student => {
+            const existing = contributorMap.get(student.userId)
+            if (existing) {
+              existing.postCount += student.postCount
+              existing.replyCount += student.replyCount
+              existing.totalContributions += student.totalContributions
+            } else {
+              contributorMap.set(student.userId, { ...student })
+            }
+          })
+        })
+
+        console.log('[TopContributors] Contributor map:', contributorMap)
+
+        // Sort và lấy top 5
+        const top5 = Array.from(contributorMap.values())
+          .sort((a, b) => b.totalContributions - a.totalContributions)
+          .slice(0, 5)
+
+        console.log('[TopContributors] Top 5:', top5)
+        setContributors(top5)
+      })
+      .catch(e => {
+        console.error('[TopContributors] Error:', e)
+        setError('Không thể tải dữ liệu')
+      })
+      .finally(() => setLoading(false))
+  }, [teacherId])
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-8">
+        <div className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin"
+          style={{ borderColor: 'var(--accent)' }}/>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-sm" style={{ color: 'var(--text-3)' }}>{error}</p>
+      </div>
+    )
+  }
+
+  if (contributors.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-sm" style={{ color: 'var(--text-3)' }}>Chưa có người tham gia thảo luận</p>
+      </div>
+    )
+  }
+
+  const maxContributions = Math.max(...contributors.map(c => c.totalContributions))
+
+  return (
+    <div className="p-5 space-y-3">
+      {contributors.map((contributor, index) => {
+        const percentage = (contributor.totalContributions / maxContributions) * 100
+        
+        // Màu phù hợp với cả light và dark mode
+        const rankColors = [
+          // Gold - #f59e0b (amber-500)
+          { 
+            bg: 'rgba(245, 158, 11, 0.15)', 
+            text: '#f59e0b', 
+            bar: 'linear-gradient(90deg, rgba(245, 158, 11, 0.8) 0%, rgba(245, 158, 11, 0.4) 100%)' 
+          },
+          // Silver - #94a3b8 (slate-400)
+          { 
+            bg: 'rgba(148, 163, 184, 0.15)', 
+            text: '#94a3b8', 
+            bar: 'linear-gradient(90deg, rgba(148, 163, 184, 0.8) 0%, rgba(148, 163, 184, 0.4) 100%)' 
+          },
+          // Bronze - #ea580c (orange-600)
+          { 
+            bg: 'rgba(234, 88, 12, 0.15)', 
+            text: '#ea580c', 
+            bar: 'linear-gradient(90deg, rgba(234, 88, 12, 0.8) 0%, rgba(234, 88, 12, 0.4) 100%)' 
+          },
+          // 4th & 5th - use CSS variables
+          { 
+            bg: 'rgba(99, 102, 241, 0.1)', 
+            text: '#818cf8', 
+            bar: 'linear-gradient(90deg, rgba(129, 140, 248, 0.6) 0%, rgba(129, 140, 248, 0.3) 100%)' 
+          },
+          { 
+            bg: 'rgba(99, 102, 241, 0.1)', 
+            text: '#818cf8', 
+            bar: 'linear-gradient(90deg, rgba(129, 140, 248, 0.6) 0%, rgba(129, 140, 248, 0.3) 100%)' 
+          },
+        ]
+        
+        const colors = rankColors[index]
+        
+        return (
+          <div key={contributor.userId} className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                {/* Rank badge */}
+                <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-xs font-bold"
+                  style={{ background: colors.bg, color: colors.text }}>
+                  {index + 1}
+                </div>
+                
+                {/* User info */}
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-sm truncate" style={{ color: 'var(--text-1)' }}>
+                    {contributor.fullName || contributor.username}
+                  </p>
+                  <p className="text-xs" style={{ color: 'var(--text-3)' }}>
+                    {contributor.postCount} bài viết · {contributor.replyCount} phản hồi
+                  </p>
+                </div>
+              </div>
+
+              {/* Total contributions */}
+              <div className="text-right shrink-0 ml-3">
+                <p className="font-bold text-lg" style={{ color: 'var(--text-1)' }}>
+                  {contributor.totalContributions}
+                </p>
+                <p className="text-xs" style={{ color: 'var(--text-3)' }}>đóng góp</p>
+              </div>
+            </div>
+
+            {/* Progress bar */}
+            <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
+              <div 
+                className="h-full rounded-full transition-all duration-500"
+                style={{ 
+                  width: `${percentage}%`,
+                  background: colors.bar
+                }}
+              />
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
 
 function Sk({ h = 'h-8', w = 'w-full' }) {
   return <div className={`${w} ${h} rounded-2xl animate-pulse`} style={{ background: 'var(--bg-elevated)' }}/>
@@ -40,9 +232,12 @@ function StatCard({ label, value, sub, icon, color, loading, warn }) {
 }
 
 const getTheme = () => document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark'
-const LC = '#A3AED0'
+const getChartTextColor = () => getTheme() === 'dark' ? '#E2E8F0' : '#475569' // Light mode: slate-600 (tối hơn)
 
-const areaOpts = (cats) => ({
+const areaOpts = (cats) => {
+  const textColor = getChartTextColor()
+  const isDark = getTheme() === 'dark'
+  return {
   chart: { toolbar: { show: false }, background: 'transparent', fontFamily: 'DM Sans, sans-serif' },
   theme: { mode: getTheme() },
   stroke: { curve: 'smooth', width: 3 },
@@ -50,46 +245,54 @@ const areaOpts = (cats) => ({
   markers: { size: 0, hover: { size: 6 } },
   xaxis: {
     categories: cats,
-    labels: { style: { colors: LC, fontSize: '12px' }, formatter: v => v?.length > 10 ? v.slice(0,10)+'…' : v },
+    labels: { style: { colors: textColor, fontSize: '12px' }, formatter: v => v?.length > 10 ? v.slice(0,10)+'…' : v },
     axisBorder: { show: false }, axisTicks: { show: false }, tooltip: { enabled: false },
   },
-  yaxis: { labels: { style: { colors: LC, fontSize: '11px' } } },
-  grid: { borderColor: 'rgba(163,174,208,0.12)', strokeDashArray: 4, xaxis: { lines: { show: false } } },
-  tooltip: { theme: getTheme(), style: { fontSize: '13px', fontFamily: 'DM Sans, sans-serif' }, x: { show: true } },
+  yaxis: { labels: { style: { colors: textColor, fontSize: '11px' } } },
+  grid: { borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(163,174,208,0.12)', strokeDashArray: 4, xaxis: { lines: { show: false } } },
+  tooltip: { 
+    theme: isDark ? 'dark' : 'light',
+    style: { fontSize: '13px', fontFamily: 'DM Sans, sans-serif' }, 
+    x: { show: true } 
+  },
   colors: ['#7551FF'], dataLabels: { enabled: false },
-})
+}}
 
-const barOpts = (cats) => ({
+const barOpts = (cats) => {
+  const textColor = getChartTextColor()
+  const isDark = getTheme() === 'dark'
+  return {
   chart: { toolbar: { show: false }, background: 'transparent', fontFamily: 'DM Sans, sans-serif' },
   theme: { mode: getTheme() },
   plotOptions: { bar: { borderRadius: 8, columnWidth: '50%', dataLabels: { position: 'top' } } },
-  dataLabels: { enabled: true, offsetY: -6, style: { fontSize: '11px', colors: [LC] } },
+  dataLabels: { enabled: true, offsetY: -6, style: { fontSize: '11px', colors: [textColor] } },
   xaxis: {
     categories: cats,
-    labels: { style: { colors: LC, fontSize: '11px' }, formatter: v => v?.length > 10 ? v.slice(0,10)+'…' : v },
+    labels: { style: { colors: textColor, fontSize: '11px' }, formatter: v => v?.length > 10 ? v.slice(0,10)+'…' : v },
     axisBorder: { show: false }, axisTicks: { show: false },
   },
   yaxis: { show: false }, grid: { show: false },
-  tooltip: { theme: getTheme(), style: { fontSize: '13px' } },
+  tooltip: { theme: isDark ? 'dark' : 'light', style: { fontSize: '13px' } },
   colors: ['#422AFB'], fill: { type: 'gradient', gradient: { type: 'vertical', opacityFrom: 1, opacityTo: 0.75 } },
-})
+}}
 
 const donutOpts = (pct, t) => {
+  const textColor = getChartTextColor()
+  const isDark = getTheme() === 'dark'
   const clr = pct >= 70 ? '#01B574' : pct >= 50 ? '#FFB547' : '#EE5D50'
-  const dark = getTheme() === 'dark'
   return {
     chart: { background: 'transparent', fontFamily: 'DM Sans, sans-serif' },
     theme: { mode: getTheme() },
-    colors: [clr, dark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'],
+    colors: [clr, isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'],
     labels: [t('stats.passed'), t('stats.failed')],
     plotOptions: { pie: { donut: { size: '72%', labels: {
       show: true,
-      name: { show: true, fontSize: '12px', color: LC, offsetY: -4 },
+      name: { show: true, fontSize: '12px', color: textColor, offsetY: -4 },
       value: { show: true, fontSize: '24px', fontWeight: 700, color: clr, offsetY: 4, formatter: v => `${Math.round(+v)}%` },
-      total: { show: true, label: t('stats.passRate'), fontSize: '12px', color: LC, formatter: () => `${Math.round(pct)}%` },
+      total: { show: true, label: t('stats.passRate'), fontSize: '12px', color: textColor, formatter: () => `${Math.round(pct)}%` },
     }}}},
     legend: { show: false }, dataLabels: { enabled: false }, stroke: { width: 0 },
-    tooltip: { theme: getTheme(), style: { fontSize: '13px' } },
+    tooltip: { theme: isDark ? 'dark' : 'light', style: { fontSize: '13px' } },
   }
 }
 
@@ -100,6 +303,9 @@ export default function TeacherDashboard() {
   const [stats, setStats]     = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState(null)
+  const [discussionStats, setDiscussionStats] = useState(null)
+  const [discussionLoading, setDiscussionLoading] = useState(true)
+  const [forumStats, setForumStats] = useState(null) // Thêm forum stats cho top contributors
 
   useEffect(() => {
     api.get('/dashboard/teacher')
@@ -110,6 +316,12 @@ export default function TeacherDashboard() {
       })
       .catch(e => setError(e?.response?.data?.message || t('messages.loadingFailed')))
       .finally(() => setLoading(false))
+    
+    // Load discussion stats
+    api.get('/dashboard/discussion/teacher')
+      .then(r => setDiscussionStats(r.data.data))
+      .catch(e => console.error('Failed to load discussion stats:', e))
+      .finally(() => setDiscussionLoading(false))
   }, [t])
 
   const courseNames   = stats?.courseStats?.map(c => c.courseName || '') ?? []
@@ -154,6 +366,95 @@ export default function TeacherDashboard() {
         ].map(s => <StatCard key={s.label} {...s} loading={loading}/>)}
       </div>
 
+      {/* Discussion Stats Section */}
+      {!discussionLoading && discussionStats && (
+        <div className="space-y-4">
+          {/* Warning card for unanswered questions */}
+          {discussionStats.unansweredCount > 0 && (
+            <div className="card p-4 flex items-center justify-between border-2"
+              style={{ borderColor: 'var(--warning-border)', background: 'var(--warning-subtle)' }}>
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+                  style={{ background: 'var(--warning)', color: 'white' }}>
+                  <IcoWarn/>
+                </div>
+                <div>
+                  <p className="font-bold text-lg" style={{ color: 'var(--warning)' }}>
+                    {discussionStats.unansweredCount} câu hỏi chưa trả lời
+                  </p>
+                  <p className="text-sm mt-0.5" style={{ color: 'var(--text-3)' }}>
+                    Sinh viên đang chờ câu trả lời từ bạn
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => navigate('/teacher/courses')}
+                className="btn-primary px-4 py-2 text-sm">
+                Xem câu hỏi →
+              </button>
+            </div>
+          )}
+
+          {/* Discussion stats grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Left: 3 stat cards */}
+            <div className="space-y-3">
+              <p className="text-xs font-semibold px-1" style={{ color: 'var(--text-3)' }}>
+                THỐNG KÊ THẢO LUẬN
+              </p>
+              {[
+                { 
+                  label: 'Bài viết', 
+                  value: discussionStats.totalPosts, 
+                  icon: <IcoPost/>, 
+                  color: '#7551FF',
+                  sub: 'Trong các khóa của bạn'
+                },
+                { 
+                  label: 'Phản hồi', 
+                  value: discussionStats.totalReplies, 
+                  icon: <IcoReply/>, 
+                  color: '#16a34a',
+                  sub: 'Tổng số phản hồi'
+                },
+                { 
+                  label: 'Đã trả lời', 
+                  value: discussionStats.answeredPosts, 
+                  icon: <IcoCheck/>, 
+                  color: '#01B574',
+                  sub: `${discussionStats.totalPosts > 0 ? Math.round((discussionStats.answeredPosts / discussionStats.totalPosts) * 100) : 0}% bài viết`
+                },
+              ].map(s => (
+                <div key={s.label} className="card p-4 flex items-center gap-3 hover:shadow-md transition-all duration-200">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: s.color + '20', color: s.color }}>
+                    {s.icon}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-bold text-2xl" style={{ color: 'var(--text-1)' }}>
+                      {s.value ?? 0}
+                    </p>
+                    <p className="text-xs font-semibold" style={{ color: 'var(--text-2)' }}>{s.label}</p>
+                    {s.sub && <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>{s.sub}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Right: Top Contributors List (2 columns) */}
+            <div className="lg:col-span-2 card">
+              <div className="px-5 py-4 border-b" style={{ borderColor: 'var(--border-base)' }}>
+                <p className="font-bold" style={{ color: 'var(--text-1)' }}>Top người đóng góp</p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>
+                  Tài khoản tích cực nhất trong các khóa của bạn
+                </p>
+              </div>
+              
+              <TopContributors teacherId={user?.id} />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Charts row 1 */}
       {!loading && courseNames.length > 0 && attemptCounts.some(c => c > 0) && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -168,7 +469,7 @@ export default function TeacherDashboard() {
                 ...areaOpts(courseNames),
                 tooltip: {
                   enabled: true,
-                  theme: 'light',
+                  theme: getTheme() === 'dark' ? 'dark' : 'light',
                   x: {
                     show: true,
                     formatter: function(value, { series, seriesIndex, dataPointIndex, w }) {
@@ -223,14 +524,14 @@ export default function TeacherDashboard() {
                   theme: { mode: getTheme() },
                   xaxis: {
                     categories: stats.monthlyAttempts.map(m => m.month),
-                    labels: { style: { colors: LC, fontSize: '11px' }, rotate: -45 }
+                    labels: { style: { colors: getChartTextColor(), fontSize: '11px' }, rotate: -45 }
                   },
-                  yaxis: { labels: { style: { colors: LC } } },
+                  yaxis: { labels: { style: { colors: getChartTextColor() } } },
                   colors: ['var(--accent)'],
                   plotOptions: { bar: { borderRadius: 6, columnWidth: '60%' } },
                   dataLabels: { enabled: false },
-                  grid: { borderColor: 'rgba(163,174,208,0.12)', strokeDashArray: 3 },
-                  tooltip: { theme: getTheme(), y: { formatter: (val) => `${val} lượt` } }
+                  grid: { borderColor: getTheme() === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(163,174,208,0.12)', strokeDashArray: 3 },
+                  tooltip: { theme: getTheme() === 'dark' ? 'dark' : 'light', y: { formatter: (val) => `${val} lượt` } }
                 }}
               />
             ) : (
@@ -256,11 +557,11 @@ export default function TeacherDashboard() {
                   theme: { mode: getTheme() },
                   labels: ['Xuất sắc (9-10)', 'Giỏi (8-9)', 'Khá (7-8)', 'TB (5-7)', 'Yếu (<5)'],
                   colors: ['#16a34a', '#0891b2', '#d97706', '#f59e0b', '#dc2626'],
-                  legend: { position: 'bottom', labels: { colors: LC }, fontSize: '11px' },
-                  dataLabels: { enabled: true, formatter: (val) => `${val.toFixed(0)}%`, style: { fontSize: '11px' } },
+                  legend: { position: 'bottom', labels: { colors: getChartTextColor() }, fontSize: '11px' },
+                  dataLabels: { enabled: true, formatter: (val) => `${val.toFixed(0)}%`, style: { fontSize: '11px', colors: ['#fff'] } },
                   stroke: { width: 0 },
                   plotOptions: { pie: { donut: { size: '65%' } } },
-                  tooltip: { theme: getTheme(), y: { formatter: (val) => `${val} bài` } }
+                  tooltip: { theme: getTheme() === 'dark' ? 'dark' : 'light', y: { formatter: (val) => `${val} bài` } }
                 }}
               />
             ) : (

@@ -145,3 +145,37 @@ export const statsApi = {
   getExamLeaderboard: (examId)   => api.get(`/exam-stats/${examId}/leaderboard`),
   getCourseLeaderboard: (courseId) => api.get(`/courses/${courseId}/leaderboard`),
 }
+
+// ── DISCUSSION FORUM ──────────────────────────────────────
+export const discussionApi = {
+  // Posts
+  createPost:         (courseId, data)           => api.post(`/api/courses/${courseId}/discussions`, data),
+  getPosts:           (courseId, page = 0, size = 20) => api.get(`/api/courses/${courseId}/discussions`, { params: { page, size } }),
+  getPostDetail:      (postId)                   => api.get(`/api/discussions/${postId}`),
+  updatePost:         (postId, data)             => api.put(`/api/discussions/${postId}`, data),
+  deletePost:         (postId)                   => api.delete(`/api/discussions/${postId}`),
+  
+  // Replies
+  createReply:        (postId, data)             => api.post(`/api/discussions/${postId}/replies`, data),
+  getReplies:         (postId)                   => api.get(`/api/discussions/${postId}/replies`),
+  updateReply:        (replyId, data)            => api.put(`/api/discussions/replies/${replyId}`, data),
+  deleteReply:        (replyId)                  => api.delete(`/api/discussions/replies/${replyId}`),
+  
+  // Votes
+  votePost:           (postId, voteType)         => api.post(`/api/discussions/${postId}/vote`, null, { params: { voteType } }),
+  removeVoteFromPost: (postId)                   => api.delete(`/api/discussions/${postId}/vote`),
+  voteReply:          (replyId, voteType)        => api.post(`/api/discussions/replies/${replyId}/vote`, null, { params: { voteType } }),
+  removeVoteFromReply:(replyId)                  => api.delete(`/api/discussions/replies/${replyId}/vote`),
+  
+  // Best Answer
+  markBestAnswer:     (postId, replyId)          => api.post(`/api/discussions/${postId}/best-answer/${replyId}`),
+  
+  // Search
+  searchPosts:        (courseId, filters, page = 0, size = 20) => {
+    const params = { page, size, ...filters }
+    return api.get(`/api/courses/${courseId}/discussions/search`, { params })
+  },
+  
+  // Statistics (teachers only)
+  getForumStats:      (courseId)                 => api.get(`/api/courses/${courseId}/discussions/stats`),
+}

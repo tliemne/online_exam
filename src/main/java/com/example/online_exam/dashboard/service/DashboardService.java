@@ -264,10 +264,31 @@ public class DashboardService {
 
         List<Course>  courses  = courseRepo.findByStudents_Id(student.getId());
         List<Exam>    exams    = examRepo.findPublishedForStudent(student.getId());
-        List<Attempt> attempts = attemptRepo.findSubmittedByStudent(student.getId());
+        
+        // Lấy TẤT CẢ attempts của student
+        List<Attempt> allAttempts = attemptRepo.findSubmittedByStudent(student.getId());
+        
+        // Nhóm theo examId và chỉ lấy attempt có điểm cao nhất của mỗi exam
+        Map<Long, Attempt> bestAttemptsByExam = allAttempts.stream()
+                .filter(a -> a.getStatus() == AttemptStatus.GRADED) // Chỉ lấy bài đã chấm
+                .filter(a -> a.getScore() != null) // Phải có điểm
+                .collect(Collectors.toMap(
+                        a -> a.getExam().getId(),
+                        a -> a,
+                        (a1, a2) -> a1.getScore() > a2.getScore() ? a1 : a2 // Lấy điểm cao hơn
+                ));
+        
+        // Danh sách attempts để hiển thị (chỉ lần thi tốt nhất của mỗi exam)
+        List<Attempt> attempts = new ArrayList<>(bestAttemptsByExam.values());
+        
+        // Sort theo thời gian submit (mới nhất trước)
+        attempts.sort((a1, a2) -> {
+            if (a2.getSubmittedAt() == null) return -1;
+            if (a1.getSubmittedAt() == null) return 1;
+            return a2.getSubmittedAt().compareTo(a1.getSubmittedAt());
+        });
 
-        List<Attempt> graded = attempts.stream()
-                .filter(a -> a.getStatus() == AttemptStatus.GRADED).collect(Collectors.toList());
+        List<Attempt> graded = attempts; // Tất cả đã là GRADED rồi
 
         long passed = graded.stream().filter(a -> Boolean.TRUE.equals(a.getPassed())).count();
         Double avg  = graded.stream().filter(a -> a.getScore() != null)
@@ -281,16 +302,16 @@ public class DashboardService {
                 .map(this::toRecentAttempt)
                 .collect(Collectors.toList());
 
-        // ── Monthly Attempts Chart (6 tháng gần nhất) ──
-        List<DashboardResponse.MonthlyAttempt> monthlyAttempts = calculateMonthlyAttempts(attempts);
+        // ── Monthly Attempts Chart (6 tháng gần nhất) - dùng ALL attempts ──
+        List<DashboardResponse.MonthlyAttempt> monthlyAttempts = calculateMonthlyAttempts(allAttempts);
 
-        // ── Score Distribution Chart ──
+        // ── Score Distribution Chart - dùng best attempts ──
         DashboardResponse.ScoreDistribution scoreDistribution = calculateScoreDistribution(graded);
 
         return DashboardResponse.Student.builder()
                 .enrolledCourses(courses.size())
                 .availableExams(exams.size())
-                .completedAttempts(attempts.size())
+                .completedAttempts(attempts.size()) // Số bài thi đã hoàn thành (unique exams)
                 .passedAttempts(passed)
                 .avgScore(avg)
                 .recentAttempts(recent)

@@ -1,13 +1,14 @@
 import { useState, useEffect, useCallback } from 'react'
 import CreateStudentModal from '../../components/common/CreateStudentModal'
 import ResetPasswordModal from '../../components/common/ResetPasswordModal'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
 import { courseApi, userApi, lectureApi, announcementApi } from '../../api/services'
 import { useAuth } from '../../context/AuthContext'
 import { useToast } from '../../context/ToastContext'
 import { useConfirm } from '../../components/common/ConfirmDialog'
 import { useTranslation } from 'react-i18next'
 import api from '../../api/client'
+import DiscussionForumPage from '../shared/DiscussionForumPage'
 
 // ── Icons ─────────────────────────────────────────────────
 const Icon = {
@@ -845,6 +846,11 @@ function TabAnnouncements({ course, isTeacher }) {
   )
 }
 
+// ── Tab: Discussions ──────────────────────────────────────
+function TabDiscussions({ courseId }) {
+  return <DiscussionForumPage courseId={courseId} />
+}
+
 // ── Tab: AI Analysis ──────────────────────────────────────
 function TabAiAnalysis({ courseId }) {
   const [data, setData]       = useState(null)
@@ -974,6 +980,7 @@ const TEACHER_TABS = [
   { key: 'announcements', label: 'Thông báo'  },
   { key: 'lectures',      label: 'Bài giảng'  },
   { key: 'exams',         label: 'Đề thi'     },
+  { key: 'discussions',   label: '💬 Thảo luận' },
   { key: 'ai_analysis',   label: '✦ AI Phân tích' },
 ]
 
@@ -981,12 +988,14 @@ const STUDENT_TABS = [
   { key: 'announcements', label: 'Thông báo'  },
   { key: 'lectures',      label: 'Bài giảng'  },
   { key: 'exams',         label: 'Đề thi'     },
+  { key: 'discussions',   label: '💬 Thảo luận' },
 ]
 
 export default function CourseDetailPage() {
   const { id: courseId } = useParams ? useParams() : {}
   const { id } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const toast = useToast()
   const { t } = useTranslation()
   const [confirmDialog, ConfirmDialogUI] = useConfirm()
@@ -1001,6 +1010,15 @@ export default function CourseDetailPage() {
   const [showManageTeachers, setShowManageTeachers] = useState(false)
   const [allUsers, setAllUsers] = useState([])
   const TABS = isTeacher ? TEACHER_TABS : STUDENT_TABS
+
+  // Auto-open discussion tab from notification link
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    const tabParam = params.get('tab')
+    if (tabParam === 'discussion') {
+      setTab('discussions')
+    }
+  }, [location.search])
 
   const handleExportReport = async () => {
     setExporting(true)
@@ -1148,6 +1166,7 @@ export default function CourseDetailPage() {
         {tab === 'students' && <TabStudents course={course} isTeacher={isTeacher} isAdmin={isAdmin} onRefresh={loadCourse} />}
         {tab === 'lectures' && <TabLectures course={course} isTeacher={isTeacher} />}
         {tab === 'exams'    && <TabExams    course={course} isTeacher={isTeacher} />}
+        {tab === 'discussions' && <TabDiscussions courseId={course.id} />}
         {tab === 'ai_analysis' && <TabAiAnalysis courseId={course.id} />}
       </div>
 

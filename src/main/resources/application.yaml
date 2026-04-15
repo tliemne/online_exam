@@ -20,6 +20,12 @@ spring:
       hibernate:
         format_sql: true
 
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 50MB
+
   data:
     redis:
       host: ${REDIS_HOST:localhost}
@@ -62,6 +68,10 @@ app:
   activity-log:
     retention-days: 30
     cleanup-cron: "0 5 3 * * *"
+  upload:
+    dir: uploads/discussion
+    max-image-size: 5242880  # 5MB
+    max-file-size: 10485760  # 10MB
 
 gemini:
   api:
