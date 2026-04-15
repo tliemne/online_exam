@@ -134,6 +134,17 @@ public class UserController {
         }
     }
 
+    // Delete avatar (set to null)
+    @DeleteMapping("/me/avatar")
+    public BaseResponse<String> deleteAvatar() {
+        userService.updateAvatar(null);
+        return BaseResponse.<String>builder()
+                .status(200)
+                .message("Đã gỡ ảnh đại diện")
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
     @PreAuthorize("hasRole('STUDENT')")
     @PutMapping("/me/student-profile")
     public BaseResponse<StudentProfileResponse> updateMyStudentProfile(@RequestBody StudentProfileUpdateRequest request) {

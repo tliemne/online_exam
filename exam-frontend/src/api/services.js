@@ -17,6 +17,7 @@ export const userApi = {
     const fd = new FormData(); fd.append('file', file)
     return api.post('/users/me/avatar', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
   },
+  deleteAvatar: () => api.delete('/users/me/avatar'),
   getAll: () => api.get('/users'),
   createUser: (data) => api.post('/users', data),
   getById: (id) => api.get(`/users/${id}`),
@@ -169,6 +170,7 @@ export const discussionApi = {
   
   // Best Answer
   markBestAnswer:     (postId, replyId)          => api.post(`/api/discussions/${postId}/best-answer/${replyId}`),
+  unmarkBestAnswer:   (postId)                   => api.delete(`/api/discussions/${postId}/best-answer`),
   
   // Search
   searchPosts:        (courseId, filters, page = 0, size = 20) => {
@@ -178,4 +180,23 @@ export const discussionApi = {
   
   // Statistics (teachers only)
   getForumStats:      (courseId)                 => api.get(`/api/courses/${courseId}/discussions/stats`),
+  
+  // Attachments
+  uploadPostAttachment: (postId, file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.post(`/api/discussions/${postId}/attachments`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+  },
+  uploadReplyAttachment: (replyId, file) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    return api.post(`/api/discussions/replies/${replyId}/attachments`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+  },
+  deleteAttachment: (attachmentId) => api.delete(`/api/discussions/attachments/${attachmentId}`),
+  getAttachmentUrl: (attachmentId) => `/public/attachments/${attachmentId}`,
+  getThumbnailUrl: (attachmentId) => `/public/attachments/${attachmentId}/thumbnail`,
 }

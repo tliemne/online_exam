@@ -1,7 +1,7 @@
 package com.example.online_exam.discussion.service;
 
-import com.example.online_exam.common.exception.AppException;
-import com.example.online_exam.common.exception.ErrorCode;
+import com.example.online_exam.exception.AppException;
+import com.example.online_exam.exception.ErrorCode;
 import com.example.online_exam.discussion.enums.FileType;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -92,9 +92,18 @@ public class FileUploadService {
     public byte[] getFile(String filePath) {
         try {
             Path path = Paths.get(uploadDir, filePath);
-            return Files.readAllBytes(path);
+            log.info("Reading file from: {}", path.toAbsolutePath());
+            
+            if (!Files.exists(path)) {
+                log.error("File does not exist: {}", path.toAbsolutePath());
+                throw new AppException(ErrorCode.FILE_NOT_FOUND);
+            }
+            
+            byte[] data = Files.readAllBytes(path);
+            log.info("Successfully read {} bytes from {}", data.length, path.toAbsolutePath());
+            return data;
         } catch (IOException e) {
-            log.error("Failed to read file: {}", e.getMessage());
+            log.error("Failed to read file: {}, error: {}", filePath, e.getMessage());
             throw new AppException(ErrorCode.FILE_NOT_FOUND);
         }
     }

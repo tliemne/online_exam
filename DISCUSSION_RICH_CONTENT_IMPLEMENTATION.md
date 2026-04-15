@@ -145,21 +145,88 @@ export const discussionApi = {
 
 ---
 
-## Phase 2: File Attachments (NOT STARTED)
+## Phase 2: File Attachments (COMPLETED ✅)
+
+### Backend
+Already complete from Phase 1 - `FileUploadService` supports document types with validation for 10MB max size.
+
+### Frontend Components
+
+#### FileAttachmentList.jsx ✅
+- Display files with appropriate icons (PDF, DOC, XLS, PPT, ZIP, TXT)
+- Download functionality
+- Delete functionality (with permission check)
+- File size display
+- Color-coded icons by file type
+
+#### FileUploader.jsx ✅
+- Drag & drop file upload
+- File type validation (PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, ZIP, RAR)
+- File size validation (10MB max)
+- Max file count validation (3 for posts, 1 for replies)
+- File preview with name and size
+- Remove file functionality
+
+### Integration
+
+#### CreatePostModal.jsx ✅
+- Added `FileUploader` component below `ImageUploader`
+- Added state management for files: `const [files, setFiles] = useState([])`
+- Updated `handleSubmit` to upload files after post creation
+- File upload logic similar to image upload (Promise.all for parallel uploads)
+- Max 3 files per post
+
+#### PostDetailModal.jsx ✅
+- Added `FileAttachmentList` to display files in posts and replies
+- Added state for reply files: `const [replyFiles, setReplyFiles] = useState([])`
+- Added `handleFileSelect` function to handle file selection from toolbar
+- Updated reply form to show file preview when files selected
+- Updated `handleSubmitReply` to upload files after reply creation
+- Max 1 file per reply
+- File upload in nested replies (ReplyItem component)
+
+#### AttachmentToolbar.jsx ✅
+- Updated to support both `imageDisabled` and `fileDisabled` props
+- File button (📎) enabled and functional
+- File input accepts: .pdf, .doc, .docx, .xls, .xlsx, .ppt, .pptx, .txt, .zip, .rar
+- Calls `onFileSelect` callback when files selected
 
 ### Features
-- PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, TXT, ZIP, RAR
-- Max 3 files per post, 1 file per reply
-- Max 10MB per file
-- File icon based on type
-- Download button
+- ✅ Upload files when creating post (max 3)
+- ✅ Upload files when replying (max 1)
+- ✅ Display files with appropriate icons
+- ✅ Download files
+- ✅ Delete files (with permission check)
+- ✅ File type validation
+- ✅ File size validation (10MB)
+- ✅ Drag & drop support
+- ✅ File preview before upload
 
-### Implementation Steps
-1. Update FileUploadService to support more file types
-2. Create FileAttachment component
-3. Update CreatePostModal to support files
-4. Update PostDetailModal to display files
-5. Add file download functionality
+### Testing the Feature
+
+1. **Create a post with files:**
+   - Go to Discussion Forum
+   - Click "Tạo bài viết mới"
+   - Add title and content
+   - Add images (max 5) and/or files (max 3)
+   - Submit
+
+2. **Reply with files:**
+   - Open a post
+   - Click "Bình luận" button
+   - Write a reply
+   - Click file icon (📎) in toolbar
+   - Select file (max 1)
+   - Submit
+
+3. **View and download files:**
+   - Files display with appropriate icons
+   - Click download button to download
+   - File size shown next to name
+
+4. **Delete files:**
+   - Click trash icon (only for owner/teacher/admin)
+   - Confirm deletion
 
 ---
 
@@ -183,22 +250,70 @@ export const discussionApi = {
 ## Current Status
 
 ✅ **Backend for Phase 1 (Image Upload) is COMPLETE**
-🔄 **Frontend for Phase 1 is NEXT**
+✅ **Frontend for Phase 1 (Image Upload) is COMPLETE**
+✅ **Phase 2 (File Attachments) is COMPLETE**
 
-The backend is fully functional and ready for testing. You can now:
-1. Test the backend endpoints with Postman
-2. Start implementing the frontend components
-3. Integrate frontend with backend APIs
+### What's Working Now
 
-### Backend Changes Summary
-- Added `attachments` field to `DiscussionPost` and `DiscussionReply` entities
-- Updated mappers to include attachments in responses
-- Created complete attachment upload/download/delete flow
-- Added file validation and permission checks
-- Configured multipart file upload (max 10MB per file, 50MB per request)
+**Backend:**
+- File upload with validation (type, size, count)
+- Permission checks for delete operations
+- Cascade deletion when post/reply is deleted
+- Image serving through controller endpoints
+- Thumbnail support
+- Document file support (PDF, DOC, XLS, PPT, TXT, ZIP, RAR)
+
+**Frontend:**
+- ✅ ImageUploader component with drag & drop
+- ✅ ImageGallery component with lightbox
+- ✅ FileUploader component with drag & drop
+- ✅ FileAttachmentList component with download
+- ✅ Image upload in CreatePostModal (max 5 images)
+- ✅ File upload in CreatePostModal (max 3 files)
+- ✅ Image upload in reply forms (max 3 images)
+- ✅ File upload in reply forms (max 1 file)
+- ✅ Image display in PostDetailModal
+- ✅ File display in PostDetailModal
+- ✅ Delete image/file functionality
+- ✅ AttachmentToolbar with image and file buttons
+- ✅ API integration complete
+
+### Testing the Feature
+
+1. **Create a post with images and files:**
+   - Go to Discussion Forum
+   - Click "Tạo bài viết mới"
+   - Add title and content
+   - Drag & drop images or click to select (max 5)
+   - Drag & drop files or click to select (max 3)
+   - Submit
+
+2. **Reply with images and files:**
+   - Open a post
+   - Click "Bình luận" button
+   - Write a reply
+   - Click image icon (📷) to add images (max 3)
+   - Click file icon (📎) to add file (max 1)
+   - Submit
+
+3. **View images:**
+   - Images display in grid layout
+   - Click image to open lightbox
+   - Navigate with arrow buttons
+   - Close with X button
+
+4. **View and download files:**
+   - Files display with appropriate icons (PDF, DOC, XLS, etc.)
+   - File size shown next to name
+   - Click download button to download
+
+5. **Delete images/files:**
+   - Hover over image or click trash on file
+   - Click trash icon (only for owner/teacher/admin)
+   - Confirm deletion
 
 ### Next Steps
-1. Create frontend components (ImageUploader, ImageGallery, AttachmentToolbar)
-2. Update CreatePostModal and PostDetailModal
-3. Add API methods to services.js
-4. Test the complete flow end-to-end
+
+Ready for Phase 3: Link Preview (YouTube embed, URL preview cards)
+- Would you like me to continue with Phase 3?
+- Or would you like to test Phase 2 first?

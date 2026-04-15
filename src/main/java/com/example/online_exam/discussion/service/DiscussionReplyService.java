@@ -35,6 +35,8 @@ public class DiscussionReplyService {
     private final DiscussionReplyMapper discussionReplyMapper;
     private final CurrentUserService currentUserService;
     private final com.example.online_exam.notification.service.NotificationService notificationService;
+    private final com.example.online_exam.discussion.repository.DiscussionAttachmentRepository attachmentRepository;
+    private final FileUploadService fileUploadService;
 
     /**
      * Task 7.1: Create a new reply
@@ -171,7 +173,11 @@ public class DiscussionReplyService {
     }
 
     /**
-     * Task 7.4: Delete a reply (soft delete)
+     * Task 7.4: Delete a reply (hard delete)
+     * Xóa hẳn reply và tất cả dữ liệu liên quan:
+     * - Tất cả attachments (files + database)
+     * - Tất cả votes
+     * - Tất cả nested replies (replies con)
      */
     public void deleteReply(Long replyId) {
         User currentUser = currentUserService.requireCurrentUser();
@@ -183,20 +189,49 @@ public class DiscussionReplyService {
             throw new AppException(ErrorCode.NOT_FOUND, "Reply not found");
         }
         
-        // Validate user is reply author OR course teacher
+        // Validate user is reply author OR course teacher OR admin
         validateReplyEditPermission(currentUser, reply);
         
-        // Set isDeleted=true
-        reply.setIsDeleted(true);
+        // 1. Get all nested replies (replies to this reply)
+        List<DiscussionReply> nestedReplies = discussionReplyRepository.findByParentReplyId(replyId);
         
-        // If reply was best answer, set post.hasBestAnswer=false
+        // 2. Delete attachments and votes for nested replies
+        for (DiscussionReply nested : nestedReplies) {
+            // Delete nested reply attachments
+            List<com.example.online_exam.discussion.entity.DiscussionAttachment> nestedAttachments = 
+                attachmentRepository.findByReplyIdOrderByCreatedAtAsc(nested.getId());
+            for (com.example.online_exam.discussion.entity.DiscussionAttachment attachment : nestedAttachments) {
+                fileUploadService.deleteFile(attachment.getFilePath());
+            }
+            attachmentRepository.deleteAll(nestedAttachments);
+            
+            // Delete nested reply votes
+            discussionVoteRepository.deleteByReplyId(nested.getId());
+        }
+        
+        // 3. Delete all nested replies
+        discussionReplyRepository.deleteAll(nestedReplies);
+        
+        // 4. Delete this reply's attachments (files + database)
+        List<com.example.online_exam.discussion.entity.DiscussionAttachment> attachments = 
+            attachmentRepository.findByReplyIdOrderByCreatedAtAsc(replyId);
+        for (com.example.online_exam.discussion.entity.DiscussionAttachment attachment : attachments) {
+            fileUploadService.deleteFile(attachment.getFilePath());
+        }
+        attachmentRepository.deleteAll(attachments);
+        
+        // 5. Delete this reply's votes
+        discussionVoteRepository.deleteByReplyId(replyId);
+        
+        // 6. If reply was best answer, set post.hasBestAnswer=false
         if (reply.getIsBestAnswer()) {
             DiscussionPost post = reply.getPost();
             post.setHasBestAnswer(false);
             discussionPostRepository.save(post);
         }
         
-        discussionReplyRepository.save(reply);
+        // 7. Delete reply (hard delete)
+        discussionReplyRepository.delete(reply);
     }
 
     /**

@@ -49,6 +49,8 @@ public class DiscussionPostService {
     private final DiscussionReplyMapper discussionReplyMapper;
     private final CurrentUserService currentUserService;
     private final com.example.online_exam.notification.service.NotificationService notificationService;
+    private final com.example.online_exam.discussion.repository.DiscussionAttachmentRepository attachmentRepository;
+    private final FileUploadService fileUploadService;
 
     /**
      * Task 5.1: Create a new discussion post
@@ -236,7 +238,8 @@ public class DiscussionPostService {
     /**
      * Task 5.6: Delete a post (hard delete with cascade)
      * Xóa thật bài viết và tất cả dữ liệu liên quan:
-     * - Tất cả replies (và nested replies)
+     * - Tất cả attachments (files và database records)
+     * - Tất cả replies (và nested replies) và attachments của chúng
      * - Tất cả votes (cho post và replies)
      * - Notifications liên quan sẽ được xử lý khi click
      */
@@ -249,19 +252,39 @@ public class DiscussionPostService {
         // Validate user is post author OR course teacher OR admin
         validatePostEditPermission(currentUser, post);
         
-        // 1. Xóa tất cả votes cho replies
+        // 1. Get all replies (including nested)
         List<DiscussionReply> replies = discussionReplyRepository.findByPostIdAndIsDeletedFalse(postId);
+        
+        // 2. Delete all reply attachments (files + database)
+        for (DiscussionReply reply : replies) {
+            List<com.example.online_exam.discussion.entity.DiscussionAttachment> replyAttachments = 
+                attachmentRepository.findByReplyIdOrderByCreatedAtAsc(reply.getId());
+            for (com.example.online_exam.discussion.entity.DiscussionAttachment attachment : replyAttachments) {
+                fileUploadService.deleteFile(attachment.getFilePath());
+            }
+            attachmentRepository.deleteAll(replyAttachments);
+        }
+        
+        // 3. Delete all votes for replies
         for (DiscussionReply reply : replies) {
             discussionVoteRepository.deleteByReplyId(reply.getId());
         }
         
-        // 2. Xóa tất cả replies (cascade sẽ xóa nested replies nếu có)
+        // 4. Delete all replies
         discussionReplyRepository.deleteAll(replies);
         
-        // 3. Xóa tất cả votes cho post
+        // 5. Delete all post attachments (files + database)
+        List<com.example.online_exam.discussion.entity.DiscussionAttachment> postAttachments = 
+            attachmentRepository.findByPostIdOrderByCreatedAtAsc(postId);
+        for (com.example.online_exam.discussion.entity.DiscussionAttachment attachment : postAttachments) {
+            fileUploadService.deleteFile(attachment.getFilePath());
+        }
+        attachmentRepository.deleteAll(postAttachments);
+        
+        // 6. Delete all votes for post
         discussionVoteRepository.deleteByPostId(postId);
         
-        // 4. Xóa post
+        // 7. Delete post
         discussionPostRepository.delete(post);
         
         // Note: Notifications sẽ được xử lý khi user click vào
@@ -323,6 +346,34 @@ public class DiscussionPostService {
                 route
             );
         }
+        
+        return discussionPostMapper.toResponse(post);
+    }
+
+    /**
+     * Unmark best answer
+     */
+    public DiscussionPostResponse unmarkBestAnswer(Long postId) {
+        User currentUser = currentUserService.requireCurrentUser();
+        
+        DiscussionPost post = discussionPostRepository.findByIdAndStatus(postId, PostStatus.ACTIVE)
+                .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Post not found"));
+        
+        // Validate user is post author OR course teacher
+        validatePostEditPermission(currentUser, post);
+        
+        // Remove best answer flag from all replies
+        List<DiscussionReply> replies = discussionReplyRepository.findByPostIdAndIsDeletedFalse(postId);
+        replies.forEach(r -> {
+            if (r.getIsBestAnswer()) {
+                r.setIsBestAnswer(false);
+                discussionReplyRepository.save(r);
+            }
+        });
+        
+        // Set post hasBestAnswer to false
+        post.setHasBestAnswer(false);
+        discussionPostRepository.save(post);
         
         return discussionPostMapper.toResponse(post);
     }

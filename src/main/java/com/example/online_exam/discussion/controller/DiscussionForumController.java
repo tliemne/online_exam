@@ -271,6 +271,20 @@ public class DiscussionForumController {
                 .build();
     }
 
+    /**
+     * Unmark best answer
+     */
+    @DeleteMapping("/discussions/{postId}/best-answer")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER','STUDENT')")
+    public BaseResponse<DiscussionPostResponse> unmarkBestAnswer(@PathVariable Long postId) {
+        return BaseResponse.<DiscussionPostResponse>builder()
+                .status(200)
+                .message("Best answer unmarked successfully")
+                .data(discussionPostService.unmarkBestAnswer(postId))
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // SEARCH ENDPOINT
     // ═══════════════════════════════════════════════════════════════
@@ -374,7 +388,7 @@ public class DiscussionForumController {
     }
 
     /**
-     * Get/Download attachment file
+     * Get/Download attachment file - PUBLIC ACCESS
      */
     @GetMapping("/discussions/attachments/{attachmentId}")
     public ResponseEntity<byte[]> getAttachment(@PathVariable Long attachmentId) {
@@ -385,6 +399,7 @@ public class DiscussionForumController {
         headers.setContentType(MediaType.parseMediaType(attachment.getMimeType()));
         headers.setContentDispositionFormData("inline", attachment.getOriginalFilename());
         headers.setContentLength(fileData.length);
+        headers.setCacheControl("public, max-age=31536000"); // Cache for 1 year
 
         return ResponseEntity.ok()
                 .headers(headers)
@@ -392,7 +407,7 @@ public class DiscussionForumController {
     }
 
     /**
-     * Get thumbnail for image attachment
+     * Get thumbnail for image attachment - PUBLIC ACCESS
      */
     @GetMapping("/discussions/attachments/{attachmentId}/thumbnail")
     public ResponseEntity<byte[]> getThumbnail(@PathVariable Long attachmentId) {
@@ -403,6 +418,7 @@ public class DiscussionForumController {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType(attachment.getMimeType()));
         headers.setContentLength(fileData.length);
+        headers.setCacheControl("public, max-age=31536000"); // Cache for 1 year
 
         return ResponseEntity.ok()
                 .headers(headers)

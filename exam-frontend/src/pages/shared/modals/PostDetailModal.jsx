@@ -3,14 +3,22 @@ import { discussionApi } from '../../../api/services'
 import { useToast } from '../../../context/ToastContext'
 import { useAuth } from '../../../context/AuthContext'
 import CreatePostModal from './CreatePostModal'
+import ImageGallery from '../../../components/discussion/ImageGallery'
+import ImageUploader from '../../../components/discussion/ImageUploader'
+import AttachmentToolbar from '../../../components/discussion/AttachmentToolbar'
+import FileAttachmentList from '../../../components/discussion/FileAttachmentList'
+import FileUploader from '../../../components/discussion/FileUploader'
 
 const Icon = {
   x:       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>,
   like:    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"/></svg>,
   dislike: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5"/></svg>,
+  comment: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>,
   check:   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>,
   edit:    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>,
   trash:   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>,
+  chevronDown: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>,
+  chevronUp: <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7"/></svg>,
 }
 
 // Recursive Reply Component
@@ -19,6 +27,8 @@ function ReplyItem({ reply, post, user, isAdmin, isTeacher, isAuthor, canMarkBes
   const [editContent, setEditContent] = useState(reply.content)
   const [showReplyForm, setShowReplyForm] = useState(false)
   const [replyContent, setReplyContent] = useState('')
+  const [replyImages, setReplyImages] = useState([])
+  const [replyFiles, setReplyFiles] = useState([])
   const [submitting, setSubmitting] = useState(false)
   const [showNested, setShowNested] = useState(true)
   const toast = useToast()
@@ -42,8 +52,28 @@ function ReplyItem({ reply, post, user, isAdmin, isTeacher, isAuthor, canMarkBes
     }
     setSubmitting(true)
     try {
-      await discussionApi.createReply(post.id, { content: replyContent, parentReplyId: reply.id })
+      const response = await discussionApi.createReply(post.id, { content: replyContent, parentReplyId: reply.id })
+      const newReplyId = response.data.data.id
+
+      // Upload images if any
+      if (replyImages.length > 0 && newReplyId) {
+        const uploadPromises = replyImages.map(img => 
+          discussionApi.uploadReplyAttachment(newReplyId, img.file)
+        )
+        await Promise.all(uploadPromises)
+      }
+
+      // Upload files if any
+      if (replyFiles.length > 0 && newReplyId) {
+        const uploadPromises = replyFiles.map(file => 
+          discussionApi.uploadReplyAttachment(newReplyId, file.file)
+        )
+        await Promise.all(uploadPromises)
+      }
+
       setReplyContent('')
+      setReplyImages([])
+      setReplyFiles([])
       setShowReplyForm(false)
       onReply()
       toast.success('Đã đăng trả lời')
@@ -95,6 +125,20 @@ function ReplyItem({ reply, post, user, isAdmin, isTeacher, isAuthor, canMarkBes
             )}
           </div>
 
+          {/* Reply Images */}
+          <ImageGallery 
+            attachments={reply.attachments} 
+            canDelete={user?.id === reply.author?.id || isAdmin}
+            onDelete={onEdit}
+          />
+
+          {/* Reply Files */}
+          <FileAttachmentList 
+            attachments={reply.attachments} 
+            canDelete={user?.id === reply.author?.id || isAdmin}
+            onDelete={onEdit}
+          />
+
           {/* Like/Dislike counts */}
           {(reply.voteCount > 0 || (reply.dislikeCount || 0) > 0) && (
             <div className="flex items-center gap-2 mt-1 px-2 text-xs text-[var(--text-3)]">
@@ -121,10 +165,14 @@ function ReplyItem({ reply, post, user, isAdmin, isTeacher, isAuthor, canMarkBes
               className="flex items-center gap-1 font-semibold text-[var(--text-3)] hover:text-accent transition-colors py-1">
               Trả lời
             </button>
-            {canMarkBestAnswer && !reply.isBestAnswer && level === 0 && (
+            {canMarkBestAnswer && level === 0 && (
               <button onClick={() => onMarkBest(reply.id)}
-                className="flex items-center gap-1 font-semibold text-[var(--text-3)] hover:text-success transition-colors py-1">
-                Đánh dấu tốt nhất
+                className={`flex items-center gap-1 font-semibold transition-colors py-1 ${
+                  reply.isBestAnswer 
+                    ? 'text-success hover:text-danger' 
+                    : 'text-[var(--text-3)] hover:text-success'
+                }`}>
+                {reply.isBestAnswer ? 'Hủy đánh dấu' : 'Đánh dấu tốt nhất'}
               </button>
             )}
             {(user?.id === reply.author?.id || isAdmin) && (
@@ -146,23 +194,113 @@ function ReplyItem({ reply, post, user, isAdmin, isTeacher, isAuthor, canMarkBes
 
           {/* Inline Reply Form */}
           {showReplyForm && (
-            <form onSubmit={handleSubmitReply} className="mt-3 bg-[var(--bg-page)] rounded-lg p-3">
-              <textarea className="input-field resize-none text-sm" rows={2} value={replyContent}
-                onChange={e => setReplyContent(e.target.value)}
-                placeholder={`Trả lời ${reply.author?.fullName || reply.author?.username}...`}
-                maxLength={5000} />
-              <div className="flex items-center justify-between mt-2">
-                <span className="text-xs text-[var(--text-3)]">{replyContent.length}/5000</span>
-                <div className="flex gap-2">
-                  <button type="submit" disabled={submitting || replyContent.length < 1}
-                    className="btn-primary px-4 py-1 text-sm">
-                    {submitting ? 'Đang đăng...' : 'Đăng'}
-                  </button>
-                  <button type="button" onClick={() => setShowReplyForm(false)}
-                    className="btn-secondary px-4 py-1 text-sm">Hủy</button>
+            <div className="mt-3 bg-[var(--bg-elevated)] rounded-lg p-3">
+              <div className="flex gap-3">
+                {/* Avatar */}
+                <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center shrink-0 font-bold text-accent text-xs">
+                  {(user?.fullName || user?.username || '?')[0].toUpperCase()}
                 </div>
+                
+                {/* Form */}
+                <form onSubmit={handleSubmitReply} className="flex-1 space-y-3">
+                  <div className="relative">
+                    <textarea 
+                      className="input-field resize-none pr-12 text-sm" 
+                      rows={2} 
+                      value={replyContent}
+                      onChange={e => setReplyContent(e.target.value)}
+                      placeholder={`Trả lời ${reply.author?.fullName || reply.author?.username}...`}
+                      maxLength={5000}
+                      autoFocus
+                    />
+                    <button
+                      type="submit"
+                      disabled={submitting || replyContent.length < 1}
+                      className="absolute right-2 bottom-2 p-1 text-accent hover:bg-accent/10 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      title="Đăng"
+                    >
+                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                      </svg>
+                    </button>
+                  </div>
+                  
+                  {/* Toolbar */}
+                  <div className="flex items-center justify-between">
+                    <AttachmentToolbar 
+                      onImageSelect={(files) => {
+                        const newImages = files.map(file => ({
+                          file,
+                          preview: URL.createObjectURL(file),
+                          name: file.name,
+                          size: file.size,
+                        }))
+                        setReplyImages(prev => [...prev, ...newImages].slice(0, 3))
+                      }}
+                      onFileSelect={(files) => {
+                        const newFiles = files.map(file => ({
+                          file,
+                          name: file.name,
+                          size: file.size,
+                        }))
+                        setReplyFiles(prev => [...prev, ...newFiles].slice(0, 1))
+                      }}
+                      imageDisabled={replyImages.length >= 3}
+                      fileDisabled={replyFiles.length >= 1}
+                    />
+                    <span className="text-xs text-[var(--text-3)]">{replyContent.length}/5000</span>
+                  </div>
+
+                  {/* Image Preview */}
+                  {replyImages.length > 0 && (
+                    <div className="grid grid-cols-3 gap-2">
+                      {replyImages.map((img, idx) => (
+                        <div key={idx} className="relative group aspect-square rounded-lg overflow-hidden bg-[var(--bg-page)] border border-[var(--border-base)]">
+                          <img src={img.preview} alt={img.name} className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => setReplyImages(prev => prev.filter((_, i) => i !== idx))}
+                            className="absolute top-1 right-1 p-1 rounded-full bg-danger text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* File Preview */}
+                  {replyFiles.length > 0 && (
+                    <div className="space-y-2">
+                      {replyFiles.map((file, idx) => (
+                        <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-[var(--bg-page)] border border-[var(--border-base)] group">
+                          <div className="text-accent">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-[var(--text-1)] truncate">{file.name}</p>
+                            <p className="text-xs text-[var(--text-3)]">{(file.size / 1024).toFixed(1)} KB</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setReplyFiles(prev => prev.filter((_, i) => i !== idx))}
+                            className="p-1 rounded-full hover:bg-danger/10 text-danger transition-colors"
+                          >
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </form>
               </div>
-            </form>
+            </div>
           )}
 
           {/* Toggle nested replies */}
@@ -203,10 +341,14 @@ export default function PostDetailModal({ post: initialPost, onClose, onUpdated 
   const { user } = useAuth()
   const [post, setPost] = useState(initialPost)
   const [replyContent, setReplyContent] = useState('')
+  const [replyImages, setReplyImages] = useState([])
+  const [replyFiles, setReplyFiles] = useState([])
   const [submitting, setSubmitting] = useState(false)
   const [loading, setLoading] = useState(false)
   const [showEditPost, setShowEditPost] = useState(false)
   const [postNotFound, setPostNotFound] = useState(false)
+  const [showComments, setShowComments] = useState(true)
+  const [showReplyForm, setShowReplyForm] = useState(false)
 
   const loadPost = () => {
     setLoading(true)
@@ -250,30 +392,79 @@ export default function PostDetailModal({ post: initialPost, onClose, onUpdated 
   const handleSubmitReply = async (e) => {
     e.preventDefault()
     if (replyContent.length < 1) {
-      toast.error('Trả lời không được để trống')
+      toast.error('Bình luận không được để trống')
       return
     }
     setSubmitting(true)
     try {
-      await discussionApi.createReply(post.id, { content: replyContent })
+      const response = await discussionApi.createReply(post.id, { content: replyContent })
+      const newReplyId = response.data.data.id
+
+      // Upload images if any
+      if (replyImages.length > 0 && newReplyId) {
+        const uploadPromises = replyImages.map(img => 
+          discussionApi.uploadReplyAttachment(newReplyId, img.file)
+        )
+        await Promise.all(uploadPromises)
+      }
+
+      // Upload files if any
+      if (replyFiles.length > 0 && newReplyId) {
+        const uploadPromises = replyFiles.map(file => 
+          discussionApi.uploadReplyAttachment(newReplyId, file.file)
+        )
+        await Promise.all(uploadPromises)
+      }
+
       setReplyContent('')
+      setReplyImages([])
+      setReplyFiles([])
+      setShowReplyForm(false)
       loadPost()
-      toast.success('Đã đăng trả lời')
+      toast.success('Đã đăng bình luận')
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Không thể đăng trả lời')
+      toast.error(err.response?.data?.message || 'Không thể đăng bình luận')
     } finally {
       setSubmitting(false)
     }
   }
 
+  const handleImageSelect = (files) => {
+    const newImages = files.map(file => ({
+      file,
+      preview: URL.createObjectURL(file),
+      name: file.name,
+      size: file.size,
+    }))
+    setReplyImages(prev => [...prev, ...newImages].slice(0, 3))
+  }
+
+  const handleFileSelect = (files) => {
+    const newFiles = files.map(file => ({
+      file,
+      name: file.name,
+      size: file.size,
+    }))
+    setReplyFiles(prev => [...prev, ...newFiles].slice(0, 1))
+  }
+
   const handleMarkBestAnswer = async (replyId) => {
     try {
-      await discussionApi.markBestAnswer(post.id, replyId)
+      // Check if this reply is already best answer
+      const reply = post.replies?.find(r => r.id === replyId)
+      if (reply?.isBestAnswer) {
+        // Unmark best answer
+        await discussionApi.unmarkBestAnswer(post.id)
+        toast.success('Đã hủy đánh dấu câu trả lời tốt nhất')
+      } else {
+        // Mark as best answer
+        await discussionApi.markBestAnswer(post.id, replyId)
+        toast.success('Đã đánh dấu câu trả lời tốt nhất')
+      }
       loadPost()
       onUpdated()
-      toast.success('Đã đánh dấu câu trả lời tốt nhất')
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Không thể đánh dấu')
+      toast.error(err.response?.data?.message || 'Không thể thực hiện')
     }
   }
 
@@ -359,6 +550,20 @@ export default function PostDetailModal({ post: initialPost, onClose, onUpdated 
               </div>
               <p className="text-[var(--text-2)] whitespace-pre-wrap mb-4">{post.content}</p>
               
+              {/* Post Images */}
+              <ImageGallery 
+                attachments={post.attachments} 
+                canDelete={canEditPost}
+                onDelete={loadPost}
+              />
+
+              {/* Post Files */}
+              <FileAttachmentList 
+                attachments={post.attachments} 
+                canDelete={canEditPost}
+                onDelete={loadPost}
+              />
+
               {post.tags && post.tags.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mb-4">
                   {post.tags.map(tag => (
@@ -392,6 +597,15 @@ export default function PostDetailModal({ post: initialPost, onClose, onUpdated 
                   {Icon.like}
                   Thích
                 </button>
+                <button onClick={() => setShowReplyForm(!showReplyForm)}
+                  className={`flex items-center gap-2 font-semibold transition-colors py-1 px-3 rounded ${
+                    showReplyForm
+                      ? 'text-accent bg-accent/10'
+                      : 'text-[var(--text-3)] hover:bg-accent/10 hover:text-accent'
+                  }`}>
+                  {Icon.comment}
+                  Bình luận
+                </button>
                 <button onClick={() => handleVotePost('DOWNVOTE')}
                   className={`flex items-center gap-2 font-semibold transition-colors py-1 px-3 rounded ${
                     post.currentUserVote === 'DOWNVOTE' 
@@ -402,52 +616,149 @@ export default function PostDetailModal({ post: initialPost, onClose, onUpdated 
                   Không thích
                 </button>
               </div>
+
+              {/* Reply Form - Show at top when button clicked */}
+              {showReplyForm && (
+                <div className="mt-4 bg-[var(--bg-elevated)] rounded-lg p-4">
+                  <div className="flex gap-3">
+                    {/* Avatar */}
+                    <div className="w-10 h-10 rounded-full bg-accent/10 flex items-center justify-center shrink-0 font-bold text-accent">
+                      {(user?.fullName || user?.username || '?')[0].toUpperCase()}
+                    </div>
+                    
+                    {/* Form */}
+                    <form onSubmit={handleSubmitReply} className="flex-1 space-y-3">
+                      <div className="relative">
+                        <textarea 
+                          className="input-field resize-none pr-12" 
+                          rows={2} 
+                          value={replyContent}
+                          onChange={e => setReplyContent(e.target.value)}
+                          placeholder={`Bình luận dưới tên ${user?.fullName || user?.username}...`}
+                          maxLength={5000} 
+                          autoFocus 
+                        />
+                        <button
+                          type="submit"
+                          disabled={submitting || replyContent.length < 1}
+                          className="absolute right-2 bottom-2 p-1.5 text-accent hover:bg-accent/10 rounded-full transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          title="Đăng"
+                        >
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/>
+                          </svg>
+                        </button>
+                      </div>
+                      
+                      {/* Toolbar and Images */}
+                      <div className="flex items-center justify-between">
+                        <AttachmentToolbar 
+                          onImageSelect={handleImageSelect}
+                          onFileSelect={handleFileSelect}
+                          imageDisabled={replyImages.length >= 3}
+                          fileDisabled={replyFiles.length >= 1}
+                        />
+                        <span className="text-xs text-[var(--text-3)]">{replyContent.length}/5000</span>
+                      </div>
+
+                      {/* Image Preview */}
+                      {replyImages.length > 0 && (
+                        <div className="grid grid-cols-3 gap-2">
+                          {replyImages.map((img, idx) => (
+                            <div key={idx} className="relative group aspect-square rounded-lg overflow-hidden bg-[var(--bg-page)] border border-[var(--border-base)]">
+                              <img src={img.preview} alt={img.name} className="w-full h-full object-cover" />
+                              <button
+                                type="button"
+                                onClick={() => setReplyImages(prev => prev.filter((_, i) => i !== idx))}
+                                className="absolute top-1 right-1 p-1 rounded-full bg-danger text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* File Preview */}
+                      {replyFiles.length > 0 && (
+                        <div className="space-y-2">
+                          {replyFiles.map((file, idx) => (
+                            <div key={idx} className="flex items-center gap-3 p-2 rounded-lg bg-[var(--bg-page)] border border-[var(--border-base)] group">
+                              <div className="text-accent">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs font-medium text-[var(--text-1)] truncate">{file.name}</p>
+                                <p className="text-xs text-[var(--text-3)]">{(file.size / 1024).toFixed(1)} KB</p>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setReplyFiles(prev => prev.filter((_, i) => i !== idx))}
+                                className="p-1 rounded-full hover:bg-danger/10 text-danger transition-colors"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </form>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
-          <div className="border-t border-[var(--border-base)] pt-6">
-            <h3 className="font-semibold text-[var(--text-1)] mb-4">{post.replyCount || 0} Trả lời</h3>
-
-            {/* Replies */}
-            <div className="space-y-4">
-              {mainReplies.length > 0 ? (
-                mainReplies.map(reply => (
-                  <ReplyItem
-                    key={reply.id}
-                    reply={reply}
-                    post={post}
-                    user={user}
-                    isAdmin={isAdmin}
-                    isTeacher={isTeacher}
-                    isAuthor={isAuthor}
-                    canMarkBestAnswer={canMarkBestAnswer}
-                    onVote={handleVoteReply}
-                    onEdit={loadPost}
-                    onDelete={handleDeleteReply}
-                    onMarkBest={handleMarkBestAnswer}
-                    onReply={loadPost}
-                    level={0}
-                  />
-                ))
-              ) : (
-                <p className="text-center text-[var(--text-3)] py-8">Chưa có trả lời nào. Hãy là người đầu tiên!</p>
+          <div className="border-t border-[var(--border-base)] pt-4">
+            {/* Comments Header with Toggle */}
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-[var(--text-1)]">{post.replyCount || 0} Bình luận</h3>
+              {(post.replyCount || 0) > 0 && (
+                <button 
+                  onClick={() => setShowComments(!showComments)}
+                  className="flex items-center gap-1 text-sm font-medium text-accent hover:underline">
+                  {showComments ? (
+                    <>{Icon.chevronUp} Thu gọn</>
+                  ) : (
+                    <>{Icon.chevronDown} Xem tất cả</>
+                  )}
+                </button>
               )}
             </div>
 
-            {/* Main Reply Form */}
-            <form onSubmit={handleSubmitReply} className="mt-6">
-              <label className="input-label">Trả lời của bạn</label>
-              <textarea className="input-field resize-none" rows={4} value={replyContent}
-                onChange={e => setReplyContent(e.target.value)}
-                placeholder="Viết trả lời của bạn..." maxLength={5000} />
-              <div className="flex items-center justify-between mt-2">
-                <p className="text-xs text-[var(--text-3)]">{replyContent.length}/5000 ký tự</p>
-                <button type="submit" disabled={submitting || replyContent.length < 1}
-                  className="btn-primary px-6">
-                  {submitting ? 'Đang đăng...' : 'Đăng trả lời'}
-                </button>
+            {/* Replies */}
+            {showComments && (
+              <div className="space-y-4">
+                {mainReplies.length > 0 ? (
+                  mainReplies.map(reply => (
+                    <ReplyItem
+                      key={reply.id}
+                      reply={reply}
+                      post={post}
+                      user={user}
+                      isAdmin={isAdmin}
+                      isTeacher={isTeacher}
+                      isAuthor={isAuthor}
+                      canMarkBestAnswer={canMarkBestAnswer}
+                      onVote={handleVoteReply}
+                      onEdit={loadPost}
+                      onDelete={handleDeleteReply}
+                      onMarkBest={handleMarkBestAnswer}
+                      onReply={loadPost}
+                      level={0}
+                    />
+                  ))
+                ) : (
+                  <p className="text-center text-[var(--text-3)] py-8">Chưa có bình luận nào. Hãy là người đầu tiên!</p>
+                )}
               </div>
-            </form>
+            )}
           </div>
         </div>
         )}

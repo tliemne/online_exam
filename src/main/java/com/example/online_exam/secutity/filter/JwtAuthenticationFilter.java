@@ -70,4 +70,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         filterChain.doFilter(request, response);
     }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        // Skip JWT filter for public endpoints
+        return path.startsWith("/auth/") || 
+               path.startsWith("/uploads/") ||
+               path.startsWith("/public/") ||
+               (path.startsWith("/api/discussions/attachments/") && "GET".equals(request.getMethod()));
+    }
 }

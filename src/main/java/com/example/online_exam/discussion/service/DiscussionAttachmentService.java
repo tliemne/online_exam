@@ -1,7 +1,7 @@
 package com.example.online_exam.discussion.service;
 
-import com.example.online_exam.common.exception.AppException;
-import com.example.online_exam.common.exception.ErrorCode;
+import com.example.online_exam.exception.AppException;
+import com.example.online_exam.exception.ErrorCode;
 import com.example.online_exam.discussion.dto.AttachmentDTO;
 import com.example.online_exam.discussion.entity.DiscussionAttachment;
 import com.example.online_exam.discussion.entity.DiscussionPost;
@@ -157,10 +157,22 @@ public class DiscussionAttachmentService {
      * Get attachment file
      */
     public byte[] getAttachmentFile(Long attachmentId) {
+        log.info("Getting attachment file for ID: {}", attachmentId);
         DiscussionAttachment attachment = attachmentRepository.findById(attachmentId)
-                .orElseThrow(() -> new AppException(ErrorCode.FILE_NOT_FOUND));
+                .orElseThrow(() -> {
+                    log.error("Attachment not found in database: {}", attachmentId);
+                    return new AppException(ErrorCode.FILE_NOT_FOUND);
+                });
 
-        return fileUploadService.getFile(attachment.getFilePath());
+        log.info("Found attachment in DB: {}, filePath: {}", attachmentId, attachment.getFilePath());
+        try {
+            byte[] fileData = fileUploadService.getFile(attachment.getFilePath());
+            log.info("Successfully loaded file: {} ({} bytes)", attachment.getFilePath(), fileData.length);
+            return fileData;
+        } catch (Exception e) {
+            log.error("Failed to load file: {}, error: {}", attachment.getFilePath(), e.getMessage());
+            throw e;
+        }
     }
 
     /**

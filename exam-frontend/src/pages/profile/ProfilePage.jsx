@@ -129,18 +129,65 @@ export default function ProfilePage() {
         <div className="flex items-start gap-5">
           <div className="relative shrink-0">
             <Avatar name={acc?.fullName || acc?.username} color={avatarColor} avatarUrl={acc?.avatarUrl} />
-            {/* Upload ảnh */}
-            <label className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-[var(--bg-surface)] text-white text-[10px] flex items-center justify-center cursor-pointer"
-              style={{ background: avatarColor }} title="Đổi ảnh đại diện">
-              {uploading ? <span className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"/> : '📷'}
-              <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploading}/>
-            </label>
-            {/* Đổi màu nền (chỉ hiện khi chưa có ảnh) */}
-            {!acc?.avatarUrl && (
+            
+            {/* Buttons overlay when has avatar */}
+            {acc?.avatarUrl ? (
+              <div className="absolute -bottom-1 -right-1 flex gap-1">
+                {/* Change avatar */}
+                <label className="w-7 h-7 rounded-full bg-accent text-white flex items-center justify-center cursor-pointer hover:bg-accent/90 transition-colors border-2 border-[var(--bg-surface)]"
+                  title="Đổi ảnh">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  </svg>
+                  <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploading}/>
+                </label>
+                {/* Remove avatar */}
+                <button onClick={async () => {
+                  if (!window.confirm('Bạn có chắc muốn gỡ ảnh đại diện?')) return
+                  setUploading(true)
+                  try {
+                    await userApi.deleteAvatar()
+                    await loadProfile()
+                    await refreshUser()
+                    showMsg('Đã gỡ ảnh đại diện')
+                  } catch (err) {
+                    setError('Không thể gỡ ảnh')
+                  } finally {
+                    setUploading(false)
+                  }
+                }}
+                  disabled={uploading}
+                  className="w-7 h-7 rounded-full bg-danger text-white flex items-center justify-center cursor-pointer hover:bg-danger/90 transition-colors border-2 border-[var(--bg-surface)] disabled:opacity-50"
+                  title="Gỡ ảnh">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                  </svg>
+                </button>
+              </div>
+            ) : (
               <>
+                {/* Upload avatar when no avatar */}
+                <label className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-accent text-white flex items-center justify-center cursor-pointer hover:bg-accent/90 transition-colors border-2 border-[var(--bg-surface)]"
+                  title="Tải ảnh lên">
+                  {uploading ? (
+                    <span className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"/>
+                  ) : (
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                  )}
+                  <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} disabled={uploading}/>
+                </label>
+                {/* Color picker */}
                 <button onClick={() => setShowColorPicker(p => !p)}
-                  className="absolute -top-1 -right-1 w-5 h-5 rounded-full border border-[var(--bg-surface)] text-white text-[9px] flex items-center justify-center"
-                  style={{ background: 'var(--bg-elevated)', color: 'var(--text-2)' }} title="Đổi màu">🎨</button>
+                  className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-[var(--bg-elevated)] text-[var(--text-2)] flex items-center justify-center border border-[var(--border-base)] hover:bg-[var(--bg-page)] transition-colors"
+                  title="Đổi màu">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"/>
+                  </svg>
+                </button>
                 {showColorPicker && (
                   <div className="absolute top-full left-0 mt-2 p-2 rounded-xl border shadow-lg z-10 grid grid-cols-5 gap-1.5"
                     style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-base)' }}>

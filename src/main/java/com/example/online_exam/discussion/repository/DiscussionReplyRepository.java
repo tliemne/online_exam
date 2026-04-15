@@ -12,6 +12,8 @@ public interface DiscussionReplyRepository extends JpaRepository<DiscussionReply
 
     List<DiscussionReply> findByPostIdAndIsDeletedFalse(Long postId);
 
+    List<DiscussionReply> findByParentReplyId(Long parentReplyId);
+
     @Query("SELECT r FROM DiscussionReply r WHERE r.post.id = :postId AND r.isDeleted = false ORDER BY r.voteCount DESC")
     List<DiscussionReply> findByPostIdOrderByVoteCountDesc(@Param("postId") Long postId);
 

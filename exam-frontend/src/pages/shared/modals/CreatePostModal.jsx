@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { discussionApi } from '../../../api/services'
 import { useToast } from '../../../context/ToastContext'
+import ImageUploader from '../../../components/discussion/ImageUploader'
+import FileUploader from '../../../components/discussion/FileUploader'
 
 const Icon = {
   x: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>,
@@ -14,6 +16,8 @@ export default function CreatePostModal({ courseId, onClose, onCreated, post }) 
     tags: post?.tags || [],
   })
   const [tagInput, setTagInput] = useState('')
+  const [images, setImages] = useState([])
+  const [files, setFiles] = useState([])
   const [saving, setSaving] = useState(false)
 
   const handleSubmit = async (e) => {
@@ -34,11 +38,31 @@ export default function CreatePostModal({ courseId, onClose, onCreated, post }) 
 
     setSaving(true)
     try {
+      let postId
       if (post) {
         await discussionApi.updatePost(post.id, { ...form, courseId })
+        postId = post.id
       } else {
-        await discussionApi.createPost(courseId, form)
+        const response = await discussionApi.createPost(courseId, form)
+        postId = response.data.data.id
       }
+
+      // Upload images if any
+      if (images.length > 0 && postId) {
+        const uploadPromises = images.map(img => 
+          discussionApi.uploadPostAttachment(postId, img.file)
+        )
+        await Promise.all(uploadPromises)
+      }
+
+      // Upload files if any
+      if (files.length > 0 && postId) {
+        const uploadPromises = files.map(file => 
+          discussionApi.uploadPostAttachment(postId, file.file)
+        )
+        await Promise.all(uploadPromises)
+      }
+
       toast.success(post ? 'Đã cập nhật bài viết' : 'Đã tạo bài viết')
       onCreated()
       onClose()
@@ -120,6 +144,22 @@ export default function CreatePostModal({ courseId, onClose, onCreated, post }) 
               </div>
             )}
           </div>
+
+          {/* Images */}
+          {!post && (
+            <div>
+              <label className="input-label">Ảnh (tùy chọn, tối đa 5)</label>
+              <ImageUploader images={images} onChange={setImages} maxImages={5} />
+            </div>
+          )}
+
+          {/* Files */}
+          {!post && (
+            <div>
+              <label className="input-label">File đính kèm (tùy chọn, tối đa 3)</label>
+              <FileUploader files={files} onChange={setFiles} maxFiles={3} />
+            </div>
+          )}
 
           {/* Actions */}
           <div className="flex gap-3 pt-2">
