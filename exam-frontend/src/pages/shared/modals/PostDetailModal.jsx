@@ -8,6 +8,8 @@ import ImageUploader from '../../../components/discussion/ImageUploader'
 import AttachmentToolbar from '../../../components/discussion/AttachmentToolbar'
 import FileAttachmentList from '../../../components/discussion/FileAttachmentList'
 import FileUploader from '../../../components/discussion/FileUploader'
+import LinkPreview from '../../../components/discussion/LinkPreview'
+import { useUrlDetector } from '../../../hooks/useUrlDetector'
 
 const Icon = {
   x:       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>,
@@ -32,6 +34,7 @@ function ReplyItem({ reply, post, user, isAdmin, isTeacher, isAuthor, canMarkBes
   const [submitting, setSubmitting] = useState(false)
   const [showNested, setShowNested] = useState(true)
   const toast = useToast()
+  const replyUrls = useUrlDetector(reply.content)
 
   const handleSaveEdit = async () => {
     try {
@@ -124,6 +127,15 @@ function ReplyItem({ reply, post, user, isAdmin, isTeacher, isAuthor, canMarkBes
               <p className="text-sm text-[var(--text-2)] whitespace-pre-wrap break-words">{reply.content}</p>
             )}
           </div>
+
+          {/* Reply Link Previews */}
+          {!editMode && replyUrls.length > 0 && (
+            <div className="mt-2 space-y-2">
+              {replyUrls.map((url, i) => (
+                <LinkPreview key={i} url={url} />
+              ))}
+            </div>
+          )}
 
           {/* Reply Images */}
           <ImageGallery 
@@ -245,6 +257,7 @@ function ReplyItem({ reply, post, user, isAdmin, isTeacher, isAuthor, canMarkBes
                         }))
                         setReplyFiles(prev => [...prev, ...newFiles].slice(0, 1))
                       }}
+                      onLinkInsert={(url) => setReplyContent(prev => prev ? `${prev}\n${url}` : url)}
                       imageDisabled={replyImages.length >= 3}
                       fileDisabled={replyFiles.length >= 1}
                     />
@@ -499,6 +512,7 @@ export default function PostDetailModal({ post: initialPost, onClose, onUpdated 
   const canMarkBestAnswer = isAuthor || isAdmin || isTeacher
 
   const mainReplies = post.replies?.filter(r => !r.parentReplyId) || []
+  const postUrls = useUrlDetector(post.content)
 
   return (
     <div className="modal-overlay">
@@ -550,6 +564,15 @@ export default function PostDetailModal({ post: initialPost, onClose, onUpdated 
               </div>
               <p className="text-[var(--text-2)] whitespace-pre-wrap mb-4">{post.content}</p>
               
+              {/* Post Link Previews */}
+              {postUrls.length > 0 && (
+                <div className="mb-4 space-y-2">
+                  {postUrls.map((url, i) => (
+                    <LinkPreview key={i} url={url} />
+                  ))}
+                </div>
+              )}
+
               {/* Post Images */}
               <ImageGallery 
                 attachments={post.attachments} 
@@ -655,11 +678,20 @@ export default function PostDetailModal({ post: initialPost, onClose, onUpdated 
                         <AttachmentToolbar 
                           onImageSelect={handleImageSelect}
                           onFileSelect={handleFileSelect}
+                          onLinkInsert={(url) => setReplyContent(prev => prev ? `${prev}\n${url}` : url)}
                           imageDisabled={replyImages.length >= 3}
                           fileDisabled={replyFiles.length >= 1}
                         />
                         <span className="text-xs text-[var(--text-3)]">{replyContent.length}/5000</span>
                       </div>
+
+                      {/* Link Preview */}
+                      {(() => {
+                        const urls = replyContent.match(/https?:\/\/[^\s]+/g) || []
+                        return urls.length > 0 ? (
+                          <LinkPreview url={urls[0]} />
+                        ) : null
+                      })()}
 
                       {/* Image Preview */}
                       {replyImages.length > 0 && (
