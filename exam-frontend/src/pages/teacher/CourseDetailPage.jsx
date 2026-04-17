@@ -858,13 +858,19 @@ function TabAiAnalysis({ courseId }) {
   const [data, setData]       = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError]     = useState('')
+  const [refreshing, setRefreshing] = useState(false)
 
-  useEffect(() => {
-    api.get(`/attempts/ai-class/${courseId}`)
+  const load = (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true)
+    else setLoading(true)
+    setError('')
+    api.get(`/attempts/ai-class/${courseId}${isRefresh ? '?refresh=true' : ''}`)
       .then(r => setData(r.data.data))
       .catch(() => setError('Không tải được phân tích. Thử lại.'))
-      .finally(() => setLoading(false))
-  }, [courseId])
+      .finally(() => { setLoading(false); setRefreshing(false) })
+  }
+
+  useEffect(() => { load() }, [courseId])
 
   if (loading) return (
     <div className="flex items-center justify-center py-16 gap-3">
@@ -873,11 +879,30 @@ function TabAiAnalysis({ courseId }) {
       <span className="text-sm" style={{ color: 'var(--text-3)' }}>AI đang phân tích lớp học...</span>
     </div>
   )
-  if (error) return <p className="text-center py-8 text-sm" style={{ color: 'var(--danger)' }}>{error}</p>
+  if (error) return (
+    <div className="text-center py-8 space-y-3">
+      <p className="text-sm" style={{ color: 'var(--danger)' }}>{error}</p>
+      <button onClick={() => load()} className="btn-secondary text-sm px-4 py-2">Thử lại</button>
+    </div>
+  )
   if (!data)  return null
 
   return (
     <div className="space-y-6 py-2">
+      {/* Header with refresh */}
+      <div className="flex items-center justify-between">
+        <p className="text-xs" style={{ color: 'var(--text-3)' }}>
+          Dữ liệu được cache · Cập nhật khi có bài thi mới
+        </p>
+        <button onClick={() => load(true)} disabled={refreshing}
+          className="btn-ghost text-xs px-3 py-1.5 flex items-center gap-1.5"
+          style={{ color: 'var(--text-3)' }}>
+          {refreshing
+            ? <span className="w-3 h-3 border border-t-transparent rounded-full animate-spin inline-block" style={{ borderColor: 'var(--accent)' }}/>
+            : '↻'}
+          Làm mới
+        </button>
+      </div>
       {/* Overview stats */}
       <div className="grid grid-cols-4 gap-3">
         {[

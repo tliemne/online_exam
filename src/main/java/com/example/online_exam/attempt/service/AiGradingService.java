@@ -381,7 +381,7 @@ public class AiGradingService {
         if (attempts.isEmpty())
             return new WeaknessAnalysis(List.of(), "Chưa có đủ dữ liệu để phân tích.", List.of(), List.of());
 
-        // Tính tỉ lệ đúng theo từng tag
+        // Tính tỉ lệ đúng theo từng tag, nếu không có tag thì theo tên đề thi
         Map<String, int[]> tagStats = new java.util.LinkedHashMap<>();
         int totalWrong = 0;
         for (var attempt : attempts) {
@@ -389,16 +389,28 @@ public class AiGradingService {
                 if (aa.getQuestion() == null) continue;
                 boolean correct = Boolean.TRUE.equals(aa.getIsCorrect());
                 if (!correct) totalWrong++;
-                for (var tag : aa.getQuestion().getTags()) {
-                    tagStats.computeIfAbsent(tag.getName(), k -> new int[]{0, 0});
-                    tagStats.get(tag.getName())[0]++;
-                    if (correct) tagStats.get(tag.getName())[1]++;
+
+                var tags = aa.getQuestion().getTags();
+                if (tags == null || tags.isEmpty()) {
+                    // Câu hỏi không có tag → phân tích theo tên đề thi
+                    String examName = attempt.getExam() != null
+                            ? attempt.getExam().getTitle()
+                            : "Đề thi chung";
+                    tagStats.computeIfAbsent(examName, k -> new int[]{0, 0});
+                    tagStats.get(examName)[0]++;
+                    if (correct) tagStats.get(examName)[1]++;
+                } else {
+                    for (var tag : tags) {
+                        tagStats.computeIfAbsent(tag.getName(), k -> new int[]{0, 0});
+                        tagStats.get(tag.getName())[0]++;
+                        if (correct) tagStats.get(tag.getName())[1]++;
+                    }
                 }
             }
         }
 
         List<TopicStat> topics = tagStats.entrySet().stream()
-                .filter(e -> e.getValue()[0] >= 3)
+                .filter(e -> e.getValue()[0] >= 2) // giảm từ 3 xuống 2
                 .map(e -> {
                     int total = e.getValue()[0], correct = e.getValue()[1];
                     int pct = (int) Math.round((double) correct / total * 100);
@@ -428,7 +440,7 @@ public class AiGradingService {
 
         WeaknessAnalysis result = new WeaknessAnalysis(topics, advice, suggestions, roadmap);
         try {
-            redis.opsForValue().set(cacheKey, objectMapper.writeValueAsString(result), Duration.ofHours(2));
+            redis.opsForValue().set(cacheKey, objectMapper.writeValueAsString(result), Duration.ofHours(6));
         } catch (Exception ignored) {}
         return result;
     }
@@ -436,37 +448,34 @@ public class AiGradingService {
     /** Gọi AI để lấy lộ trình học tập có cấu trúc */
     private AiAdviceResult callAiForAdvice(List<TopicStat> topics, int totalAttempts, int totalWrong) {
         try {
+            // Compact prompt - tối ưu token
             StringBuilder sb = new StringBuilder();
-            sb.append("Student đã làm ").append(totalAttempts)
-                    .append(" bài thi, sai ").append(totalWrong).append(" câu.\n");
-            sb.append("Thống kê theo chủ đề:\n");
-            topics.forEach(t -> sb.append(String.format("- %s: %d/%d đúng (%d%%)\n",
-                    t.topic(), t.correct(), t.total(), t.correctPct())));
-            sb.append("""
-
-                Hãy phân tích và trả về JSON (không markdown):
-                {
-                  "advice": "<nhận xét tổng thể 1-2 câu tiếng Việt>",
-                  "roadmap": [
-                    {
-                      "topic": "<tên chủ đề>",
-                      "priority": "HIGH|MEDIUM|LOW",
-                      "action": "<việc cần làm cụ thể, 1 câu>",
-                      "keywords": ["<từ khóa 1>", "<từ khóa 2>", "<từ khóa 3>"]
-                    }
-                  ]
-                }
-                Chỉ đưa chủ đề có tỉ lệ đúng < 70% vào roadmap. Tối đa 5 mục.
-                """);
+            sb.append("SV làm ").append(totalAttempts).append(" bài, sai ").append(totalWrong).append(" câu. Chủ đề:\n");
+            topics.forEach(t -> sb.append(t.topic()).append(":").append(t.correctPct()).append("%,"));
+            sb.append("\nJSON (no markdown):{\"advice\":\"<1 câu VN>\",\"roadmap\":[{\"topic\":\"<tên>\",\"priority\":\"HIGH|MEDIUM|LOW\",\"action\":\"<1 câu>\",\"keywords\":[\"kw1\",\"kw2\"]}]}\nChỉ topic <70%, tối đa 5.");
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             Map<String, Object> body = Map.of(
                     "contents", List.of(Map.of("parts", List.of(Map.of("text", sb.toString()))))
             );
-            ResponseEntity<String> resp = restTemplate.postForEntity(
-                    getGeminiUrl() + "?key=" + geminiApiKey,
-                    new HttpEntity<>(body, headers), String.class);
+
+            // Retry up to 2 times on 503
+            ResponseEntity<String> resp = null;
+            for (int attempt = 0; attempt < 3; attempt++) {
+                try {
+                    resp = restTemplate.postForEntity(
+                            getGeminiUrl() + "?key=" + geminiApiKey,
+                            new HttpEntity<>(body, headers), String.class);
+                    break; // success
+                } catch (org.springframework.web.client.HttpServerErrorException e) {
+                    if (e.getStatusCode().value() == 503 && attempt < 2) {
+                        log.warn("[AiWeakness] 503 retry {}/2", attempt + 1);
+                        Thread.sleep(1500L * (attempt + 1)); // 1.5s, 3s
+                    } else throw e;
+                }
+            }
+            if (resp == null) throw new RuntimeException("No response from Gemini");
             JsonNode root = objectMapper.readTree(resp.getBody());
             String text = root.path("candidates").get(0)
                     .path("content").path("parts").get(0).path("text").asText("");

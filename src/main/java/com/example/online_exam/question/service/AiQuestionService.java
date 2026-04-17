@@ -82,21 +82,26 @@ public class AiQuestionService {
                 + ":" + resolvedType + ":" + resolvedDiff + ":" + count
                 + (req.getTags() != null && !req.getTags().isBlank() ? ":" + req.getTags().toLowerCase().replaceAll("\\s+","") : "");
 
-        boolean useCache = !Boolean.TRUE.equals(req.getBustCache()); // false khi student luyện tập
+        boolean useCache = !Boolean.TRUE.equals(req.getBustCache());
 
-        // Check cache
-        if (useCache) {
+        // Practice cache key - dùng cache riêng 1 giờ cho luyện tập
+        String practiceCacheKey = Boolean.TRUE.equals(req.getBustCache())
+                ? "ai:practice:" + cacheKey.substring(CACHE_PREFIX.length())
+                : null;
+
+        // Check cache - teacher preview dùng 30 phút, student luyện tập dùng 1 giờ
+        String checkKey = useCache ? cacheKey : practiceCacheKey;
+        if (checkKey != null) {
             try {
-                String cached = redis.opsForValue().get(cacheKey);
+                String cached = redis.opsForValue().get(checkKey);
                 if (cached != null) {
                     List<GeneratedQuestion> result = objectMapper.readValue(cached,
                             objectMapper.getTypeFactory().constructCollectionType(List.class, GeneratedQuestion.class));
-                    log.info("[AiQuestion] cache hit: {}", cacheKey);
+                    log.info("[AiQuestion] cache hit: {}", checkKey);
                     return result;
                 }
             } catch (Exception ignored) {}
         }
-
         if (geminiApiKey == null || geminiApiKey.isBlank()) {
             log.warn("[AiQuestion] Gemini API key chưa cấu hình");
             return List.of();
@@ -115,12 +120,15 @@ public class AiQuestionService {
 
             List<GeneratedQuestion> result = parseResponse(resp.getBody(), resolvedType, resolvedDiff);
 
-            // Cache kết quả (chỉ khi không set bustCache)
-            if (useCache) {
-                try {
+            // Cache kết quả
+            try {
+                if (useCache) {
                     redis.opsForValue().set(cacheKey, objectMapper.writeValueAsString(result), CACHE_TTL);
-                } catch (Exception ignored) {}
-            }
+                } else if (practiceCacheKey != null) {
+                    // Cache luyện tập 1 giờ - lần sau cùng topic/diff dùng lại
+                    redis.opsForValue().set(practiceCacheKey, objectMapper.writeValueAsString(result), Duration.ofHours(1));
+                }
+            } catch (Exception ignored) {}
 
             return result;
 
@@ -171,60 +179,27 @@ public class AiQuestionService {
         boolean mixType = "ALL".equals(type);
         boolean mixDiff = "ALL".equals(difficulty);
 
-        String diffDesc = mixDiff ? "hỗn hợp (dễ, trung bình, khó)" : switch (difficulty) {
-            case "EASY"  -> "dễ, kiến thức cơ bản";
-            case "HARD"  -> "khó, cần suy luận sâu";
-            default      -> "trung bình";
+        String diffDesc = mixDiff ? "mixed" : switch (difficulty) {
+            case "EASY" -> "easy"; case "HARD" -> "hard"; default -> "medium";
         };
 
         if (mixType) {
-            // 1 lần gọi AI, yêu cầu mix 3 loại — AI tự gán type vào từng câu
-            return "Tạo " + count + " câu hỏi về chủ đề \"" + topic + "\", mức độ " + diffDesc + ".\n"
-                    + "Ngôn ngữ: tiếng Việt.\n"
-                    + "Phân bổ loại câu: khoảng 1/3 trắc nghiệm (MULTIPLE_CHOICE), 1/3 đúng/sai (TRUE_FALSE), 1/3 tự luận (ESSAY).\n"
-                    + "Return ONLY valid JSON array. No markdown, no explanation outside JSON.\n\n"
-                    + "JSON format (MỖI câu PHẢI có field \"type\"):\n"
-                    + "[\n"
-                    + "  { \"type\": \"MULTIPLE_CHOICE\", \"content\": \"...\", \"answers\": [{\"content\":\"...\",\"correct\":true},{\"content\":\"...\",\"correct\":false},{\"content\":\"...\",\"correct\":false},{\"content\":\"...\",\"correct\":false}], \"explanation\": \"...\" },\n"
-                    + "  { \"type\": \"TRUE_FALSE\",      \"content\": \"...\", \"answers\": [{\"content\":\"Đúng\",\"correct\":true},{\"content\":\"Sai\",\"correct\":false}], \"explanation\": \"...\" },\n"
-                    + "  { \"type\": \"ESSAY\",           \"content\": \"...\", \"answers\": [], \"explanation\": \"...\" }\n"
-                    + "]\n\n"
-                    + "Yêu cầu:\n"
-                    + "- Phải tạo ĐÚNG " + count + " câu hỏi\n"
-                    + "- Field \"type\" bắt buộc: MULTIPLE_CHOICE | TRUE_FALSE | ESSAY\n"
-                    + "- Câu MULTIPLE_CHOICE cần đúng 4 answers (1 đúng, 3 sai gây nhiễu tốt)\n"
-                    + "- Câu TRUE_FALSE cần đúng 2 answers (Đúng/Sai)\n"
-                    + "- Câu ESSAY để answers = []\n"
-                    + "- Không lặp lại câu hỏi";
+            return "Tạo " + count + " câu hỏi tiếng Việt về \"" + topic + "\", độ khó " + diffDesc + ".\n"
+                + "Mix: MULTIPLE_CHOICE(4 đáp án), TRUE_FALSE(Đúng/Sai), ESSAY(không đáp án).\n"
+                + "JSON array only, no markdown:\n"
+                + "[{\"type\":\"MULTIPLE_CHOICE\",\"content\":\"?\",\"answers\":[{\"content\":\"a\",\"correct\":true},{\"content\":\"b\",\"correct\":false}],\"explanation\":\"...\"}]\n"
+                + "Tạo đúng " + count + " câu, không lặp.";
         }
 
-        // Single type
         boolean isEssay = "ESSAY".equals(type);
-        String typeDesc = switch (type) {
-            case "MULTIPLE_CHOICE" -> "trắc nghiệm 4 đáp án (1 đúng, 3 sai)";
-            case "TRUE_FALSE"      -> "đúng/sai (2 đáp án: Đúng và Sai, 1 cái đúng)";
-            case "ESSAY"           -> "tự luận (không có đáp án cố định)";
-            default                -> "trắc nghiệm 4 đáp án (1 đúng, 3 sai)";
-        };
-        String answersFormat = isEssay
-                ? "[]"
-                : "[{\"content\": \"<đáp án>\", \"correct\": true}, {\"content\": \"<đáp án>\", \"correct\": false}]";
-        String requirement = isEssay
-                ? "- Câu hỏi yêu cầu trình bày/phân tích, không có đáp án đúng/sai cố định"
-                : "- Đáp án sai phải hợp lý (gây nhiễu tốt)";
+        String answersNote = isEssay ? "answers:[]" :
+            type.equals("TRUE_FALSE") ? "answers:[{\"content\":\"Đúng\",\"correct\":true},{\"content\":\"Sai\",\"correct\":false}]" :
+            "answers:[{\"content\":\"đúng\",\"correct\":true},{\"content\":\"sai1\",\"correct\":false},{\"content\":\"sai2\",\"correct\":false},{\"content\":\"sai3\",\"correct\":false}]";
 
-        return "Tạo " + count + " câu hỏi " + typeDesc + " về chủ đề \"" + topic + "\", mức độ " + diffDesc + ".\n"
-                + "Ngôn ngữ: tiếng Việt.\n"
-                + "Return ONLY valid JSON array. No markdown, no explanation outside JSON.\n\n"
-                + "JSON format:\n"
-                + "[\n"
-                + "  { \"type\": \"" + type + "\", \"content\": \"<nội dung>\", \"answers\": " + answersFormat + ", \"explanation\": \"<gợi ý>\" }\n"
-                + "]\n\n"
-                + "Yêu cầu:\n"
-                + "- Phải tạo ĐÚNG " + count + " câu hỏi\n"
-                + "- Câu hỏi rõ ràng, không mơ hồ\n"
-                + requirement + "\n"
-                + "- Không lặp lại câu hỏi";
+        return "Tạo " + count + " câu hỏi tiếng Việt loại " + type + " về \"" + topic + "\", độ khó " + diffDesc + ".\n"
+            + "JSON array only, no markdown:\n"
+            + "[{\"type\":\"" + type + "\",\"content\":\"?\",\"" + answersNote + ",\"explanation\":\"...\"}]\n"
+            + "Tạo đúng " + count + " câu, không lặp.";
     }
 
     // ── Response parser ───────────────────────────────────

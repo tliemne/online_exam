@@ -88,7 +88,7 @@ function PracticeModal({ topic, difficulty, onClose }) {
   const [submitted, setSubmitted]   = useState(false)
   const [score, setScore]           = useState(null)
   const [error, setError]           = useState('')
-  const [count, setCount]           = useState(5)
+  const [count, setCount]           = useState(3)
   const [diff, setDiff]             = useState('ALL')
   const [qtype, setQtype]           = useState('ALL')
   const [started, setStarted]       = useState(false)
@@ -96,14 +96,27 @@ function PracticeModal({ topic, difficulty, onClose }) {
   const handleStart = () => {
     setStarted(true)
     setLoading(true)
-    // Practice không cache — thêm timestamp để bypass Redis cache
     api.post('/questions/ai-generate', {
       topic, type: qtype, difficulty: diff, count,
       courseId: null, tags: null,
-      bustCache: true, // skip Redis cache khi luyện tập
+      bustCache: true,
     })
-      .then(r => setQuestions(r.data.data || []))
-      .catch(() => setError('Không tải được bài luyện. Thử lại.'))
+      .then(r => {
+        const qs = r.data.data || []
+        if (qs.length === 0) setError('AI không tạo được câu hỏi. Thử lại sau ít phút.')
+        else setQuestions(qs)
+      })
+      .catch(err => {
+        const status = err.response?.status
+        if (status === 503) {
+          setError('AI đang quá tải. Vui lòng thử lại sau 1-2 phút.')
+        } else if (status === 429) {
+          setError('Đã vượt giới hạn API. Thử lại sau vài phút.')
+        } else {
+          setError('Không tạo được bài luyện. Thử lại sau.')
+        }
+        setStarted(false) // Cho phép thử lại
+      })
       .finally(() => setLoading(false))
   }
 
@@ -206,7 +219,15 @@ function PracticeModal({ topic, difficulty, onClose }) {
             </div>
           )}
 
-          {error && <p className="text-center text-sm py-4" style={{ color: 'var(--danger)' }}>{error}</p>}
+          {error && (
+            <div className="text-center py-6 space-y-3">
+              <p className="text-sm" style={{ color: 'var(--danger)' }}>{error}</p>
+              <button onClick={() => { setError(''); setStarted(false) }}
+                className="btn-secondary text-sm px-4 py-2">
+                Thử lại
+              </button>
+            </div>
+          )}
 
           {/* Score result */}
           {submitted && score && (
@@ -566,6 +587,38 @@ function WeaknessWidget() {
                               Luyện tập ngay →
                             </button>
                           </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Chọn chủ đề luyện tập - luôn hiện dù AI fail */}
+                {data.topics?.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium mb-3" style={{ color: 'var(--text-3)' }}>
+                      CHỌN CHỦ ĐỀ ĐỂ LUYỆN TẬP
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {data.topics.map((t, i) => {
+                        const clr = t.correctPct >= 70 ? 'var(--success)' : t.correctPct >= 50 ? 'var(--warning)' : 'var(--danger)'
+                        const diff = t.correctPct < 50 ? 'EASY' : t.correctPct < 70 ? 'MEDIUM' : 'HARD'
+                        return (
+                          <button key={i}
+                            onClick={() => setPractice({ topic: t.topic, difficulty: diff })}
+                            className="text-left p-3 rounded-lg border transition-all hover:border-[var(--accent)] hover:bg-[var(--accent-subtle)]"
+                            style={{ borderColor: 'var(--border-base)' }}>
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs font-medium truncate" style={{ color: 'var(--text-1)' }}>{t.topic}</span>
+                              <span className="text-[10px] font-mono ml-1 shrink-0" style={{ color: clr }}>{t.correctPct}%</span>
+                            </div>
+                            <div className="h-1 rounded-full overflow-hidden" style={{ background: 'var(--border-base)' }}>
+                              <div className="h-full rounded-full" style={{ width: `${t.correctPct}%`, background: clr }}/>
+                            </div>
+                            <p className="text-[10px] mt-1.5" style={{ color: 'var(--text-3)' }}>
+                              {t.correctPct < 50 ? '⚡ Cần ôn gấp' : t.correctPct < 70 ? '📚 Cần luyện thêm' : '✓ Đang tốt'}
+                            </p>
+                          </button>
                         )
                       })}
                     </div>
