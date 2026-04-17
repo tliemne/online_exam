@@ -124,6 +124,25 @@ export default function ProfilePage() {
       {success && <div className="px-4 py-3 rounded-lg bg-success/10 border border-success/20 text-success text-sm">✓ {success}</div>}
       {error   && <div className="px-4 py-3 rounded-lg bg-danger/10  border border-danger/20  text-danger  text-sm">{error}</div>}
 
+      {/* Banner nhắc thêm email nếu chưa có */}
+      {!loading && acc && (!acc.email || acc.email.endsWith('@school.edu.vn') || acc.email.trim() === '') && (
+        <div className="px-4 py-3 rounded-xl bg-warning/10 border border-warning/30 flex items-start gap-3">
+          <svg className="w-5 h-5 text-warning shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+          </svg>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-[var(--text-1)]">Bạn chưa có email hợp lệ</p>
+            <p className="text-xs text-[var(--text-3)] mt-0.5">
+              Thêm email để nhận thông báo đề thi, kết quả và có thể khôi phục mật khẩu khi cần.
+            </p>
+          </div>
+          <button onClick={() => setEditing(true)}
+            className="btn-secondary text-xs px-3 py-1.5 shrink-0">
+            Thêm email
+          </button>
+        </div>
+      )}
+
       <div className="card p-6">
         {/* Header: avatar + tên + role */}
         <div className="flex items-start gap-5">

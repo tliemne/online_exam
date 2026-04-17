@@ -90,7 +90,7 @@ public interface QuestionRepository extends JpaRepository<Question, Long> {
     );
 
     // Xóa toàn bộ câu hỏi do 1 teacher tạo (dùng khi xóa tài khoản teacher)
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("DELETE FROM Question q WHERE q.createdBy.id = :userId")
     void deleteByCreatedById(@Param("userId") Long userId);
     java.util.List<com.example.online_exam.question.entity.Question> findByCreatedById(Long userId);

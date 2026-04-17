@@ -11,7 +11,7 @@ public interface StudentProfileRepository extends JpaRepository<StudentProfile, 
     Optional<StudentProfile> findByUserId(Long userId);
     boolean existsByStudentCode(String studentCode);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("DELETE FROM StudentProfile sp WHERE sp.user.id = :userId")
     void deleteByUserId(Long userId);
 }

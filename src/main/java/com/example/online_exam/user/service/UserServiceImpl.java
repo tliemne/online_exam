@@ -65,6 +65,7 @@ public class UserServiceImpl implements UserService {
     private final QuestionRepository questionRepository;
     private final ExamQuestionRepository examQuestionRepository;
     private final com.example.online_exam.activitylog.repository.ActivityLogRepository activityLogRepository;
+    private final com.example.online_exam.notification.repository.NotificationRepository notificationRepository;
 
     // Optional — null nếu spring-boot-starter-mail chưa được cấu hình
     @org.springframework.beans.factory.annotation.Autowired(required = false)
@@ -312,6 +313,14 @@ public class UserServiceImpl implements UserService {
         if (caller.getId().equals(id)) {
             throw new AppException(ErrorCode.CANNOT_DELETE_SELF);
         }
+        // Không cho xóa tài khoản Admin khác
+        User target = userRepository.findById(id)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        boolean targetIsAdmin = target.getRoles().stream()
+                .anyMatch(r -> r.getName() == RoleName.ADMIN);
+        if (targetIsAdmin) {
+            throw new AppException(ErrorCode.FORBIDDEN);
+        }
         // 1. Xóa refresh token trong Redis
         refreshTokenRepository.deleteByUserId(id);
         // 2a. Null hóa teacher_id trong courses nếu user là teacher
@@ -334,11 +343,12 @@ public class UserServiceImpl implements UserService {
         // 7. Xóa profile
         studentProfileRepository.deleteByUserId(id);
         teacherProfileRepository.deleteByUserId(id);
-        // 8. Xóa activity logs
+        // 8. Xóa notifications
+        notificationRepository.deleteAllByUser(id);
+        // 9. Xóa activity logs
         activityLogRepository.deleteByUserId(id);
-        // 9. Xóa user
-        userRepository.deleteById(id);
-    }
+        // 10. Xóa user
+        userRepository.deleteById(id);    }
     private UserResponse mapByVisibility(User targetUser) {
         User viewer = currentUserService.getCurrentUser().orElse(null);
 

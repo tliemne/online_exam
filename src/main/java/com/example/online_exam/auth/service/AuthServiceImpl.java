@@ -5,15 +5,23 @@ import com.example.online_exam.activitylog.service.ActivityLogService;
 import com.example.online_exam.auth.dto.AuthResponse;
 import com.example.online_exam.auth.dto.LoginRequest;
 import com.example.online_exam.auth.repository.RedisRefreshTokenRepository;
+import com.example.online_exam.common.service.EmailService;
 import com.example.online_exam.exception.AppException;
 import com.example.online_exam.exception.ErrorCode;
 import com.example.online_exam.secutity.service.JwtService;
 import com.example.online_exam.user.entity.User;
 import com.example.online_exam.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+import java.util.concurrent.TimeUnit;
+
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
@@ -24,26 +32,29 @@ public class AuthServiceImpl implements AuthService {
     private final RedisRefreshTokenRepository redisTokenRepo;
     private final ActivityLogService          activityLogService;
     private final LoginRateLimiter            rateLimiter;
+    private final StringRedisTemplate         redisTemplate;
+
+    @Autowired(required = false)
+    private EmailService emailService;
+
+    private static final String RESET_PREFIX = "pwd_reset:";
+    private static final long   RESET_TTL_MINUTES = 15;
 
     @Override
     public AuthResponse login(LoginRequest request) {
-        // 1. Kiểm tra block trước
         rateLimiter.checkBlocked(request.getUsername());
 
-        // 2. Tìm user
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseGet(() -> {
                     rateLimiter.recordFailure(request.getUsername());
                     throw new AppException(ErrorCode.USER_NOT_FOUND);
                 });
 
-        // 3. Kiểm tra password
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             rateLimiter.recordFailure(request.getUsername());
             throw new AppException(ErrorCode.INVALID_PASSWORD);
         }
 
-        // 4. Thành công — xóa counter
         rateLimiter.recordSuccess(request.getUsername());
 
         String accessToken  = jwtService.generateAccessToken(user);
@@ -62,7 +73,6 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public void logout(String refreshToken) {
-        // Tìm userId để log trước khi xóa
         redisTokenRepo.findUserIdByToken(refreshToken).ifPresent(userId -> {
             redisTokenRepo.deleteByToken(refreshToken);
             userRepository.findById(userId).ifPresent(user ->
@@ -81,13 +91,70 @@ public class AuthServiceImpl implements AuthService {
                 .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
 
         String newAccess = jwtService.generateAccessToken(user);
-
-        // Gia hạn TTL mỗi lần refresh (sliding window)
         redisTokenRepo.extend(refreshToken, userId);
 
         return AuthResponse.builder()
                 .accessToken(newAccess)
                 .refreshToken(refreshToken)
                 .build();
+    }
+
+    @Override
+    public void forgotPassword(String email) {
+        // Always return success to prevent email enumeration
+        if (email == null || email.isBlank()) return;
+
+        userRepository.findByEmail(email).ifPresent(user -> {
+            if (emailService == null) {
+                log.warn("EmailService not configured, cannot send reset email");
+                return;
+            }
+
+            // Rate limit: max 3 requests per hour per email
+            String rateLimitKey = "forgot_pwd_limit:" + email;
+            String countStr = redisTemplate.opsForValue().get(rateLimitKey);
+            int count = countStr != null ? Integer.parseInt(countStr) : 0;
+            if (count >= 3) {
+                log.warn("Forgot password rate limit exceeded for email: {}", email);
+                return; // Silently ignore - don't reveal to attacker
+            }
+            // Increment counter, set TTL 1 hour on first request
+            if (count == 0) {
+                redisTemplate.opsForValue().set(rateLimitKey, "1", 1, TimeUnit.HOURS);
+            } else {
+                redisTemplate.opsForValue().increment(rateLimitKey);
+            }
+
+            // Generate reset token and store in Redis
+            String token = UUID.randomUUID().toString();
+            redisTemplate.opsForValue().set(
+                RESET_PREFIX + token,
+                user.getId().toString(),
+                RESET_TTL_MINUTES, TimeUnit.MINUTES
+            );
+            emailService.sendForgotPasswordLink(email, user.getFullName(), token);
+            log.info("Password reset email sent to {} (attempt {})", email, count + 1);
+        });
+    }
+
+    @Override
+    public void resetPasswordByToken(String token, String newPassword) {
+        String key = RESET_PREFIX + token;
+        String userIdStr = redisTemplate.opsForValue().get(key);
+
+        if (userIdStr == null) {
+            throw new AppException(ErrorCode.TOKEN_INVALID);
+        }
+
+        Long userId = Long.parseLong(userIdStr);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+
+        // Delete token after use
+        redisTemplate.delete(key);
+        log.info("Password reset successfully for user {}", user.getUsername());
     }
 }

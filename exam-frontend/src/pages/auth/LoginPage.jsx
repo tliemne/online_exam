@@ -152,11 +152,10 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="mt-8 text-sm text-center" style={{ color: 'var(--text-3)' }}>
-            {t('auth.noAccount')}{' '}
-            <Link to="/register" className="font-bold transition-colors"
-              style={{ color: 'var(--accent)' }}>
-              {t('auth.registerLink')}
+          {/* No register link - accounts are created by admin only */}
+          <p className="mt-4 text-sm text-center">
+            <Link to="/forgot-password" className="text-[var(--text-3)] hover:text-accent transition-colors">
+              Quên mật khẩu?
             </Link>
           </p>
         </div>

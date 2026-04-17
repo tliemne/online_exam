@@ -11,7 +11,7 @@ public interface TeacherProfileRepository extends JpaRepository<TeacherProfile, 
     Optional<TeacherProfile> findByUserId(Long userId);
     boolean existsByTeacherCode(String teacherCode);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("DELETE FROM TeacherProfile tp WHERE tp.user.id = :userId")
     void deleteByUserId(Long userId);
 }

@@ -399,14 +399,27 @@ export default function AdminUsers() {
                       </td>
                       <td className="py-3">
                         <div className="flex items-center gap-1">
-                          <button onClick={() => setResetTarget(u)}
-                            className="btn-ghost text-[var(--text-3)] hover:text-accent hover:bg-accent/10 px-2 py-1 text-xs">
-                            🔑 Reset
-                          </button>
-                          {u.id !== currentUser?.id && (
+                          {/* Reset password - chỉ hiện với non-admin */}
+                          {!u.roles?.includes('ADMIN') && (
+                            <button onClick={() => setResetTarget(u)}
+                              className="p-1.5 rounded hover:bg-accent/10 text-[var(--text-3)] hover:text-accent transition-colors"
+                              title="Đặt lại mật khẩu">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                              </svg>
+                            </button>
+                          )}
+                          {/* Delete - chỉ hiện với non-admin và không phải chính mình */}
+                          {u.id !== currentUser?.id && !u.roles?.includes('ADMIN') && (
                             <button onClick={() => handleDelete(u.id)} disabled={deleting === u.id}
-                              className="btn-ghost text-danger/70 hover:text-danger hover:bg-danger/8 px-2 py-1 text-xs">
-                              {deleting === u.id ? '...' : 'Xóa'}
+                              className="p-1.5 rounded hover:bg-danger/10 text-[var(--text-3)] hover:text-danger transition-colors"
+                              title="Xóa tài khoản">
+                              {deleting === u.id
+                                ? <span className="w-4 h-4 border-2 border-danger/30 border-t-danger rounded-full animate-spin block"/>
+                                : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                  </svg>
+                              }
                             </button>
                           )}
                         </div>

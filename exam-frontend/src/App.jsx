@@ -7,6 +7,8 @@ import { ProtectedRoute, GuestRoute } from './routes/Guards'
 import AppLayout from './components/layout/AppLayout'
 
 import LoginPage from './pages/auth/LoginPage'
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage'
+import ResetPasswordPage from './pages/auth/ResetPasswordPage'
 
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminUsers from './pages/admin/AdminUsers'
@@ -58,6 +60,8 @@ export default function App() {
         <Routes>
           {/* Public */}
           <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
+          <Route path="/forgot-password" element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
+          <Route path="/reset-password" element={<GuestRoute><ResetPasswordPage /></GuestRoute>} />
           
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
 

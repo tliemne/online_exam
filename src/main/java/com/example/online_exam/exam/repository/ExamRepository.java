@@ -38,7 +38,7 @@ public interface ExamRepository extends JpaRepository<Exam, Long> {
     @Query("SELECT e FROM Exam e WHERE e.course.teacher.id = :teacherId ORDER BY e.createdAt DESC")
     List<Exam> findByCourseTeacherId(@Param("teacherId") Long teacherId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("DELETE FROM Exam e WHERE e.createdBy.id = :userId")
     void deleteByCreatedById(@Param("userId") Long userId);
 }

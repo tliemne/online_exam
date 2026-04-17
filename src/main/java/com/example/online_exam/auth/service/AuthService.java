@@ -6,8 +6,8 @@ import com.example.online_exam.auth.dto.LoginResponse;
 
 public interface AuthService {
     AuthResponse login(LoginRequest request);
-
     void logout(String refreshToken);
-
     AuthResponse refresh(String refreshToken);
+    void forgotPassword(String email);
+    void resetPasswordByToken(String token, String newPassword);
 }

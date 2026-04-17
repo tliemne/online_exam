@@ -53,6 +53,17 @@ public class EmailService {
     }
 
     // ─────────────────────────────────────────────────────
+    // 2b. Quên mật khẩu - gửi link reset
+    // ─────────────────────────────────────────────────────
+    @Async("emailExecutor")
+    public void sendForgotPasswordLink(String toEmail, String fullName, String resetToken) {
+        String resetLink = baseUrl + "/reset-password?token=" + resetToken;
+        send(toEmail,
+                "[ExamPortal] Đặt lại mật khẩu",
+                buildForgotPasswordEmail(fullName, resetLink));
+    }
+
+    // ─────────────────────────────────────────────────────
     // 3. Giáo viên publish đề → thông báo toàn bộ SV lớp
     //    (Gọi riêng từng SV — mỗi lần 1 email để Async xử lý song song)
     // ─────────────────────────────────────────────────────
@@ -186,6 +197,32 @@ public class EmailService {
                 </p>
             </div>
         """.formatted(baseUrl, name, newPassword) + footer();
+    }
+
+    // ── Template 2b: Forgot Password Link ─────────────────
+    private String buildForgotPasswordEmail(String name, String resetLink) {
+        return header("#7c3aed", "Quên mật khẩu", "Đặt lại mật khẩu của bạn") + """
+            <p style="font-size:16px;color:#111">Xin chào <b>%s</b>,</p>
+            <p style="font-size:14px;color:#555;line-height:1.6;margin-bottom:24px">
+                Chúng tôi nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn.
+                Click vào nút bên dưới để đặt lại mật khẩu.
+            </p>
+            <div style="text-align:center;margin-bottom:24px">
+                <a href="%s"
+                   style="background:#7c3aed;color:#fff;text-decoration:none;
+                          padding:14px 32px;border-radius:8px;font-weight:bold;font-size:15px">
+                   Đặt lại mật khẩu →</a>
+            </div>
+            <div style="background:#f5f3ff;border:1px solid #ddd6fe;padding:13px;border-radius:8px;margin-bottom:16px">
+                <p style="margin:0;font-size:13px;color:#5b21b6">
+                    ⏰ Link này sẽ hết hạn sau <b>15 phút</b>.
+                </p>
+            </div>
+            <p style="font-size:13px;color:#9ca3af">
+                Nếu bạn không yêu cầu đặt lại mật khẩu, hãy bỏ qua email này.
+                Tài khoản của bạn vẫn an toàn.
+            </p>
+        """.formatted(name, resetLink) + footer();
     }
 
     // ── Template 3: Exam Published ────────────────────────

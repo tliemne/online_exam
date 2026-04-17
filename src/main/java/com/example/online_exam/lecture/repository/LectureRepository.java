@@ -12,7 +12,7 @@ public interface LectureRepository extends JpaRepository<Lecture, Long> {
 
     List<Lecture> findByCourseIdOrderByOrderIndexAsc(Long courseId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("DELETE FROM Lecture l WHERE l.createdBy.id = :userId")
     void deleteByCreatedById(@Param("userId") Long userId);
 }
