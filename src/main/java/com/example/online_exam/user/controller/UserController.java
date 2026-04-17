@@ -48,19 +48,10 @@ public class UserController {
     @Autowired(required = false)
     private EmailService emailService;
 
-    // Public: chỉ tạo được STUDENT hoặc TEACHER
+    // Đã tắt đăng ký public - chỉ Admin mới tạo được tài khoản
     @PostMapping("/register")
-    public BaseResponse<UserResponse> register(@Validated @RequestBody UserRegisterRequest request) {
-        // Không cho tạo ADMIN qua endpoint public
-        if (request.getRole() == RoleName.ADMIN) {
-            throw new AppException(ErrorCode.FORBIDDEN);
-        }
-        return BaseResponse.<UserResponse>builder()
-                .status(200)
-                .message("register success")
-                .data(userService.register(request))
-                .timestamp(LocalDateTime.now())
-                .build();
+    public BaseResponse<Void> register() {
+        throw new AppException(ErrorCode.FORBIDDEN);
     }
 
     // Chỉ ADMIN mới tạo được mọi role kể cả ADMIN khác

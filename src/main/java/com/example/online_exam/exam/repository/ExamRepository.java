@@ -41,4 +41,17 @@ public interface ExamRepository extends JpaRepository<Exam, Long> {
     @Modifying(clearAutomatically = true)
     @Query("DELETE FROM Exam e WHERE e.createdBy.id = :userId")
     void deleteByCreatedById(@Param("userId") Long userId);
+
+    /**
+     * Tìm đề DRAFT có startTime <= now (sẵn sàng publish)
+     */
+    @Query("SELECT e FROM Exam e LEFT JOIN FETCH e.course c LEFT JOIN FETCH c.students LEFT JOIN FETCH e.examQuestions " +
+           "WHERE e.status = 'DRAFT' AND e.startTime IS NOT NULL AND e.startTime <= :now")
+    List<Exam> findDraftExamsReadyToPublish(@Param("now") java.time.LocalDateTime now);
+
+    /**
+     * Tìm đề PUBLISHED có endTime <= now (sẵn sàng close)
+     */
+    @Query("SELECT e FROM Exam e WHERE e.status = 'PUBLISHED' AND e.endTime IS NOT NULL AND e.endTime <= :now")
+    List<Exam> findPublishedExamsReadyToClose(@Param("now") java.time.LocalDateTime now);
 }

@@ -62,6 +62,7 @@ export default function App() {
           <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
           <Route path="/forgot-password" element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
           <Route path="/reset-password" element={<GuestRoute><ResetPasswordPage /></GuestRoute>} />
+          {/* /register disabled - accounts created by admin only */}
           
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
