@@ -25,6 +25,15 @@ public interface TagRepository extends JpaRepository<Tag, Long> {
     """)
     List<Object[]> countQuestionsByTag();
 
+    // Thống kê: số câu hỏi theo danh sách tag IDs (cho pagination)
+    @Query("""
+        SELECT t.id, COUNT(q.id)
+        FROM Tag t LEFT JOIN t.questions q
+        WHERE t.id IN :tagIds
+        GROUP BY t.id
+    """)
+    List<Object[]> countQuestionsByTagIds(@Param("tagIds") List<Long> tagIds);
+
     // Tags của 1 question
     @Query("SELECT t FROM Tag t JOIN t.questions q WHERE q.id = :questionId ORDER BY t.name")
     List<Tag> findByQuestionId(@Param("questionId") Long questionId);

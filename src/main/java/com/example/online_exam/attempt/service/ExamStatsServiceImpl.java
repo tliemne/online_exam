@@ -65,13 +65,27 @@ public class ExamStatsServiceImpl implements ExamStatsService {
         Map<Long, Attempt> bestByStudent = new HashMap<>();
         for (Attempt a : attempts) {
             if (a.getScore() == null) continue; // Skip essay not graded yet
-            bestByStudent.merge(a.getStudent().getId(), a, (existing, current) ->
-                    current.getScore() > existing.getScore() ? current : existing);
+            bestByStudent.merge(a.getStudent().getId(), a, (existing, current) -> {
+                // Ưu tiên điểm cao hơn, nếu bằng nhau thì lấy bài mới hơn
+                if (current.getScore() > existing.getScore()) {
+                    return current;
+                } else if (current.getScore().equals(existing.getScore())) {
+                    return current.getSubmittedAt().isAfter(existing.getSubmittedAt()) ? current : existing;
+                } else {
+                    return existing;
+                }
+            });
         }
         
-        // Sort theo score DESC
+        // Sort theo score DESC, nếu bằng điểm thì theo thời gian DESC (mới nhất trước)
         List<Attempt> topAttempts = bestByStudent.values().stream()
-                .sorted(Comparator.comparingDouble((Attempt a) -> a.getScore() != null ? a.getScore() : 0).reversed())
+                .sorted((a1, a2) -> {
+                    int scoreCompare = Double.compare(a2.getScore() != null ? a2.getScore() : 0, 
+                                                     a1.getScore() != null ? a1.getScore() : 0);
+                    if (scoreCompare != 0) return scoreCompare;
+                    // Nếu điểm bằng nhau, sắp xếp theo thời gian nộp mới nhất trước
+                    return a2.getSubmittedAt().compareTo(a1.getSubmittedAt());
+                })
                 .limit(10)
                 .collect(Collectors.toList());
         

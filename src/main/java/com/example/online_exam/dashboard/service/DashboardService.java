@@ -163,7 +163,7 @@ public class DashboardService {
         
         // Lấy tất cả exams của teacher (created by) + exams trong courses của teacher
         List<Exam> allExams = new ArrayList<>();
-        allExams.addAll(examRepo.findByCreatedById(teacher.getId()));
+        allExams.addAll(examRepo.findByCreatedByIdOrderByCreatedAtDesc(teacher.getId()));
         
         for (Course c : courses) {
             allExams.addAll(examRepo.findByCourseId(c.getId()));
@@ -298,6 +298,8 @@ public class DashboardService {
                 : null;
 
         List<DashboardResponse.RecentAttempt> recent = attempts.stream()
+                .filter(a -> a.getSubmittedAt() != null)
+                .sorted((a, b) -> b.getSubmittedAt().compareTo(a.getSubmittedAt()))
                 .limit(5)
                 .map(this::toRecentAttempt)
                 .collect(Collectors.toList());

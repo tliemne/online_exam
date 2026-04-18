@@ -23,8 +23,20 @@ public class CourseLeaderboardController {
      */
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public BaseResponse<CourseLeaderboardResponse> getLeaderboard(
-            @PathVariable Long courseId) {
+    public BaseResponse<?> getLeaderboard(
+            @PathVariable Long courseId,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        if (page != null && size != null) {
+            // Paginated request
+            return BaseResponse.builder()
+                    .status(200)
+                    .message("success")
+                    .data(leaderboardService.getLeaderboardPaginated(courseId, page, size))
+                    .timestamp(LocalDateTime.now())
+                    .build();
+        }
+        // Non-paginated request (backward compatibility)
         return BaseResponse.<CourseLeaderboardResponse>builder()
                 .status(200)
                 .message("success")

@@ -32,7 +32,9 @@ public interface ExamRepository extends JpaRepository<Exam, Long> {
     """)
     List<Exam> findPublishedForStudent(@Param("studentId") Long studentId);
 
-    List<Exam> findByCreatedById(Long userId);
+    List<Exam> findByCreatedByIdOrderByCreatedAtDesc(Long userId);
+
+    List<Exam> findAllByOrderByCreatedAtDesc();
 
     /** Lấy đề trong lớp mà user là giáo viên phụ trách */
     @Query("SELECT e FROM Exam e WHERE e.course.teacher.id = :teacherId ORDER BY e.createdAt DESC")
@@ -43,11 +45,14 @@ public interface ExamRepository extends JpaRepository<Exam, Long> {
     void deleteByCreatedById(@Param("userId") Long userId);
 
     /**
-     * Tìm đề DRAFT có startTime <= now (sẵn sàng publish)
+     * Tìm đề DRAFT có startTime trong khoảng [now-2min, now] (sẵn sàng publish lần đầu)
+     * Tránh publish lại đề cũ khi restart server
      */
     @Query("SELECT e FROM Exam e LEFT JOIN FETCH e.course c LEFT JOIN FETCH c.students LEFT JOIN FETCH e.examQuestions " +
-           "WHERE e.status = 'DRAFT' AND e.startTime IS NOT NULL AND e.startTime <= :now")
-    List<Exam> findDraftExamsReadyToPublish(@Param("now") java.time.LocalDateTime now);
+           "WHERE e.status = 'DRAFT' AND e.startTime IS NOT NULL " +
+           "AND e.startTime <= :now AND e.startTime >= :twoMinutesAgo")
+    List<Exam> findDraftExamsReadyToPublish(@Param("now") java.time.LocalDateTime now, 
+                                           @Param("twoMinutesAgo") java.time.LocalDateTime twoMinutesAgo);
 
     /**
      * Tìm đề PUBLISHED có endTime <= now (sẵn sàng close)

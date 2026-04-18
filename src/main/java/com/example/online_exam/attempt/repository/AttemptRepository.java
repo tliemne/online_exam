@@ -40,6 +40,16 @@ public interface AttemptRepository extends JpaRepository<Attempt, Long> {
     """)
     List<Attempt> findSubmittedByStudent(@Param("studentId") Long studentId);
 
+    // Student xem tất cả bài đã nộp (phân trang)
+    @Query("""
+        SELECT a FROM Attempt a
+        WHERE a.student.id = :studentId
+          AND a.status IN ('SUBMITTED','GRADED')
+    """)
+    org.springframework.data.domain.Page<Attempt> findSubmittedByStudentPaginated(
+        @Param("studentId") Long studentId, 
+        org.springframework.data.domain.Pageable pageable);
+
     @Query("""
         SELECT DISTINCT a FROM Attempt a
         LEFT JOIN FETCH a.exam e

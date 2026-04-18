@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -42,6 +43,32 @@ public class TagServiceImpl implements TagService {
             res.setQuestionCount((Long) r[3]);
             return res;
         }).collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<TagResponse> getAllPaginated(int page, int size) {
+        org.springframework.data.domain.Pageable pageable = 
+            org.springframework.data.domain.PageRequest.of(page, size, 
+                org.springframework.data.domain.Sort.by("name").ascending());
+        
+        org.springframework.data.domain.Page<Tag> tagPage = tagRepo.findAll(pageable);
+        
+        // Get question counts for all tags in this page
+        List<Long> tagIds = tagPage.getContent().stream().map(Tag::getId).collect(Collectors.toList());
+        List<Object[]> countRows = tagRepo.countQuestionsByTagIds(tagIds);
+        Map<Long, Long> countMap = countRows.stream()
+            .collect(Collectors.toMap(r -> (Long) r[0], r -> (Long) r[1]));
+        
+        return tagPage.map(tag -> {
+            TagResponse res = new TagResponse();
+            res.setId(tag.getId());
+            res.setName(tag.getName());
+            res.setColor(tag.getColor());
+            res.setDescription(tag.getDescription());
+            res.setQuestionCount(countMap.getOrDefault(tag.getId(), 0L));
+            return res;
+        });
     }
 
     @Override

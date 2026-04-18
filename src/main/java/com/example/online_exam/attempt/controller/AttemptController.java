@@ -60,7 +60,14 @@ public class AttemptController {
     // GET /attempts/my  — student xem lịch sử của mình
     @GetMapping("/my")
     @PreAuthorize("hasRole('STUDENT')")
-    public BaseResponse<List<AttemptResponse>> getMyAttempts() {
+    public BaseResponse<?> getMyAttempts(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        if (page != null && size != null) {
+            // Paginated request
+            return ok(attemptService.getMyAttemptsPaginated(page, size));
+        }
+        // Non-paginated request (backward compatibility)
         return ok(attemptService.getMyAttempts());
     }
 

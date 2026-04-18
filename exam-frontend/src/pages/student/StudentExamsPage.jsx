@@ -13,16 +13,28 @@ export default function StudentExamsPage() {
   const [taking, setTaking]   = useState(null)
   const [viewingResult, setViewingResult] = useState(null)
   const [filter, setFilter]   = useState('all') // all | open | ended
+  const [page, setPage]       = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const pageSize = 6
 
-  const load = () => {
+  const load = (pageNum = 0) => {
     setLoading(true)
+    // For now, load all and paginate on frontend
     api.get('/exams/student')
-      .then(r => setExams(r.data.data || []))
-      .catch(() => setExams([]))
+      .then(r => {
+        const allExams = r.data.data || []
+        setExams(allExams)
+        setTotalPages(Math.ceil(allExams.length / pageSize))
+        setPage(pageNum)
+      })
+      .catch(() => {
+        setExams([])
+        setTotalPages(0)
+      })
       .finally(() => setLoading(false))
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => { load(0) }, [])
 
   const now = new Date()
   const filtered = exams.filter(e => {
@@ -34,6 +46,12 @@ export default function StudentExamsPage() {
     if (filter === 'ended') return e.endTime && now > new Date(e.endTime)
     return true
   })
+
+  // Apply pagination to filtered results
+  const startIdx = page * pageSize
+  const endIdx = startIdx + pageSize
+  const paginatedFiltered = filtered.slice(startIdx, endIdx)
+  const filteredTotalPages = Math.ceil(filtered.length / pageSize)
 
   const openCount  = exams.filter(e => {
     const s = e.startTime ? new Date(e.startTime) : null
@@ -69,7 +87,7 @@ export default function StudentExamsPage() {
           { key: 'open',  label: 'Đang mở' },
           { key: 'ended', label: 'Đã kết thúc' },
         ].map(f => (
-          <button key={f.key} onClick={() => setFilter(f.key)}
+          <button key={f.key} onClick={() => { setFilter(f.key); setPage(0) }}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
               filter === f.key
                 ? 'bg-accent text-white'
@@ -85,7 +103,7 @@ export default function StudentExamsPage() {
         <div className="flex justify-center py-16">
           <div className="w-8 h-8 rounded-full border-2 border-accent border-t-transparent animate-spin"/>
         </div>
-      ) : filtered.length === 0 ? (
+      ) : paginatedFiltered.length === 0 ? (
         <div className="card text-center py-16">
           
           <p className="text-[var(--text-2)] font-medium">
@@ -97,10 +115,57 @@ export default function StudentExamsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map(e => (
+          {paginatedFiltered.map(e => (
             <StudentExamCard key={e.id} exam={e} onTake={setTaking} onViewResult={(ex) => { setViewingResult(ex); }}
               onLeaderboard={(ex) => navigate(`/student/exams/${ex.id}/leaderboard`)} />
           ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {filteredTotalPages > 1 && (
+        <div className="flex justify-center">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPage(page - 1)}
+              disabled={page === 0}
+              className="px-3 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ 
+                background: 'var(--bg-elevated)', 
+                color: 'var(--text-2)',
+                border: '1px solid var(--border-base)'
+              }}>
+              ← Trước
+            </button>
+            
+            {Array.from({ length: Math.min(5, filteredTotalPages) }, (_, i) => {
+              const pageNum = Math.max(0, Math.min(filteredTotalPages - 5, page - 2)) + i
+              if (pageNum >= filteredTotalPages) return null
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => setPage(pageNum)}
+                  className="px-3 py-2 rounded-lg text-sm font-medium transition-all"
+                  style={pageNum === page
+                    ? { background: 'var(--accent)', color: '#fff' }
+                    : { background: 'var(--bg-elevated)', color: 'var(--text-2)', border: '1px solid var(--border-base)' }}>
+                  {pageNum + 1}
+                </button>
+              )
+            })}
+            
+            <button
+              onClick={() => setPage(page + 1)}
+              disabled={page >= filteredTotalPages - 1}
+              className="px-3 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ 
+                background: 'var(--bg-elevated)', 
+                color: 'var(--text-2)',
+                border: '1px solid var(--border-base)'
+              }}>
+              Sau →
+            </button>
+          </div>
         </div>
       )}
 
@@ -109,7 +174,7 @@ export default function StudentExamsPage() {
         <TakeExamModal
           exam={taking}
           onClose={() => setTaking(null)}
-          onSubmitted={() => { load(); setTaking(null) }}
+          onSubmitted={() => { load(page); setTaking(null) }}
         />
       )}
       {viewingResult && (

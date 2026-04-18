@@ -165,7 +165,7 @@ public class ExamServiceImpl implements ExamService {
             Set<Long> seen = new HashSet<>();
             List<Exam> result = new ArrayList<>();
             // Đề mình tạo
-            examRepo.findByCreatedById(caller.getId()).forEach(e -> {
+            examRepo.findByCreatedByIdOrderByCreatedAtDesc(caller.getId()).forEach(e -> {
                 if (seen.add(e.getId())) result.add(e);
             });
             // Đề trong lớp mình phụ trách (admin có thể tạo)
@@ -175,7 +175,7 @@ public class ExamServiceImpl implements ExamService {
             return result.stream()
                     .map(e -> toResponse(e, false, false)).collect(Collectors.toList());
         }
-        return examRepo.findAll().stream()
+        return examRepo.findAllByOrderByCreatedAtDesc().stream()
                 .map(e -> toResponse(e, false, false)).collect(Collectors.toList());
     }
 

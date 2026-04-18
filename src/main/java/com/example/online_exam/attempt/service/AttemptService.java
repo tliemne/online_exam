@@ -20,6 +20,9 @@ public interface AttemptService {
     // Student xem lịch sử bài làm của mình
     List<AttemptResponse> getMyAttempts();
 
+    // Student xem lịch sử bài làm của mình (phân trang)
+    org.springframework.data.domain.Page<AttemptResponse> getMyAttemptsPaginated(int page, int size);
+
     // Student xem lịch sử cho 1 exam
     List<AttemptResponse> getMyAttemptsByExam(Long examId);
 

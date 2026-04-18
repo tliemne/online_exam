@@ -6,14 +6,35 @@ export default function StudentSchedulePage() {
   const [exams, setExams]     = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter]   = useState('upcoming') // upcoming | open | ended | all
+  const [page, setPage]       = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const pageSize = 5
   const navigate = useNavigate()
 
-  useEffect(() => {
+  const loadExams = (pageNum = 0) => {
+    setLoading(true)
+    // For now, we'll load all exams and paginate on frontend
+    // TODO: Add backend pagination for /exams/student
     api.get('/exams/student')
-      .then(r => setExams(r.data.data || []))
-      .catch(() => setExams([]))
+      .then(r => {
+        const allExams = r.data.data || []
+        // Simple frontend pagination
+        const startIdx = pageNum * pageSize
+        const endIdx = startIdx + pageSize
+        const paginatedExams = allExams.slice(startIdx, endIdx)
+        
+        setExams(allExams) // Keep all for filtering
+        setTotalPages(Math.ceil(allExams.length / pageSize))
+        setPage(pageNum)
+      })
+      .catch(() => {
+        setExams([])
+        setTotalPages(0)
+      })
       .finally(() => setLoading(false))
-  }, [])
+  }
+
+  useEffect(() => { loadExams(0) }, [])
 
   const now = new Date()
 
@@ -34,6 +55,12 @@ export default function StudentSchedulePage() {
     const tb = b.startTime ? new Date(b.startTime) : new Date(0)
     return ta - tb
   })
+
+  // Apply pagination to filtered results
+  const startIdx = page * pageSize
+  const endIdx = startIdx + pageSize
+  const paginatedFiltered = filtered.slice(startIdx, endIdx)
+  const filteredTotalPages = Math.ceil(filtered.length / pageSize)
 
   const fmt = (dt) => dt ? new Date(dt).toLocaleString('vi-VN', {
     weekday: 'short', day: '2-digit', month: '2-digit',
@@ -68,7 +95,7 @@ export default function StudentSchedulePage() {
           { key: 'upcoming', label: 'Sắp diễn ra',  color: '#f59e0b', bg: 'rgba(245,158,11,0.08)'  },
           { key: 'ended',    label: 'Đã kết thúc',  color: '#6b7280', bg: 'rgba(107,114,128,0.08)' },
         ].map(item => (
-          <button key={item.key} onClick={() => setFilter(item.key)}
+          <button key={item.key} onClick={() => { setFilter(item.key); setPage(0) }}
             className="card p-4 text-center transition-all hover:scale-[1.02]"
             style={filter === item.key ? { borderColor: item.color, background: item.bg } : {}}>
             <p className="text-2xl font-bold" style={{ color: item.color }}>{counts[item.key]}</p>
@@ -85,7 +112,7 @@ export default function StudentSchedulePage() {
           { key: 'ended',    label: 'Đã kết thúc' },
           { key: 'all',      label: 'Tất cả' },
         ].map(t => (
-          <button key={t.key} onClick={() => setFilter(t.key)}
+          <button key={t.key} onClick={() => { setFilter(t.key); setPage(0) }}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
               filter === t.key
                 ? 'border-accent text-accent'
@@ -102,13 +129,13 @@ export default function StudentSchedulePage() {
         <div className="flex justify-center py-12">
           <div className="w-7 h-7 rounded-full border-2 border-accent border-t-transparent animate-spin"/>
         </div>
-      ) : filtered.length === 0 ? (
+      ) : paginatedFiltered.length === 0 ? (
         <div className="text-center py-12 text-[var(--text-3)]">
           <p className="text-sm">Không có đề thi nào phù hợp</p>
         </div>
       ) : (
         <div className="space-y-3">
-          {filtered.map(exam => {
+          {paginatedFiltered.map(exam => {
             const cat = categorize(exam)
             const style = catStyle[cat]
             const myCount  = exam.myAttemptCount ?? 0
@@ -164,6 +191,59 @@ export default function StudentSchedulePage() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {filteredTotalPages > 1 && (
+        <div className="flex justify-center">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                const newPage = page - 1
+                setPage(newPage)
+              }}
+              disabled={page === 0}
+              className="px-3 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ 
+                background: 'var(--bg-elevated)', 
+                color: 'var(--text-2)',
+                border: '1px solid var(--border-base)'
+              }}>
+              ← Trước
+            </button>
+            
+            {Array.from({ length: Math.min(5, filteredTotalPages) }, (_, i) => {
+              const pageNum = Math.max(0, Math.min(filteredTotalPages - 5, page - 2)) + i
+              if (pageNum >= filteredTotalPages) return null
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => setPage(pageNum)}
+                  className="px-3 py-2 rounded-lg text-sm font-medium transition-all"
+                  style={pageNum === page
+                    ? { background: 'var(--accent)', color: '#fff' }
+                    : { background: 'var(--bg-elevated)', color: 'var(--text-2)', border: '1px solid var(--border-base)' }}>
+                  {pageNum + 1}
+                </button>
+              )
+            })}
+            
+            <button
+              onClick={() => {
+                const newPage = page + 1
+                setPage(newPage)
+              }}
+              disabled={page >= filteredTotalPages - 1}
+              className="px-3 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ 
+                background: 'var(--bg-elevated)', 
+                color: 'var(--text-2)',
+                border: '1px solid var(--border-base)'
+              }}>
+              Sau →
+            </button>
+          </div>
         </div>
       )}
     </div>

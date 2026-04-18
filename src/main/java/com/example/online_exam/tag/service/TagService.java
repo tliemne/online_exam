@@ -7,6 +7,7 @@ import java.util.List;
 
 public interface TagService {
     List<TagResponse> getAll();
+    org.springframework.data.domain.Page<TagResponse> getAllPaginated(int page, int size);
     TagResponse create(TagRequest req);
     TagResponse update(Long id, TagRequest req);
     void delete(Long id);

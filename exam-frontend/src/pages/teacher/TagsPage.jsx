@@ -172,16 +172,33 @@ export default function TagsPage() {
   const [selected, setSelected] = useState(null)
   const [deleting, setDeleting] = useState(null)
   const [keyword, setKeyword]   = useState('')
+  const [page, setPage]         = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const pageSize = 5
 
-  const loadTags = () => {
+  const loadTags = (pageNum = 0) => {
     setLoading(true)
-    tagApi.getAll()
-      .then(r => setTags(r.data.data || []))
+    // Always call with pagination parameters
+    tagApi.getAll(pageNum, pageSize)
+      .then(r => {
+        const data = r.data.data
+        if (data && typeof data === 'object' && data.content) {
+          // Paginated response
+          setTags(data.content || [])
+          setTotalPages(data.totalPages || 0)
+          setPage(pageNum)
+        } else {
+          // Legacy non-paginated response
+          setTags(data || [])
+          setTotalPages(1)
+          setPage(0)
+        }
+      })
       .catch(() => {})
       .finally(() => setLoading(false))
   }
 
-  useEffect(() => { loadTags() }, [])
+  useEffect(() => { loadTags(0) }, [])
 
   const handleDelete = async (tag) => {
     if (!(await confirmDialog({ 
@@ -193,7 +210,7 @@ export default function TagsPage() {
     setDeleting(tag.id)
     try {
       await tagApi.delete(tag.id)
-      loadTags()
+      loadTags(page) // Reload current page
     } catch (err) {
       toast.error(err?.response?.data?.message || t('tag.deleteError'))
     } finally { setDeleting(null) }
@@ -288,12 +305,59 @@ export default function TagsPage() {
         </div>
       )}
 
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex justify-center">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => loadTags(page - 1)}
+              disabled={page === 0}
+              className="px-3 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ 
+                background: 'var(--bg-elevated)', 
+                color: 'var(--text-2)',
+                border: '1px solid var(--border-base)'
+              }}>
+              ← {t('common.previous')}
+            </button>
+            
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              const pageNum = Math.max(0, Math.min(totalPages - 5, page - 2)) + i
+              if (pageNum >= totalPages) return null
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => loadTags(pageNum)}
+                  className="px-3 py-2 rounded-lg text-sm font-medium transition-all"
+                  style={pageNum === page
+                    ? { background: 'var(--accent)', color: '#fff' }
+                    : { background: 'var(--bg-elevated)', color: 'var(--text-2)', border: '1px solid var(--border-base)' }}>
+                  {pageNum + 1}
+                </button>
+              )
+            })}
+            
+            <button
+              onClick={() => loadTags(page + 1)}
+              disabled={page >= totalPages - 1}
+              className="px-3 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ 
+                background: 'var(--bg-elevated)', 
+                color: 'var(--text-2)',
+                border: '1px solid var(--border-base)'
+              }}>
+              {t('common.next')} →
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Modals */}
       {(modal === 'create' || modal === 'edit') && (
         <TagFormModal
           tag={modal === 'edit' ? selected : null}
           onClose={() => setModal(null)}
-          onSaved={loadTags}
+          onSaved={() => loadTags(page)}
         />
       )}
     </div>

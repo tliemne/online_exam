@@ -314,6 +314,20 @@ public class AttemptServiceImpl implements AttemptService {
 
     @Override
     @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<AttemptResponse> getMyAttemptsPaginated(int page, int size) {
+        User student = currentUserService.requireCurrentUser();
+        org.springframework.data.domain.Pageable pageable = 
+            org.springframework.data.domain.PageRequest.of(page, size, 
+                org.springframework.data.domain.Sort.by("submittedAt").descending());
+        
+        org.springframework.data.domain.Page<Attempt> attemptPage = 
+            attemptRepo.findSubmittedByStudentPaginated(student.getId(), pageable);
+        
+        return attemptPage.map(a -> toResponse(a, false));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<AttemptResponse> getMyAttemptsByExam(Long examId) {
         User student = currentUserService.requireCurrentUser();
         return attemptRepo.findByExamIdAndStudentIdOrderByStartedAtDesc(examId, student.getId())

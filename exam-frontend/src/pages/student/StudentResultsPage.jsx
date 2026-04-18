@@ -389,12 +389,37 @@ export default function StudentResultsPage() {
   const [loading, setLoading]     = useState(true)
   const [selected, setSelected]   = useState(null)
   const [filterStatus, setFilter] = useState('all')
+  const [page, setPage]           = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const pageSize = 5
+
+  const loadAttempts = (pageNum = 0) => {
+    setLoading(true)
+    // Always call with pagination parameters
+    api.get(`/attempts/my?page=${pageNum}&size=${pageSize}`)
+      .then(r => {
+        const data = r.data.data
+        if (data && typeof data === 'object' && data.content) {
+          // Paginated response
+          setAttempts(data.content || [])
+          setTotalPages(data.totalPages || 0)
+          setPage(pageNum)
+        } else {
+          // Legacy non-paginated response
+          setAttempts(data || [])
+          setTotalPages(1)
+          setPage(0)
+        }
+      })
+      .catch(() => {
+        setAttempts([])
+        setTotalPages(0)
+      })
+      .finally(() => setLoading(false))
+  }
 
   useEffect(() => {
-    api.get('/attempts/my')
-      .then(r => setAttempts(r.data.data || []))
-      .catch(() => setAttempts([]))
-      .finally(() => setLoading(false))
+    loadAttempts(0)
   }, [])
 
   // Nếu đang xem chi tiết → render trang detail
@@ -517,6 +542,53 @@ export default function StudentResultsPage() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex justify-center">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => loadAttempts(page - 1)}
+              disabled={page === 0}
+              className="px-3 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ 
+                background: 'var(--bg-elevated)', 
+                color: 'var(--text-2)',
+                border: '1px solid var(--border-base)'
+              }}>
+              ← Trước
+            </button>
+            
+            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+              const pageNum = Math.max(0, Math.min(totalPages - 5, page - 2)) + i
+              if (pageNum >= totalPages) return null
+              return (
+                <button
+                  key={pageNum}
+                  onClick={() => loadAttempts(pageNum)}
+                  className="px-3 py-2 rounded-lg text-sm font-medium transition-all"
+                  style={pageNum === page
+                    ? { background: 'var(--accent)', color: '#fff' }
+                    : { background: 'var(--bg-elevated)', color: 'var(--text-2)', border: '1px solid var(--border-base)' }}>
+                  {pageNum + 1}
+                </button>
+              )
+            })}
+            
+            <button
+              onClick={() => loadAttempts(page + 1)}
+              disabled={page >= totalPages - 1}
+              className="px-3 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ 
+                background: 'var(--bg-elevated)', 
+                color: 'var(--text-2)',
+                border: '1px solid var(--border-base)'
+              }}>
+              Sau →
+            </button>
+          </div>
         </div>
       )}
     </div>

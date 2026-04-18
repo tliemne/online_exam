@@ -553,46 +553,6 @@ function WeaknessWidget() {
                   )
                 })()}
 
-                {/* AI Roadmap */}
-                {data.roadmap?.length > 0 && (
-                  <div>
-                    <p className="text-xs font-medium mb-3" style={{ color: 'var(--text-3)' }}>
-                      LỘ TRÌNH HỌC TẬP
-                    </p>
-                    <div className="space-y-3">
-                      {data.roadmap.map((item, i) => {
-                        const priClr = item.priority === 'HIGH' ? 'var(--danger)' : item.priority === 'MEDIUM' ? 'var(--warning)' : 'var(--accent)'
-                        const priLabel = item.priority === 'HIGH' ? 'Ưu tiên cao' : item.priority === 'MEDIUM' ? 'Trung bình' : 'Thấp'
-                        return (
-                          <div key={i} className="rounded-lg border p-3.5 space-y-2"
-                            style={{ borderColor: 'var(--border-base)' }}>
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm font-medium" style={{ color: 'var(--text-1)' }}>{item.topic}</span>
-                              <span className="text-[10px] px-2 py-0.5 rounded-full"
-                                style={{ background: priClr + '18', color: priClr }}>{priLabel}</span>
-                            </div>
-                            <p className="text-xs" style={{ color: 'var(--text-2)' }}>{item.action}</p>
-                            {item.keywords?.length > 0 && (
-                              <div className="flex flex-wrap gap-1">
-                                {item.keywords.map((kw, j) => (
-                                  <span key={j} className="text-[10px] px-1.5 py-0.5 rounded"
-                                    style={{ background: 'var(--bg-elevated)', color: 'var(--text-3)' }}>{kw}</span>
-                                ))}
-                              </div>
-                            )}
-                            <button
-                              onClick={() => setPractice({ topic: item.topic, difficulty: item.priority === 'HIGH' ? 'EASY' : 'MEDIUM' })}
-                              className="text-xs px-3 py-1.5 rounded-lg w-full transition-all"
-                              style={{ background: 'var(--accent-subtle)', color: 'var(--accent)', border: '1px solid var(--accent-border)' }}>
-                              Luyện tập ngay →
-                            </button>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
-
                 {/* Chọn chủ đề luyện tập - luôn hiện dù AI fail */}
                 {data.topics?.length > 0 && (
                   <div>

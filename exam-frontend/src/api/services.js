@@ -43,7 +43,12 @@ export const courseApi = {
   addStudent: (id, studentId) => api.post(`/courses/${id}/students/${studentId}`),
   addStudents: (id, studentIds) => api.post(`/courses/${id}/students`, studentIds),
   removeStudent: (id, studentId) => api.delete(`/courses/${id}/students/${studentId}`),
-  getLeaderboard: (id) => api.get(`/courses/${id}/leaderboard`),
+  getLeaderboard: (id, page, size) => {
+    if (page !== undefined && size !== undefined) {
+      return api.get(`/courses/${id}/leaderboard?page=${page}&size=${size}`)
+    }
+    return api.get(`/courses/${id}/leaderboard`)
+  },
   addTeacher: (id, teacherId) => api.post(`/courses/${id}/teachers/${teacherId}`),
   removeTeacher: (id, teacherId) => api.delete(`/courses/${id}/teachers/${teacherId}`),
   getTeachers: (id) => api.get(`/courses/${id}/teachers`),
@@ -110,7 +115,12 @@ export const lectureApi = {
 
 // ── TAGS ──────────────────────────────────────────────────
 export const tagApi = {
-  getAll:            ()                    => api.get('/tags'),
+  getAll:            (page, size)          => {
+    if (page !== undefined && size !== undefined) {
+      return api.get(`/tags?page=${page}&size=${size}`)
+    }
+    return api.get('/tags')
+  },
   create:            (data)                => api.post('/tags', data),
   update:            (id, data)            => api.put(`/tags/${id}`, data),
   delete:            (id)                  => api.delete(`/tags/${id}`),

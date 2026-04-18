@@ -36,7 +36,8 @@ public class ExamScheduler {
     @Transactional
     public void autoPublish() {
         LocalDateTime now = LocalDateTime.now();
-        List<Exam> toPublish = examRepo.findDraftExamsReadyToPublish(now);
+        LocalDateTime twoMinutesAgo = now.minusMinutes(2);
+        List<Exam> toPublish = examRepo.findDraftExamsReadyToPublish(now, twoMinutesAgo);
 
         if (toPublish.isEmpty()) return;
 

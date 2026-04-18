@@ -20,7 +20,14 @@ public class TagController {
 
     // GET /tags — all roles (student cũng có thể xem tag)
     @GetMapping
-    public BaseResponse<List<TagResponse>> getAll() {
+    public BaseResponse<?> getAll(
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+        if (page != null && size != null) {
+            // Paginated request
+            return ok(tagService.getAllPaginated(page, size));
+        }
+        // Non-paginated request (backward compatibility)
         return ok(tagService.getAll());
     }
 
