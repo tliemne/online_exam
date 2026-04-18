@@ -15,6 +15,7 @@ import com.example.online_exam.exception.ErrorCode;
 import com.example.online_exam.secutity.service.CurrentUserService;
 import com.example.online_exam.user.entity.User;
 import com.example.online_exam.user.enums.RoleName;
+import com.example.online_exam.websocket.service.WebSocketService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -37,6 +39,7 @@ public class DiscussionReplyService {
     private final com.example.online_exam.notification.service.NotificationService notificationService;
     private final com.example.online_exam.discussion.repository.DiscussionAttachmentRepository attachmentRepository;
     private final FileUploadService fileUploadService;
+    private final WebSocketService webSocketService;
 
     /**
      * Task 7.1: Create a new reply
@@ -140,6 +143,20 @@ public class DiscussionReplyService {
                 }
             });
         }
+        
+        // Send websocket event: new reply created
+        webSocketService.sendToTopic(
+                "post:" + postId + ":replies",
+                "discussion:reply:created",
+                Map.of(
+                        "replyId", reply.getId(),
+                        "postId", postId,
+                        "courseId", post.getCourse().getId(),
+                        "content", reply.getContent(),
+                        "author", currentUser.getFullName(),
+                        "authorId", currentUser.getId()
+                )
+        );
         
         return discussionReplyMapper.toResponse(reply);
     }

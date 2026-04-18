@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { examApi } from '../../../api/services'
 import api from '../../../api/client'
+import websocket from '../../../api/websocket'
 import { useToast } from '../../../context/ToastContext'
 import { useConfirm } from '../../../components/common/ConfirmDialog'
 
@@ -40,36 +41,38 @@ export default function TakeExamModal({ exam, onClose, onSubmitted }) {
     const load = async () => {
       try {
         // 1. Gọi /start → backend trả về attempt IN_PROGRESS (tạo mới hoặc resume)
-        console.log('TakeExamModal: Loading exam', exam.id)
         const [examRes, startRes] = await Promise.all([
           api.get(`/exams/${exam.id}`, { params: { includeQuestions: true, hideCorrect: true } }),
           api.post(`/attempts/exams/${exam.id}/start`)
         ])
         let examQuestions = examRes.data.data?.questions || []
-        
-        console.log('Exam response:', examRes.data.data)
-        console.log('Questions loaded:', examQuestions.length)
 
         const attempt = startRes.data.data
         setAttemptId(attempt.id)
         setTabWarning(attempt.tabViolationCount || 0)
 
+        // Subscribe to exam events via WebSocket
+        if (websocket.isConnected()) {
+          websocket.subscribe(`/user/queue/personal`, (event) => {
+            if (event.type === 'exam:attempt:auto-submitted') {
+              setAutoSubmitted(true)
+              setShowTabAlert(false)
+              toast.warning('Bài thi đã được nộp tự động do vi phạm quá nhiều lần')
+              setTimeout(() => {
+                onSubmitted()
+                onClose()
+              }, 1000)
+            }
+          })
+        }
+
         // Nếu có questionOrder (xáo trộn), sắp xếp lại câu hỏi theo thứ tự đó
         if (attempt.questionOrder) {
           try {
-            const order = JSON.parse(attempt.questionOrder) // [questionId1, questionId2, ...]
-            console.log('Question order:', order)
+            const order = JSON.parse(attempt.questionOrder)
             const qMap = {}
-            examQuestions.forEach(q => { 
-              console.log('Question ID:', q.questionId, 'Question:', q)
-              qMap[q.questionId] = q 
-            })
-            console.log('Question map:', qMap)
-            examQuestions = order.map(id => {
-              console.log('Looking for ID:', id, 'Found:', qMap[id])
-              return qMap[id]
-            }).filter(q => q)
-            console.log('Questions after randomization:', examQuestions.length)
+            examQuestions.forEach(q => { qMap[q.questionId] = q })
+            examQuestions = order.map(id => qMap[id]).filter(q => q)
           } catch (e) {
             console.warn('Failed to parse questionOrder:', e)
           }
@@ -141,24 +144,14 @@ export default function TakeExamModal({ exam, onClose, onSubmitted }) {
       tabViolationCount:    tabCount ?? tabWarningRef.current,
       answers: answerList,
     }
-    api.patch(`/attempts/${attemptIdRef.current}/heartbeat`, payload)
-      .then(async res => {
-        // Kiểm tra xem bài đã nộp chưa (backend tự động nộp vì vi phạm)
-        const attempt = res.data.data
-        if (attempt?.status === 'SUBMITTED' && !autoSubmitted) {
-          console.log('Exam auto-submitted by backend due to violations')
-          setAutoSubmitted(true)
-          setShowTabAlert(false) // Đóng alert nếu đang hiển thị
-          toast.warning('Bài thi đã được nộp tự động do vi phạm quá nhiều lần')
-          
-          // Đóng modal và refresh danh sách sau 1 giây
-          setTimeout(() => {
-            onSubmitted()
-            onClose()
-          }, 1000)
-        }
-      })
-      .catch(e => console.error('[heartbeat] ERROR', e?.response?.status))
+    
+    // Use WebSocket if connected, fallback to HTTP
+    if (websocket.isConnected()) {
+      websocket.send(`/app/attempts/${attemptIdRef.current}/heartbeat`, payload)
+    } else {
+      api.patch(`/attempts/${attemptIdRef.current}/heartbeat`, payload)
+        .catch(e => console.error('[heartbeat] ERROR', e?.response?.status))
+    }
   }, [toast, autoSubmitted, onSubmitted, onClose])
 
   // Heartbeat định kỳ mỗi 10 giây
@@ -357,7 +350,7 @@ export default function TakeExamModal({ exam, onClose, onSubmitted }) {
     
     const ok = await confirmDialog({
       title: 'Thoát khỏi bài thi?',
-      message: 'Tiến trình sẽ được lưu nếu bạn đã bật tính năng lưu tiến trình.',
+      message: '',
       danger: false,
       confirmLabel: 'Thoát'
     })
@@ -367,12 +360,13 @@ export default function TakeExamModal({ exam, onClose, onSubmitted }) {
       if (attemptIdRef.current) {
         try {
           await api.post(`/attempts/${attemptIdRef.current}/exit`)
+          // Exit thành công - đóng modal và refresh danh sách
+          onSubmitted()
           onClose()
         } catch (err) {
           const msg = err?.response?.data?.message || ''
           // Nếu bài đã nộp (vì vượt maxExitAttempts), hiển thị màn hình kết quả
           if (msg.includes('đã được nộp') || msg.includes('already')) {
-            console.log('Exam already submitted, showing result')
             setAutoSubmitted(true)
             toast.warning('Bài thi đã được nộp tự động do thoát quá nhiều lần')
             
@@ -391,6 +385,7 @@ export default function TakeExamModal({ exam, onClose, onSubmitted }) {
                 submitted:      true,
               })
               setSubmitted(true)
+              // Không gọi onClose() ở đây - để user xem kết quả trước
             } catch (fetchErr) {
               console.error('Failed to fetch result:', fetchErr)
               // Nếu không fetch được, đóng modal
@@ -400,6 +395,8 @@ export default function TakeExamModal({ exam, onClose, onSubmitted }) {
             return
           }
           console.error('Exit error:', err)
+          // Lỗi khác - vẫn đóng modal và refresh
+          onSubmitted()
           onClose()
         }
       } else {

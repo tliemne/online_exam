@@ -14,10 +14,12 @@ import com.example.online_exam.exception.ErrorCode;
 import com.example.online_exam.secutity.service.CurrentUserService;
 import com.example.online_exam.user.entity.User;
 import com.example.online_exam.user.enums.RoleName;
+import com.example.online_exam.websocket.service.WebSocketService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -29,6 +31,7 @@ public class DiscussionVoteService {
     private final DiscussionPostRepository discussionPostRepository;
     private final DiscussionReplyRepository discussionReplyRepository;
     private final CurrentUserService currentUserService;
+    private final WebSocketService webSocketService;
 
     /**
      * Task 8.1: Vote on a post
@@ -92,6 +95,18 @@ public class DiscussionVoteService {
         }
         
         discussionPostRepository.save(post);
+        
+        // Send websocket event: vote changed
+        webSocketService.sendToTopic(
+                "post:" + postId + ":votes",
+                "discussion:vote:changed",
+                Map.of(
+                        "postId", postId,
+                        "courseId", post.getCourse().getId(),
+                        "voteCount", post.getVoteCount(),
+                        "dislikeCount", post.getDislikeCount() != null ? post.getDislikeCount() : 0
+                )
+        );
     }
 
     /**

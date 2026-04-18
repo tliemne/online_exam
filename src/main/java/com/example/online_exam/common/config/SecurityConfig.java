@@ -56,6 +56,7 @@ public class SecurityConfig {
                         .requestMatchers("/public/**").permitAll()
                         .requestMatchers("/api/discussions/attachments/**").permitAll()
                         .requestMatchers("/uploads/**").permitAll()
+                        .requestMatchers("/ws/**").permitAll() // WebSocket endpoint
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         // Admin only
                         .requestMatchers(HttpMethod.GET, "/users").hasRole("ADMIN")

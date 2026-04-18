@@ -6,6 +6,7 @@ import com.example.online_exam.notification.repository.NotificationRepository;
 import com.example.online_exam.secutity.service.CurrentUserService;
 import com.example.online_exam.user.entity.User;
 import com.example.online_exam.user.repository.UserRepository;
+import com.example.online_exam.websocket.service.WebSocketService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +25,7 @@ public class NotificationService {
     private final NotificationRepository notifRepo;
     private final CurrentUserService     currentUserService;
     private final UserRepository         userRepository;
+    private final WebSocketService       webSocketService;
 
     // ── Send — nhận userId thay vì User object để tránh LazyInit ─────────
     @Async
@@ -36,6 +39,19 @@ public class NotificationService {
                     .type(type).title(title).message(message).link(link)
                     .isRead(false).build();
             notifRepo.save(n);
+            
+            // Send websocket event: new notification
+            webSocketService.sendToUser(
+                    recipientId.toString(),
+                    "notification:new",
+                    Map.of(
+                            "id", n.getId(),
+                            "type", type,
+                            "title", title,
+                            "message", message,
+                            "link", link
+                    )
+            );
         } catch (Exception e) {
             log.warn("[Notification] send error: {}", e.getMessage());
         }
@@ -92,6 +108,13 @@ public class NotificationService {
     @Transactional
     public void markRead(Long id) {
         notifRepo.markReadById(id, currentUserService.requireCurrentUser().getId());
+        
+        // Send websocket event: notification read
+        webSocketService.sendToUser(
+                currentUserService.requireCurrentUser().getId().toString(),
+                "notification:read",
+                Map.of("notificationId", id)
+        );
     }
 
     @Transactional

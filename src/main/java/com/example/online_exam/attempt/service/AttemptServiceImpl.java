@@ -20,6 +20,7 @@ import com.example.online_exam.common.service.EmailService;
 import com.example.online_exam.secutity.service.CurrentUserService;
 import com.example.online_exam.user.entity.User;
 import com.example.online_exam.user.enums.RoleName;
+import com.example.online_exam.websocket.service.WebSocketService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -49,6 +50,7 @@ public class AttemptServiceImpl implements AttemptService {
     private final EmailService            emailService;
     private final QuestionStatService     questionStatService;
     private final NotificationService     notificationService;
+    private final WebSocketService        webSocketService;
 
     // ── Start Exam → tạo attempt IN_PROGRESS (hoặc trả lại nếu đã có) ─────
     @Override
@@ -278,6 +280,19 @@ public class AttemptServiceImpl implements AttemptService {
         }
         log.info("[Attempt] ===== END SUBMIT STATS UPDATE =====");
 
+        // Send websocket event: attempt submitted
+        webSocketService.sendToUser(
+                student.getId().toString(),
+                "exam:attempt:submitted",
+                Map.of(
+                        "attemptId", attempt.getId(),
+                        "examId", exam.getId(),
+                        "status", attempt.getStatus().name(),
+                        "score", attempt.getScore() != null ? attempt.getScore() : 0,
+                        "totalScore", attempt.getTotalScore()
+                )
+        );
+
         return toResponse(attempt, false);
     }
 
@@ -455,12 +470,28 @@ public class AttemptServiceImpl implements AttemptService {
                     attemptId, tabViolationCount, maxViolations);
             // Tự động submit bài - doSubmit sẽ save attempt với status SUBMITTED
             doSubmit(attempt, items, attempt.getStudent());
-            // Sau khi submit, attempt đã được save với status SUBMITTED
-            // Frontend sẽ nhận được status này qua getAttemptResponse
+            
+            // Send websocket event: auto-submitted
+            webSocketService.sendToUser(
+                    attempt.getStudent().getId().toString(),
+                    "exam:attempt:auto-submitted",
+                    Map.of("attemptId", attemptId, "reason", "Tab violations exceeded")
+            );
             return;
         }
         
         attemptRepo.save(attempt);
+
+        // Send websocket event: progress update
+        webSocketService.sendToUser(
+                attempt.getStudent().getId().toString(),
+                "exam:attempt:progress",
+                Map.of(
+                        "attemptId", attemptId,
+                        "timeRemainingSeconds", timeRemainingSeconds,
+                        "tabViolationCount", tabViolationCount
+                )
+        );
 
         // Lưu answers tạm — upsert từng câu đã trả lời
         if (items != null && !items.isEmpty()) {

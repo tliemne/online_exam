@@ -3,6 +3,7 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useSettings } from '../../context/SettingsContext'
 import { notifApi } from '../../api/services'
+import websocket from '../../api/websocket'
 import { useTranslation } from 'react-i18next'
 import LanguageSwitcherSidebar from './LanguageSwitcherSidebar'
 
@@ -178,19 +179,47 @@ function SideBtn({ onClick, icon, label, collapsed, danger }) {
 function NotificationBell() {
   const navigate = useNavigate()
   const { t } = useTranslation()
+  const { user } = useAuth()
   const [open, setOpen]           = useState(false)
   const [notifications, setNotifs] = useState([])
   const [unread, setUnread]        = useState(0)
   const [loading, setLoading]      = useState(false)
   const ref = useRef(null)
 
-  // Poll unread count mỗi 30 giây
+  // Connect to WebSocket and subscribe to notifications
   useEffect(() => {
-    const fetchUnread = () => notifApi.getUnread().then(r => setUnread(r.data.data || 0)).catch(() => {})
-    fetchUnread()
-    const t = setInterval(fetchUnread, 30000)
-    return () => clearInterval(t)
-  }, [])
+    if (!user?.id) return
+
+    const destination = `/topic/user-${user.id}`
+
+    const initWebSocket = async () => {
+      try {
+        await websocket.connect()
+      } catch (error) {
+        // Connection failed, fallback to polling
+        const fetchUnread = () => notifApi.getUnread().then(r => setUnread(r.data.data || 0)).catch(() => {})
+        fetchUnread()
+        const id = setInterval(fetchUnread, 30000)
+        return () => clearInterval(id)
+      }
+    }
+
+    // Subscribe first (will auto-subscribe when connected)
+    websocket.subscribe(destination, (event) => {
+      if (event.type === 'notification:new') {
+        setNotifs(prev => [event.data, ...prev])
+        setUnread(u => u + 1)
+      } else if (event.type === 'notification:read') {
+        setUnread(u => Math.max(0, u - 1))
+      }
+    })
+
+    initWebSocket()
+
+    return () => {
+      websocket.unsubscribe(destination)
+    }
+  }, [user?.id])
 
   // Load notifications khi mở dropdown
   useEffect(() => {
