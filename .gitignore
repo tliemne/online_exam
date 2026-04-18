@@ -1,5 +1,30 @@
 HELP.md
 target/
+
+### Documentation files ###
+# Ignore all .md files in root directory except README.md
+*.md
+!README.md
+
+# Ignore specific documentation files
+*.sql
+WEBSOCKET_*.md
+DISCUSSION_*.md
+BLOCK_SYSTEM_*.md
+PAGINATION_*.md
+*_GUIDE.md
+*_IMPLEMENTATION.md
+*_SPEC.md
+*_COMPLETE.md
+*_ANALYSIS.md
+*_STATS.md
+*_CLEANUP*.md
+*_DISCUSSION*.md
+AUTO_TRANSLATE_*.md
+DELETE_POST_*.md
+CHECK_DATA_*.sql
+DATABASE_SCHEMA*.sql
+FINAL_CLEANUP_*.sql
 .mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
