@@ -121,6 +121,24 @@ public class QuestionController {
                 .timestamp(LocalDateTime.now()).build();
     }
 
+    /** Admin: Lấy tất cả câu hỏi từ tất cả khóa học (có phân trang) */
+    @GetMapping("/admin/all")
+    @PreAuthorize("hasRole('ADMIN')")
+    public BaseResponse<Page<QuestionResponse>> getAllForAdmin(
+            @RequestParam(required = false) QuestionType type,
+            @RequestParam(required = false) Difficulty difficulty,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long tagId,
+            @RequestParam(defaultValue = "0")  int page,
+            @RequestParam(defaultValue = "10") int size) {
+        PageRequest pageable = PageRequest.of(page, size, Sort.by("id").descending());
+        Page<QuestionResponse> result = tagId != null
+                ? questionService.searchPagedWithTag(null, type, difficulty, keyword, tagId, pageable)
+                : questionService.searchPaged(null, type, difficulty, keyword, pageable);
+        return BaseResponse.<Page<QuestionResponse>>builder()
+                .status(200).message("success").data(result).timestamp(LocalDateTime.now()).build();
+    }
+
     /** DEBUG: Xóa toàn bộ cache (chỉ admin) */
     @PostMapping("/cache/clear")
     @PreAuthorize("hasRole('ADMIN')")

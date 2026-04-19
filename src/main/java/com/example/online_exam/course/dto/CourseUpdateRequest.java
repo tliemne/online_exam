@@ -2,9 +2,11 @@ package com.example.online_exam.course.dto;
 
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class CourseUpdateRequest {
     private String name;
     private String description;
-    private Long teacherId;
+    private List<Long> teacherIds;
 }

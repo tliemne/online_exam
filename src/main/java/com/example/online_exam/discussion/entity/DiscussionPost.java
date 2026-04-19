@@ -5,6 +5,7 @@ import com.example.online_exam.course.entity.Course;
 import com.example.online_exam.discussion.enums.PostStatus;
 import com.example.online_exam.user.entity.User;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.*;
 
 import java.util.ArrayList;
@@ -27,9 +28,13 @@ import java.util.Set;
 @AllArgsConstructor
 public class DiscussionPost extends BaseEntity {
 
+    @NotBlank(message = "Tiêu đề bài viết là bắt buộc")
+    @Size(min = 5, max = 200, message = "Tiêu đề phải từ 5 đến 200 ký tự")
     @Column(nullable = false, length = 200)
     private String title;
 
+    @NotBlank(message = "Nội dung bài viết là bắt buộc")
+    @Size(min = 10, message = "Nội dung phải có ít nhất 10 ký tự")
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
@@ -41,16 +46,20 @@ public class DiscussionPost extends BaseEntity {
     @JoinColumn(name = "author_id", nullable = false)
     private User author;
 
+    @NotNull(message = "Trạng thái bài viết là bắt buộc")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PostStatus status = PostStatus.ACTIVE;
 
+    @Min(value = 0, message = "Số lượt thích phải không âm")
     @Column(columnDefinition = "INTEGER DEFAULT 0")
     private Integer voteCount = 0;
     
+    @Min(value = 0, message = "Số lượt không thích phải không âm")
     @Column(columnDefinition = "INTEGER DEFAULT 0")
     private Integer dislikeCount = 0;
     
+    @Min(value = 0, message = "Số lượt trả lời phải không âm")
     @Column(columnDefinition = "INTEGER DEFAULT 0")
     private Integer replyCount = 0;
     

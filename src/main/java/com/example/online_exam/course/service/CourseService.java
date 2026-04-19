@@ -28,6 +28,7 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -52,20 +53,23 @@ public class CourseService {
 
     public CourseResponse create(CourseRequest request) {
         User currentUser = currentUserService.requireCurrentUser();
-        User primaryTeacher;
-        if (currentUserService.isAdmin(currentUser)) {
-            primaryTeacher = findValidTeacher(request.getTeacherId());
-        } else if (currentUserService.hasRole(currentUser, RoleName.TEACHER)) {
-            primaryTeacher = userRepository.findById(currentUser.getId())
-                    .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
-        } else {
+        
+        // Chỉ admin mới được tạo khóa học
+        if (!currentUserService.isAdmin(currentUser)) {
             throw new AppException(ErrorCode.FORBIDDEN);
+        }
+
+        // Validate và lấy danh sách giảng viên
+        List<User> teachers = new ArrayList<>();
+        for (Long teacherId : request.getTeacherIds()) {
+            User teacher = findValidTeacher(teacherId);
+            teachers.add(teacher);
         }
 
         Course course = new Course();
         course.setName(request.getName());
         course.setDescription(request.getDescription());
-        course.getTeachers().add(primaryTeacher);  // Thêm giáo viên chính vào danh sách
+        course.getTeachers().addAll(teachers);  // Thêm tất cả giảng viên
         course.setCreatedBy(currentUser);  // Set người tạo lớp
         courseRepository.save(course);
 
@@ -114,6 +118,23 @@ public class CourseService {
         Course course = findCourseByManageScope(id);
         if (request.getName() != null) course.setName(request.getName());
         if (request.getDescription() != null) course.setDescription(request.getDescription());
+        
+        // Nếu admin cập nhật teacherIds, thay đổi danh sách giảng viên
+        if (request.getTeacherIds() != null && !request.getTeacherIds().isEmpty()) {
+            User currentUser = currentUserService.requireCurrentUser();
+            if (currentUserService.isAdmin(currentUser)) {
+                // Validate và lấy danh sách giảng viên mới
+                java.util.List<User> newTeachers = new java.util.ArrayList<>();
+                for (Long teacherId : request.getTeacherIds()) {
+                    User teacher = findValidTeacher(teacherId);
+                    newTeachers.add(teacher);
+                }
+                // Xóa tất cả giảng viên cũ và thêm giảng viên mới
+                course.getTeachers().clear();
+                course.getTeachers().addAll(newTeachers);
+            }
+        }
+        
         courseRepository.save(course);
 
         User caller = currentUserService.requireCurrentUser();

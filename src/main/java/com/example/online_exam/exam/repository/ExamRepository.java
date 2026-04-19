@@ -59,4 +59,28 @@ public interface ExamRepository extends JpaRepository<Exam, Long> {
      */
     @Query("SELECT e FROM Exam e WHERE e.status = 'PUBLISHED' AND e.endTime IS NOT NULL AND e.endTime <= :now")
     List<Exam> findPublishedExamsReadyToClose(@Param("now") java.time.LocalDateTime now);
+    
+    /**
+     * Count attempts per exam (for admin statistics)
+     */
+    @Query(value = """
+        SELECT e.id, COUNT(a.id)
+        FROM exams e
+        LEFT JOIN attempts a ON a.exam_id = e.id AND a.status IN ('SUBMITTED', 'GRADED')
+        WHERE e.id IN :examIds
+        GROUP BY e.id
+    """, nativeQuery = true)
+    List<Object[]> countAttemptsByExamIds(@Param("examIds") List<Long> examIds);
+    
+    /**
+     * Average scores per exam (for admin statistics)
+     */
+    @Query(value = """
+        SELECT e.id, AVG(a.score)
+        FROM exams e
+        LEFT JOIN attempts a ON a.exam_id = e.id AND a.status = 'GRADED' AND a.score IS NOT NULL
+        WHERE e.id IN :examIds
+        GROUP BY e.id
+    """, nativeQuery = true)
+    List<Object[]> averageScoresByExamIds(@Param("examIds") List<Long> examIds);
 }

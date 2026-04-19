@@ -33,6 +33,10 @@ public class ExamResponse {
     // Thống kê
     private Integer questionCount;
     private LocalDateTime createdAt;
+    
+    // Admin/Teacher statistics
+    private Integer attemptCount;      // Tổng số bài làm
+    private Double averageScore;       // Điểm trung bình
 
     // Student: số lần đã thi (để check limit phía client)
     private Integer myAttemptCount;

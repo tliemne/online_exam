@@ -3,6 +3,7 @@ package com.example.online_exam.course.entity;
 import com.example.online_exam.common.entity.BaseEntity;
 import com.example.online_exam.user.entity.User;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,9 +20,12 @@ import java.util.Set;
 @AllArgsConstructor
 public class Course extends BaseEntity {
 
+    @NotBlank(message = "Tên khóa học là bắt buộc")
+    @Size(min = 3, max = 255, message = "Tên khóa học phải từ 3 đến 255 ký tự")
     @Column(nullable = false)
     private String name;
 
+    @Size(max = 5000, message = "Mô tả không được vượt quá 5000 ký tự")
     private String description;
 
     // Người tạo lớp (admin hoặc teacher)

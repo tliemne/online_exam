@@ -7,6 +7,7 @@ import com.example.online_exam.question.enums.Difficulty;
 import com.example.online_exam.question.enums.QuestionType;
 import com.example.online_exam.user.entity.User;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.*;
 import lombok.*;
 
 import java.util.ArrayList;
@@ -23,13 +24,17 @@ import java.util.List;
 @NoArgsConstructor @AllArgsConstructor
 public class Question extends BaseEntity {
 
+    @NotBlank(message = "Nội dung câu hỏi là bắt buộc")
+    @Size(min = 10, message = "Nội dung câu hỏi phải có ít nhất 10 ký tự")
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
+    @NotNull(message = "Loại câu hỏi là bắt buộc")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private QuestionType type;
 
+    @NotNull(message = "Mức độ khó là bắt buộc")
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Difficulty difficulty = Difficulty.MEDIUM;

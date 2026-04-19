@@ -68,6 +68,13 @@ public class ExamController {
         if (courseId != null) return ok(examService.getByCourse(courseId));
         return ok(examService.getAll());
     }
+    
+    // GET /exams/all  — Admin xem tất cả đề thi trong hệ thống
+    @GetMapping("/all")
+    @PreAuthorize("hasRole('ADMIN')")
+    public BaseResponse<List<ExamResponse>> getAllForAdmin() {
+        return ok(examService.getAllForAdmin());
+    }
 
     // GET /exams/student  — student xem đề PUBLISHED của các lớp mình
     @GetMapping("/student")

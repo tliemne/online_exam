@@ -11,6 +11,7 @@ public interface ExamService {
     void delete(Long id);
     ExamResponse getById(Long id, boolean includeQuestions, boolean hideCorrect);
     List<ExamResponse> getAll();
+    List<ExamResponse> getAllForAdmin(); // Admin: Lấy tất cả đề thi
     List<ExamResponse> getByCourse(Long courseId);
     List<ExamResponse> getForStudent(Long studentId);
 

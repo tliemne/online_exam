@@ -4,6 +4,7 @@ import com.example.online_exam.common.dto.BaseResponse;
 import com.example.online_exam.tag.dto.TagRequest;
 import com.example.online_exam.tag.dto.TagResponse;
 import com.example.online_exam.tag.service.TagService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -34,14 +35,14 @@ public class TagController {
     // POST /tags — TEACHER/ADMIN
     @PostMapping
     @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
-    public BaseResponse<TagResponse> create(@RequestBody TagRequest req) {
+    public BaseResponse<TagResponse> create(@Valid @RequestBody TagRequest req) {
         return ok(tagService.create(req));
     }
 
     // PUT /tags/{id}
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
-    public BaseResponse<TagResponse> update(@PathVariable Long id, @RequestBody TagRequest req) {
+    public BaseResponse<TagResponse> update(@PathVariable Long id, @Valid @RequestBody TagRequest req) {
         return ok(tagService.update(id, req));
     }
 

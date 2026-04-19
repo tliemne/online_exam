@@ -178,6 +178,47 @@ public class ExamServiceImpl implements ExamService {
         return examRepo.findAllByOrderByCreatedAtDesc().stream()
                 .map(e -> toResponse(e, false, false)).collect(Collectors.toList());
     }
+    
+    /**
+     * Admin: Lấy tất cả đề thi trong hệ thống với thông tin đầy đủ
+     */
+    @Transactional(readOnly = true)
+    public List<ExamResponse> getAllForAdmin() {
+        List<Exam> exams = examRepo.findAllByOrderByCreatedAtDesc();
+        
+        // Get all exam IDs
+        List<Long> examIds = exams.stream().map(Exam::getId).collect(Collectors.toList());
+        
+        // Query attempt statistics for all exams at once
+        Map<Long, Long> attemptCounts = new HashMap<>();
+        Map<Long, Double> averageScores = new HashMap<>();
+        
+        if (!examIds.isEmpty()) {
+            // Count attempts per exam
+            List<Object[]> countResults = examRepo.countAttemptsByExamIds(examIds);
+            for (Object[] row : countResults) {
+                Long examId = ((Number) row[0]).longValue();
+                Long count = ((Number) row[1]).longValue();
+                attemptCounts.put(examId, count);
+            }
+            
+            // Average scores per exam
+            List<Object[]> avgResults = examRepo.averageScoresByExamIds(examIds);
+            for (Object[] row : avgResults) {
+                Long examId = ((Number) row[0]).longValue();
+                Double avgScore = row[1] != null ? ((Number) row[1]).doubleValue() : 0.0;
+                averageScores.put(examId, avgScore);
+            }
+        }
+        
+        // Map to responses with statistics
+        return exams.stream().map(e -> {
+            ExamResponse r = toResponse(e, false, false);
+            r.setAttemptCount(attemptCounts.getOrDefault(e.getId(), 0L).intValue());
+            r.setAverageScore(averageScores.getOrDefault(e.getId(), 0.0));
+            return r;
+        }).collect(Collectors.toList());
+    }
 
     @Override
     @Transactional(readOnly = true)

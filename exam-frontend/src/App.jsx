@@ -12,6 +12,10 @@ import ResetPasswordPage from './pages/auth/ResetPasswordPage'
 
 import AdminDashboard from './pages/admin/AdminDashboard'
 import AdminUsers from './pages/admin/AdminUsers'
+import AdminCoursesPage from './pages/admin/AdminCoursesPage'
+import AdminExamsPage from './pages/admin/AdminExamsPage'
+import AdminTagsPage from './pages/admin/AdminTagsPage'
+import AdminReportsPage from './pages/admin/AdminReportsPage'
 
 import TeacherDashboard from './pages/teacher/TeacherDashboard'
 import CoursesPage from './pages/teacher/CoursesPage'
@@ -71,10 +75,25 @@ export default function App() {
           <Route path="/admin/users" element={<ProtectedRoute roles={['ADMIN']}><WithLayout><AdminUsers /></WithLayout></ProtectedRoute>} />
           <Route path="/admin/courses" element={
             <ProtectedRoute roles={['ADMIN']}>
-              <WithLayout><CoursesPage /></WithLayout>  
+              <WithLayout><AdminCoursesPage /></WithLayout>  
             </ProtectedRoute>
           } />
-          <Route path="/admin/courses/:id" element={<ProtectedRoute roles={['ADMIN']}><WithLayout><CourseDetailPage /></WithLayout></ProtectedRoute>} />
+          <Route path="/admin/exams" element={
+            <ProtectedRoute roles={['ADMIN']}>
+              <WithLayout><AdminExamsPage /></WithLayout>  
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/tags" element={
+            <ProtectedRoute roles={['ADMIN']}>
+              <WithLayout><AdminTagsPage /></WithLayout>  
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/reports" element={
+            <ProtectedRoute roles={['ADMIN']}>
+              <WithLayout><AdminReportsPage /></WithLayout>  
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/activity-logs" element={<ProtectedRoute roles={['ADMIN']}><WithLayout><AdminActivityLogPage /></WithLayout></ProtectedRoute>} />
 
           {/* Teacher */}
           <Route path="/teacher" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><TeacherDashboard /></WithLayout></ProtectedRoute>} />
@@ -82,7 +101,6 @@ export default function App() {
           <Route path="/teacher/courses/:id" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><CourseDetailPage /></WithLayout></ProtectedRoute>} />
           <Route path="/teacher/questions" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><QuestionsPage /></WithLayout></ProtectedRoute>} />
           <Route path="/teacher/tags" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><TagsPage /></WithLayout></ProtectedRoute>} />
-          <Route path="/admin/tags" element={<ProtectedRoute roles={['ADMIN']}><WithLayout><TagsPage /></WithLayout></ProtectedRoute>} />
           <Route path="/teacher/question-stats" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><QuestionStatPage /></WithLayout></ProtectedRoute>} />
           <Route path="/admin/question-stats" element={<ProtectedRoute roles={['ADMIN']}><WithLayout><QuestionStatPage /></WithLayout></ProtectedRoute>} />
           <Route path="/teacher/grading" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><TeacherGradingPage /></WithLayout></ProtectedRoute>} />

@@ -49,7 +49,11 @@ export function useConfirm() {
 }
 
 // ── Component UI ─────────────────────────────────────────
-function ConfirmDialog({ title, message, danger, confirmLabel, onConfirm, onCancel }) {
+function ConfirmDialog({ open, title, message, danger, confirmLabel, onConfirm, onCancel, loading }) {
+  // Nếu dùng prop 'open' (từ state), kiểm tra nó
+  // Nếu không có prop 'open', luôn render (dùng cho useConfirm hook)
+  if (open === false) return null
+  
   const btnRef = useRef(null)
 
   // Focus nút cancel mặc định — tránh Enter vô tình confirm
@@ -57,10 +61,10 @@ function ConfirmDialog({ title, message, danger, confirmLabel, onConfirm, onCanc
 
   // ESC để hủy
   useEffect(() => {
-    const handler = (e) => { if (e.key === 'Escape') onCancel() }
+    const handler = (e) => { if (e.key === 'Escape' && !loading) onCancel() }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [onCancel])
+  }, [onCancel, loading])
 
   const iconColor = danger ? '#ef4444' : '#f59e0b'
   const icon = danger ? (
@@ -79,7 +83,7 @@ function ConfirmDialog({ title, message, danger, confirmLabel, onConfirm, onCanc
     <div
       className="fixed inset-0 z-[9998] flex items-center justify-center p-4"
       style={{ background: 'rgba(11,20,55,0.75)', backdropFilter: 'blur(8px)' }}
-      onClick={(e) => { if (e.target === e.currentTarget) onCancel() }}
+      onClick={(e) => { if (e.target === e.currentTarget && !loading) onCancel() }}
     >
       <div
         className="w-full max-w-sm animate-scale-in"
@@ -108,15 +112,24 @@ function ConfirmDialog({ title, message, danger, confirmLabel, onConfirm, onCanc
         <div className="flex gap-3 px-7 pb-7 pt-2">
           <button
             onClick={onConfirm}
-            className="flex-1 py-2.5 px-4 text-sm font-bold text-white transition-all hover:opacity-90 hover:-translate-y-0.5"
+            disabled={loading}
+            className="flex-1 py-2.5 px-4 text-sm font-bold text-white transition-all hover:opacity-90 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
             style={{ background: danger ? 'var(--danger)' : 'var(--warning)', borderRadius: '14px' }}
           >
-            {confirmLabel || (danger ? 'Xóa' : 'Xác nhận')}
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <div className="w-3 h-3 rounded-full border-2 border-t-transparent border-white animate-spin" />
+                Đang xử lý...
+              </span>
+            ) : (
+              confirmLabel || (danger ? 'Xóa' : 'Xác nhận')
+            )}
           </button>
           <button
             ref={btnRef}
             onClick={onCancel}
-            className="flex-1 py-2.5 px-4 text-sm font-bold transition-all hover:opacity-80"
+            disabled={loading}
+            className="flex-1 py-2.5 px-4 text-sm font-bold transition-all hover:opacity-80 disabled:opacity-50 disabled:cursor-not-allowed"
             style={{
               background: 'var(--bg-elevated)',
               borderRadius: '14px',

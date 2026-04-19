@@ -95,6 +95,7 @@ export default function AdminActivityLogPage() {
   const [totalPages, setTotalPages] = useState(0)
   const [totalItems, setTotalItems] = useState(0)
   const [loading,    setLoading]    = useState(false)
+  const [exporting,  setExporting]  = useState(false)
 
   // ── Fetch ─────────────────────────────────────────────
   const fetchLogs = useCallback(async (p = page) => {
@@ -134,6 +135,50 @@ export default function AdminActivityLogPage() {
     setTimeout(() => fetchLogs(0), 50)
   }
 
+  const handleExport = async () => {
+    setExporting(true)
+    try {
+      const params = {
+        ...(keyword && { keyword }),
+        ...(action  && { action  }),
+        ...(from    && { from: from + ':00' }),
+        ...(to      && { to:   to   + ':59' }),
+      }
+      const res = await adminApi.getLogs({ ...params, page: 0, size: 10000 })
+      const data = res.data.data.content || []
+      
+      // Tạo CSV
+      const headers = ['Thời gian', 'Username', 'Tên', 'Action', 'Target', 'Mô tả', 'IP']
+      const rows = data.map(log => [
+        formatDateTime(log.createdAt),
+        log.username,
+        log.fullName || '',
+        ACTION_LABEL[log.action] || log.action,
+        log.targetType ? `${log.targetType}#${log.targetId || ''}` : '',
+        log.description || '',
+        log.ipAddress || ''
+      ])
+      
+      const csv = [headers, ...rows]
+        .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+        .join('\n')
+      
+      // Download
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+      const link = document.createElement('a')
+      const url = URL.createObjectURL(blob)
+      link.setAttribute('href', url)
+      link.setAttribute('download', `activity-logs-${new Date().toISOString().split('T')[0]}.csv`)
+      link.click()
+      
+      toast.success('Đã xuất báo cáo thành công')
+    } catch (err) {
+      toast.error('Không thể xuất báo cáo')
+    } finally {
+      setExporting(false)
+    }
+  }
+
   // ── Render ────────────────────────────────────────────
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -143,14 +188,35 @@ export default function AdminActivityLogPage() {
           <h1 className="page-title">{t('nav.activityLog')}</h1>
           <p className="page-subtitle">{t('messages.loadingFailed')}</p>
         </div>
-        <button
-          onClick={() => fetchLogs(page)}
-          className="btn-ghost flex items-center gap-2 px-3 py-2"
-          disabled={loading}
-        >
-          <span className={loading ? 'animate-spin' : ''}>{Icon.refresh}</span>
-          {t('questionStat.refresh')}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExport}
+            disabled={loading || exporting || logs.length === 0}
+            className="btn-secondary flex items-center gap-2 px-3 py-2 text-sm"
+          >
+            {exporting ? (
+              <>
+                <span className="animate-spin">⏳</span>
+                Đang xuất...
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                </svg>
+                Xuất CSV
+              </>
+            )}
+          </button>
+          <button
+            onClick={() => fetchLogs(page)}
+            className="btn-ghost flex items-center gap-2 px-3 py-2"
+            disabled={loading}
+          >
+            <span className={loading ? 'animate-spin' : ''}>{Icon.refresh}</span>
+            {t('questionStat.refresh')}
+          </button>
+        </div>
       </div>
 
       {/* Filter */}

@@ -297,112 +297,8 @@ function StudentsModal({ course, onClose, onUpdated, allUsers }) {
   )
 }
 
-// ── Manage Teachers Modal ────────────────────────────────
-function ManageTeachersModal({ course, onClose, onSaved, allUsers, currentUser }) {
-  const { t } = useTranslation()
-  const [teachers, setTeachers] = useState(course?.teachers || [])
-  const [selectedTeacherId, setSelectedTeacherId] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-
-  const canManage = course?.createdById === currentUser?.id
-
-  if (!canManage) return null
-
-  const availableTeachers = allUsers.filter(u =>
-    u.roles?.includes('TEACHER') &&
-    !teachers.some(t => t.id === u.id)
-  )
-
-  const handleAddTeacher = async () => {
-    if (!selectedTeacherId) {
-      setError(t('course.selectTeacher'))
-      return
-    }
-    setLoading(true)
-    setError('')
-    try {
-      const res = await courseApi.addTeacher(course.id, Number(selectedTeacherId))
-      setTeachers(res.data.data.teachers || [])
-      setSelectedTeacherId('')
-    } catch (err) {
-      setError(err.response?.data?.message || t('common.error'))
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleRemoveTeacher = async (teacherId) => {
-    if (teachers.length === 1) {
-      setError(t('course.minOneTeacher'))
-      return
-    }
-    setLoading(true)
-    setError('')
-    try {
-      const res = await courseApi.removeTeacher(course.id, teacherId)
-      setTeachers(res.data.data.teachers || [])
-    } catch (err) {
-      setError(err.response?.data?.message || t('common.error'))
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <Modal title={t('course.manageTeachers')} onClose={onClose}>
-      {error && <div className="mb-4 px-4 py-3 rounded-2xl bg-danger/10 border border-danger/30 text-danger text-sm">{error}</div>}
-      <div className="space-y-5">
-        <div>
-          <label className="label">{t('course.teacherList')}</label>
-          <div className="space-y-2 max-h-48 overflow-y-auto">
-            {teachers.length === 0 ? (
-              <p className="text-[var(--text-3)] text-sm py-3">{t('course.noTeachers')}</p>
-            ) : teachers.map(t => (
-              <div key={t.id} className="flex items-center justify-between p-3 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-base)]">
-                <div>
-                  <p className="text-[var(--text-1)] text-sm font-medium">{t.fullName || t.username}</p>
-                  <p className="text-[var(--text-3)] text-xs">@{t.username}</p>
-                </div>
-                {teachers.length > 1 && (
-                  <button onClick={() => handleRemoveTeacher(t.id)} disabled={loading}
-                    className="btn-ghost text-danger/70 hover:text-danger hover:bg-danger/10 px-2 py-1 text-xs">
-                    {t('common.delete')}
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {availableTeachers.length > 0 && (
-          <div>
-            <label className="label">{t('course.addTeacher')}</label>
-            <div className="flex gap-2">
-              <select className="input-field flex-1" value={selectedTeacherId}
-                onChange={e => setSelectedTeacherId(e.target.value)}>
-                <option value="">{t('course.selectTeacher')}</option>
-                {availableTeachers.map(t => (
-                  <option key={t.id} value={t.id}>{t.fullName || t.username}</option>
-                ))}
-              </select>
-              <button onClick={handleAddTeacher} disabled={loading || !selectedTeacherId}
-                className="btn-primary px-4">
-                {loading ? '...' : t('common.add')}
-              </button>
-            </div>
-          </div>
-        )}
-
-        <div className="flex gap-3 pt-2">
-          <button onClick={onClose} className="btn-secondary flex-1">{t('common.close')}</button>
-        </div>
-      </div>
-    </Modal>
-  )
-}
 // ── Course Card ──────────────────────────────────────────
-function CourseCard({ course, onEdit, onDelete, onDetail, isOwner, canManageTeachers, onManageTeachers }) {
+function CourseCard({ course, onEdit, onDelete, onDetail, isOwner }) {
   const { t } = useTranslation()
   return (
     <div className="card group flex flex-col gap-4 hover:border-accent/30 transition-all duration-200">
@@ -428,11 +324,6 @@ function CourseCard({ course, onEdit, onDelete, onDetail, isOwner, canManageTeac
         <button onClick={() => onDetail(course)} className="btn-ghost flex-1 text-xs py-1.5">
           {Icon.users} {t('course.details')}
         </button>
-        {canManageTeachers && (
-          <button onClick={() => onManageTeachers(course)} className="btn-ghost px-2.5 py-1.5 text-xs text-[var(--text-2)] hover:text-accent">
-            {t('course.teachers')}
-          </button>
-        )}
         {isOwner && (
           <button onClick={() => onEdit(course)} className="btn-ghost px-2.5 py-1.5 text-[var(--text-2)] hover:text-accent">
             {Icon.edit}
@@ -463,7 +354,6 @@ export default function CoursesPage() {
   const [view, setView] = useState('grid')
   const [search, setSearch] = useState('')
   const [modal, setModal] = useState(null)
-  const [teachersModal, setTeachersModal] = useState(null)
   const [selected, setSelected] = useState(null)
   const [deleting, setDeleting] = useState(null)
 
@@ -554,10 +444,8 @@ export default function CoursesPage() {
           {filtered.map(c => (
             <CourseCard key={c.id} course={c}
               isOwner={myCourses.some(m => m.id === c.id)}
-              canManageTeachers={c.createdById === user?.id}
               onEdit={(c) => { setSelected(c); setModal('edit') }}
               onDelete={handleDelete}
-              onManageTeachers={(c) => setTeachersModal(c)}
               onDetail={(c) => navigate(`${basePath}/courses/${c.id}`)}
             />
           ))}
@@ -589,12 +477,6 @@ export default function CoursesPage() {
                     <div className="flex items-center gap-1">
                       <button onClick={() => navigate(`${basePath}/courses/${c.id}`)}
                         className="btn-ghost px-2 py-1.5 text-xs">{Icon.users}</button>
-                      {c.createdById === user?.id && (
-                        <button onClick={() => setTeachersModal(c)}
-                          className="btn-ghost px-2 py-1.5 text-xs text-[var(--text-2)] hover:text-accent">
-                          {t('course.teachers')}
-                        </button>
-                      )}
                       {c.createdById === user?.id && (
                         <button onClick={() => { setSelected(c); setModal('edit') }}
                           className="btn-ghost px-2 py-1.5 text-xs text-[var(--text-2)] hover:text-accent">{Icon.edit}</button>
@@ -629,15 +511,6 @@ export default function CoursesPage() {
           allUsers={allUsers}
           onClose={() => setModal(null)}
           onUpdated={load}
-        />
-      )}
-      {teachersModal && (
-        <ManageTeachersModal
-          course={teachersModal}
-          currentUser={user}
-          allUsers={allUsers}
-          onClose={() => setTeachersModal(null)}
-          onSaved={load}
         />
       )}
     </div>
