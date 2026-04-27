@@ -29,6 +29,7 @@ public class AiQuestionService {
     private final ObjectMapper        objectMapper;
     private final StringRedisTemplate redis;
     private final com.example.online_exam.tag.repository.TagRepository tagRepository;
+    private final com.example.online_exam.ai.AiProvider aiProvider;
 
     @Value("${gemini.api.key:}")
     private String geminiApiKey;
@@ -102,23 +103,23 @@ public class AiQuestionService {
                 }
             } catch (Exception ignored) {}
         }
-        if (geminiApiKey == null || geminiApiKey.isBlank()) {
-            log.warn("[AiQuestion] Gemini API key chưa cấu hình");
+        if (!aiProvider.isAvailable()) {
+            log.warn("[AiQuestion] No AI provider configured");
             return List.of();
         }
 
         try {
             String prompt = buildPrompt(req.getTopic(), resolvedType, resolvedDiff, count);
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            Map<String, Object> body = Map.of(
-                    "contents", List.of(Map.of("parts", List.of(Map.of("text", prompt))))
-            );
-            String url = getGeminiUrl() + "?key=" + geminiApiKey;
-            ResponseEntity<String> resp = restTemplate.postForEntity(
-                    url, new HttpEntity<>(body, headers), String.class);
+            
+            // Dùng AiProvider với fallback tự động
+            String responseText = aiProvider.generate(prompt);
+            
+            if (responseText == null || responseText.isBlank()) {
+                log.error("[AiQuestion] No response from AI providers");
+                return List.of();
+            }
 
-            List<GeneratedQuestion> result = parseResponse(resp.getBody(), resolvedType, resolvedDiff);
+            List<GeneratedQuestion> result = parseResponseText(responseText, resolvedType, resolvedDiff);
 
             // Cache kết quả
             try {
@@ -142,7 +143,7 @@ public class AiQuestionService {
             log.error("[AiQuestion] generate failed [{}]: {}", e.getClass().getName(), e.getMessage(), e);
             return List.of();
         } catch (Exception e) {
-            log.error("[AiQuestion] generate failed [{}]: {}", e.getClass().getName(), e.getMessage(), e);
+            log.error("[AiQuestion] generate failed after retries [{}]: {}", e.getClass().getName(), e.getMessage());
             return List.of();
         }
     }
@@ -203,11 +204,9 @@ public class AiQuestionService {
     }
 
     // ── Response parser ───────────────────────────────────
-    private List<GeneratedQuestion> parseResponse(String body, String type, String difficulty) {
+    private List<GeneratedQuestion> parseResponseText(String text, String type, String difficulty) {
         try {
-            JsonNode root = objectMapper.readTree(body);
-            String text = root.path("candidates").get(0)
-                    .path("content").path("parts").get(0).path("text").asText();
+            // Strip markdown nếu có
             text = text.replaceAll("(?s)```json|```", "").trim();
             log.debug("[AiQuestion] raw ({}): {}", type, text.length() > 300 ? text.substring(0, 300) : text);
 

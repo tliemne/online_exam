@@ -16,6 +16,7 @@ import AdminCoursesPage from './pages/admin/AdminCoursesPage'
 import AdminExamsPage from './pages/admin/AdminExamsPage'
 import AdminTagsPage from './pages/admin/AdminTagsPage'
 import AdminReportsPage from './pages/admin/AdminReportsPage'
+import AdminDiscussionsPage from './pages/admin/AdminDiscussionsPage'
 
 import TeacherDashboard from './pages/teacher/TeacherDashboard'
 import CoursesPage from './pages/teacher/CoursesPage'
@@ -94,6 +95,7 @@ export default function App() {
             </ProtectedRoute>
           } />
           <Route path="/admin/activity-logs" element={<ProtectedRoute roles={['ADMIN']}><WithLayout><AdminActivityLogPage /></WithLayout></ProtectedRoute>} />
+          <Route path="/admin/discussions" element={<ProtectedRoute roles={['ADMIN']}><WithLayout><AdminDiscussionsPage /></WithLayout></ProtectedRoute>} />
 
           {/* Teacher */}
           <Route path="/teacher" element={<ProtectedRoute roles={['TEACHER','ADMIN']}><WithLayout><TeacherDashboard /></WithLayout></ProtectedRoute>} />

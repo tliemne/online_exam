@@ -43,4 +43,7 @@ public interface UserService {
 
     // Admin/Teacher reset mật khẩu cho user bất kỳ
     void resetPassword(Long userId, String newPassword);
+
+    // Admin toggle trạng thái tài khoản (ACTIVE ↔ INACTIVE)
+    void toggleStatus(Long userId);
 }

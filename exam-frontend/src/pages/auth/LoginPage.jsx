@@ -57,8 +57,11 @@ export default function LoginPage() {
       if (status === 429) {
         setBlocked(true)
         setError(message || t('messages.loadingFailed'))
+      } else if (status === 403 && message) {
+        // Tài khoản bị vô hiệu hóa hoặc lỗi 403 có message cụ thể
+        setError(message)
       } else {
-        setError(t('messages.unauthorized'))
+        setError(message || t('messages.unauthorized'))
       }
     } finally { setLoading(false) }
   }

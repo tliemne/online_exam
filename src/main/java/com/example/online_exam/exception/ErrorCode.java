@@ -48,6 +48,7 @@ public enum ErrorCode {
 
     // ===== USER =====
     CANNOT_DELETE_SELF(HttpStatus.BAD_REQUEST, "Không thể xóa tài khoản đang đăng nhập."),
+    ACCOUNT_INACTIVE(HttpStatus.FORBIDDEN, "Tài khoản đã bị vô hiệu hóa. Vui lòng liên hệ quản trị viên."),
 
     // ===== GENERIC =====
     NOT_FOUND(HttpStatus.NOT_FOUND, "Không tìm thấy"),

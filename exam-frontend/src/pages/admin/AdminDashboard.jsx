@@ -48,10 +48,12 @@ export default function AdminDashboard() {
     { label: 'Sinh viên',      value: stats.totalStudents, icon: Icon.student,  to: '/admin/users',   clr: '#16a34a'        },
     { label: 'Giảng viên',     value: stats.totalTeachers, icon: Icon.teacher,  to: '/admin/users',   clr: '#0891b2'        },
     { label: 'Lớp học',        value: stats.totalCourses,  icon: Icon.course,   to: '/admin/courses', clr: '#d97706'        },
-    { label: 'Đề thi',         value: stats.totalExams,    icon: Icon.exam,     to: null,             clr: '#9333ea'        },
-    { label: 'Lượt làm bài',   value: stats.totalAttempts, icon: Icon.attempts, to: null,             clr: 'var(--text-2)'  },
-    { label: 'Điểm TB',        value: stats.avgScore != null ? stats.avgScore.toFixed(1) : '—', icon: Icon.score, to: null, clr: '#d97706' },
-    { label: 'Tỉ lệ đạt',      value: stats.passRate != null ? `${stats.passRate}%` : '—',     icon: Icon.pass,  to: null, clr: '#16a34a' },
+  ] : []
+
+  const highlightCards = stats ? [
+    { label: 'Đề thi', value: stats.totalExams, sub: `${stats.publishedExams} đang mở`, icon: Icon.exam, clr: '#9333ea' },
+    { label: 'Lượt thi', value: stats.totalAttempts, sub: `Điểm TB: ${stats.avgScore?.toFixed(1) ?? '—'}`, icon: Icon.attempts, clr: 'var(--text-2)' },
+    { label: 'Tỉ lệ đạt', value: `${stats.passRate ?? 0}%`, sub: 'Toàn hệ thống', icon: Icon.pass, clr: '#16a34a' },
   ] : []
 
   return (
@@ -72,10 +74,10 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Stat grid */}
+      {/* Main stat cards - 4 cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {loading
-          ? Array.from({ length: 8 }).map((_, i) => (
+          ? Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="card p-4 space-y-2.5">
                 <Skeleton w="w-5" h="h-5"/>
                 <Skeleton w="w-14" h="h-7"/>
@@ -102,44 +104,37 @@ export default function AdminDashboard() {
         }
       </div>
 
-      {/* Highlight row */}
+      {/* Highlight row - 3 cards with sub info */}
       {!loading && stats && (
-        <div className="grid grid-cols-2 gap-3">
-          <div className="card p-4 flex items-center gap-4">
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-              style={{ background: 'var(--accent-subtle)', color: 'var(--accent)' }}>
-              {Icon.exam}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {highlightCards.map(s => (
+            <div key={s.label} className="card p-4 flex items-center gap-4">
+              <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
+                style={{ background: s.clr + '18', color: s.clr }}>
+                {s.icon}
+              </div>
+              <div>
+                <p className="font-bold text-xl" style={{ color: 'var(--text-1)' }}>{s.value}</p>
+                <p className="text-xs" style={{ color: 'var(--text-3)' }}>{s.label}</p>
+                {s.sub && <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>{s.sub}</p>}
+              </div>
             </div>
-            <div>
-              <p className="text-xs" style={{ color: 'var(--text-3)' }}>Đề đang mở (Published)</p>
-              <p className="font-display font-semibold text-xl" style={{ color: 'var(--text-1)' }}>
-                {stats.publishedExams}
-                <span className="text-sm font-normal ml-1.5" style={{ color: 'var(--text-3)' }}>/ {stats.totalExams} đề</span>
-              </p>
-            </div>
-          </div>
-          <div className="card p-4 flex items-center gap-4">
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center shrink-0"
-              style={{ background: 'rgba(22,163,74,0.1)', color: '#16a34a' }}>
-              {Icon.pass}
-            </div>
-            <div>
-              <p className="text-xs" style={{ color: 'var(--text-3)' }}>Tỉ lệ đạt toàn hệ thống</p>
-              <p className="font-display font-semibold text-xl" style={{ color: 'var(--text-1)' }}>
-                {stats.passRate}%
-                <span className="text-sm font-normal ml-1.5" style={{ color: 'var(--text-3)' }}>trên {stats.totalAttempts} lượt</span>
-              </p>
-            </div>
-          </div>
+          ))}
         </div>
       )}
 
       {/* Discussion Overview */}
       {!discussionLoading && discussionStats && (
         <div>
-          <p className="text-xs font-semibold mb-3 px-1" style={{ color: 'var(--text-3)' }}>
-            💬 TỔNG QUAN THẢO LUẬN
-          </p>
+          <div className="flex items-center justify-between mb-3 px-1">
+            <p className="text-xs font-semibold" style={{ color: 'var(--text-3)' }}>
+              💬 TỔNG QUAN THẢO LUẬN
+            </p>
+            <Link to="/admin/discussions" className="text-xs transition-colors"
+              style={{ color: 'var(--accent)' }}>
+              Xem chi tiết →
+            </Link>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="card p-4 flex items-center gap-4">
               <div className="w-11 h-11 rounded-2xl flex items-center justify-center shrink-0"
@@ -192,52 +187,29 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Charts */}
+      {/* Charts - Simplified to 2 charts */}
       {stats && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Monthly Attempts Bar Chart */}
-          <div className="card lg:col-span-2">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Monthly Attempts */}
+          <div className="card">
             <p className="font-bold mb-0.5" style={{ color: 'var(--text-1)' }}>Lượt thi theo tháng</p>
             <p className="text-xs mb-4" style={{ color: 'var(--text-3)' }}>6 tháng gần nhất</p>
             {stats.monthlyAttempts && stats.monthlyAttempts.length > 0 ? (
               <ReactApexChart type="bar" height={200}
-                series={[{
-                  name: 'Lượt thi',
-                  data: stats.monthlyAttempts.map(m => m.count)
-                }]}
+                series={[{ name: 'Lượt thi', data: stats.monthlyAttempts.map(m => m.count) }]}
                 options={{
-                  chart: { 
-                    background: 'transparent',
-                    toolbar: { show: false }
-                  },
+                  chart: { background: 'transparent', toolbar: { show: false } },
                   theme: { mode: document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark' },
                   xaxis: {
                     categories: stats.monthlyAttempts.map(m => m.month),
-                    labels: { 
-                      style: { colors: 'var(--text-3)', fontSize: '11px' },
-                      rotate: -45,
-                      rotateAlways: true
-                    }
+                    labels: { style: { colors: 'var(--text-3)', fontSize: '11px' }, rotate: -45, rotateAlways: true }
                   },
-                  yaxis: {
-                    labels: { style: { colors: 'var(--text-3)' } }
-                  },
+                  yaxis: { labels: { style: { colors: 'var(--text-3)' } } },
                   colors: ['var(--accent)'],
-                  plotOptions: {
-                    bar: {
-                      borderRadius: 6,
-                      columnWidth: '60%'
-                    }
-                  },
+                  plotOptions: { bar: { borderRadius: 6, columnWidth: '60%' } },
                   dataLabels: { enabled: false },
-                  grid: {
-                    borderColor: 'var(--border-base)',
-                    strokeDashArray: 3
-                  },
-                  tooltip: {
-                    theme: 'dark',
-                    y: { formatter: (val) => `${val} lượt` }
-                  }
+                  grid: { borderColor: 'var(--border-base)', strokeDashArray: 3 },
+                  tooltip: { theme: 'dark', y: { formatter: (val) => `${val} lượt` } }
                 }}
               />
             ) : (
@@ -245,88 +217,34 @@ export default function AdminDashboard() {
             )}
           </div>
 
-          {/* User Distribution Donut */}
-          <div className="card flex flex-col items-center justify-center">
-            <p className="font-bold mb-0.5 self-start" style={{ color: 'var(--text-1)' }}>Người dùng</p>
-            <p className="text-xs mb-3 self-start" style={{ color: 'var(--text-3)' }}>Phân bổ vai trò</p>
-            <ReactApexChart type="donut" height={160} width={160}
-              series={[stats.totalStudents ?? 0, stats.totalTeachers ?? 0]}
-              options={{
-                chart: { background: 'transparent' },
-                theme: { mode: document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark' },
-                labels: ['Sinh viên', 'Giảng viên'],
-                colors: ['#7551FF', '#01B574'],
-                legend: { show: false },
-                dataLabels: { enabled: false },
-                stroke: { width: 0 },
-                plotOptions: { pie: { donut: { size: '68%' } } },
-                tooltip: { theme: 'dark' },
-              }}
-            />
-            <div className="flex gap-5 mt-3">
-              {[['#7551FF','SV',stats.totalStudents??0],['#01B574','GV',stats.totalTeachers??0]].map(([c,l,v])=>(
-                <div key={l} className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full" style={{background:c}}/>
-                  <span className="text-xs" style={{color:'var(--text-3)'}}>{l}: {v}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Score Distribution Chart */}
-      {stats && stats.scoreDistribution && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Score Distribution */}
           <div className="card">
             <p className="font-bold mb-0.5" style={{ color: 'var(--text-1)' }}>Phân bố điểm</p>
             <p className="text-xs mb-4" style={{ color: 'var(--text-3)' }}>Theo thang điểm 10</p>
-            <ReactApexChart type="pie" height={280}
-              series={[
-                stats.scoreDistribution.excellent,
-                stats.scoreDistribution.good,
-                stats.scoreDistribution.fair,
-                stats.scoreDistribution.average,
-                stats.scoreDistribution.poor
-              ]}
-              options={{
-                chart: { background: 'transparent' },
-                theme: { mode: document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark' },
-                labels: ['Xuất sắc (9-10)', 'Giỏi (8-9)', 'Khá (7-8)', 'Trung bình (5-7)', 'Yếu (<5)'],
-                colors: ['#16a34a', '#0891b2', '#d97706', '#f59e0b', '#dc2626'],
-                legend: {
-                  position: 'bottom',
-                  labels: { colors: 'var(--text-2)' }
-                },
-                dataLabels: {
-                  enabled: true,
-                  formatter: (val) => `${val.toFixed(1)}%`
-                },
-                stroke: { width: 0 },
-                tooltip: {
-                  theme: 'dark',
-                  y: { formatter: (val) => `${val} bài` }
-                }
-              }}
-            />
-          </div>
-
-          <div className="card">
-            <p className="font-bold mb-0.5" style={{ color: 'var(--text-1)' }}>Thống kê hệ thống</p>
-            <p className="text-xs mb-4" style={{ color: 'var(--text-3)' }}>Tổng quan toàn bộ</p>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { label: 'Điểm TB',     value: stats.avgScore?.toFixed(1) ?? '—', color: 'var(--accent)',  bg: 'var(--accent-subtle)'  },
-                { label: 'Tỉ lệ đạt',  value: `${stats.passRate ?? 0}%`,          color: 'var(--success)', bg: 'var(--success-subtle)' },
-                { label: 'Đề thi',      value: stats.totalExams ?? 0,              color: 'var(--purple)',  bg: 'var(--purple-subtle)'  },
-                { label: 'Lượt thi',    value: stats.totalAttempts ?? 0,           color: 'var(--text-2)',  bg: 'var(--bg-elevated)'    },
-              ].map(s => (
-                <div key={s.label} className="rounded-2xl p-4 text-center" style={{ background: s.bg }}>
-                  <p className="font-bold text-2xl" style={{ color: s.color }}>{s.value}</p>
-                  <p className="text-xs mt-1" style={{ color: 'var(--text-3)' }}>{s.label}</p>
-                </div>
-              ))}
-            </div>
+            {stats.scoreDistribution ? (
+              <ReactApexChart type="donut" height={200}
+                series={[
+                  stats.scoreDistribution.excellent,
+                  stats.scoreDistribution.good,
+                  stats.scoreDistribution.fair,
+                  stats.scoreDistribution.average,
+                  stats.scoreDistribution.poor
+                ]}
+                options={{
+                  chart: { background: 'transparent' },
+                  theme: { mode: document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark' },
+                  labels: ['Xuất sắc (9-10)', 'Giỏi (8-9)', 'Khá (7-8)', 'TB (5-7)', 'Yếu (<5)'],
+                  colors: ['#16a34a', '#0891b2', '#d97706', '#f59e0b', '#dc2626'],
+                  legend: { position: 'bottom', labels: { colors: 'var(--text-2)' }, fontSize: '11px' },
+                  dataLabels: { enabled: true, formatter: (val) => `${val.toFixed(0)}%`, style: { fontSize: '11px', colors: ['#fff'] } },
+                  stroke: { width: 0 },
+                  plotOptions: { pie: { donut: { size: '65%' } } },
+                  tooltip: { theme: 'dark', y: { formatter: (val) => `${val} bài` } }
+                }}
+              />
+            ) : (
+              <p className="text-center py-10 text-sm" style={{ color: 'var(--text-3)' }}>Chưa có dữ liệu</p>
+            )}
           </div>
         </div>
       )}

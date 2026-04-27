@@ -32,4 +32,9 @@ public interface DiscussionPostRepository extends JpaRepository<DiscussionPost, 
     Long countByCourseId(Long courseId);
     
     Long countByCreatedAtAfter(LocalDateTime date);
+    
+    // Admin management methods
+    Page<DiscussionPost> findByCourseId(Long courseId, Pageable pageable);
+    
+    Page<DiscussionPost> findByStatus(PostStatus status, Pageable pageable);
 }

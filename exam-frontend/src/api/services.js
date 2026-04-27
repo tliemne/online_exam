@@ -29,6 +29,7 @@ export const userApi = {
   updateTeacherProfile: (data) => api.put('/users/me/teacher-profile', data),
   changeMyPassword: (oldPassword, newPassword) => api.put('/users/me/password', { oldPassword, newPassword }),
   resetPassword: (id, newPassword) => api.put(`/users/${id}/reset-password`, { newPassword }),
+  toggleStatus: (id) => api.patch(`/users/${id}/toggle-status`),
   createStudent: (data) => api.post('/users/students', data),
 }
 

@@ -209,46 +209,40 @@ public class DiscussionReplyService {
         // Validate user is reply author OR course teacher OR admin
         validateReplyEditPermission(currentUser, reply);
         
-        // 1. Get all nested replies (replies to this reply)
-        List<DiscussionReply> nestedReplies = discussionReplyRepository.findByParentReplyId(replyId);
+        // 1. Xóa đệ quy tất cả nested replies (mọi cấp độ)
+        deleteReplyRecursive(replyId);
         
-        // 2. Delete attachments and votes for nested replies
-        for (DiscussionReply nested : nestedReplies) {
-            // Delete nested reply attachments
-            List<com.example.online_exam.discussion.entity.DiscussionAttachment> nestedAttachments = 
-                attachmentRepository.findByReplyIdOrderByCreatedAtAsc(nested.getId());
-            for (com.example.online_exam.discussion.entity.DiscussionAttachment attachment : nestedAttachments) {
-                fileUploadService.deleteFile(attachment.getFilePath());
-            }
-            attachmentRepository.deleteAll(nestedAttachments);
-            
-            // Delete nested reply votes
-            discussionVoteRepository.deleteByReplyId(nested.getId());
-        }
-        
-        // 3. Delete all nested replies
-        discussionReplyRepository.deleteAll(nestedReplies);
-        
-        // 4. Delete this reply's attachments (files + database)
-        List<com.example.online_exam.discussion.entity.DiscussionAttachment> attachments = 
-            attachmentRepository.findByReplyIdOrderByCreatedAtAsc(replyId);
-        for (com.example.online_exam.discussion.entity.DiscussionAttachment attachment : attachments) {
-            fileUploadService.deleteFile(attachment.getFilePath());
-        }
-        attachmentRepository.deleteAll(attachments);
-        
-        // 5. Delete this reply's votes
-        discussionVoteRepository.deleteByReplyId(replyId);
-        
-        // 6. If reply was best answer, set post.hasBestAnswer=false
+        // 2. If reply was best answer, set post.hasBestAnswer=false
         if (reply.getIsBestAnswer()) {
             DiscussionPost post = reply.getPost();
             post.setHasBestAnswer(false);
             discussionPostRepository.save(post);
         }
+    }
+
+    /**
+     * Xóa reply và tất cả nested replies đệ quy (mọi cấp độ)
+     * Đảm bảo xóa từ lá lên gốc để tránh FK constraint
+     */
+    private void deleteReplyRecursive(Long replyId) {
+        // Lấy tất cả replies con trực tiếp
+        List<DiscussionReply> children = discussionReplyRepository.findByParentReplyId(replyId);
         
-        // 7. Delete reply (hard delete)
-        discussionReplyRepository.delete(reply);
+        // Đệ quy xóa từng reply con trước
+        for (DiscussionReply child : children) {
+            deleteReplyRecursive(child.getId());
+        }
+        
+        // Sau khi xóa hết con, xóa attachments + votes + reply này
+        List<com.example.online_exam.discussion.entity.DiscussionAttachment> attachments =
+            attachmentRepository.findByReplyIdOrderByCreatedAtAsc(replyId);
+        for (com.example.online_exam.discussion.entity.DiscussionAttachment att : attachments) {
+            fileUploadService.deleteFile(att.getFilePath());
+        }
+        attachmentRepository.deleteAll(attachments);
+        discussionVoteRepository.deleteByReplyId(replyId);
+        
+        discussionReplyRepository.deleteById(replyId);
     }
 
     /**

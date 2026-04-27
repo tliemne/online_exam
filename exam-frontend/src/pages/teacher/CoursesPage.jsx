@@ -56,7 +56,8 @@ function CourseFormModal({ course, onClose, onSaved, isAdmin, allUsers }) {
       const payload = {
         name: form.name,
         description: form.description,
-        teacherId: isAdmin ? Number(form.teacherId) : null,
+        // Admin chọn giáo viên, Teacher không cần (backend tự thêm)
+        teacherIds: isAdmin && form.teacherId ? [Number(form.teacherId)] : [],
       }
       if (course) await courseApi.update(course.id, payload)
       else await courseApi.create(payload)

@@ -54,23 +54,29 @@ public class CourseService {
     public CourseResponse create(CourseRequest request) {
         User currentUser = currentUserService.requireCurrentUser();
         
-        // Chỉ admin mới được tạo khóa học
-        if (!currentUserService.isAdmin(currentUser)) {
+        // Admin hoặc Teacher đều được tạo khóa học
+        boolean isAdmin = currentUserService.isAdmin(currentUser);
+        boolean isTeacher = currentUserService.hasRole(currentUser, RoleName.TEACHER);
+        if (!isAdmin && !isTeacher) {
             throw new AppException(ErrorCode.FORBIDDEN);
-        }
-
-        // Validate và lấy danh sách giảng viên
-        List<User> teachers = new ArrayList<>();
-        for (Long teacherId : request.getTeacherIds()) {
-            User teacher = findValidTeacher(teacherId);
-            teachers.add(teacher);
         }
 
         Course course = new Course();
         course.setName(request.getName());
         course.setDescription(request.getDescription());
-        course.getTeachers().addAll(teachers);  // Thêm tất cả giảng viên
-        course.setCreatedBy(currentUser);  // Set người tạo lớp
+        course.setCreatedBy(currentUser);
+
+        if (isAdmin && request.getTeacherIds() != null && !request.getTeacherIds().isEmpty()) {
+            // Admin tạo lớp: có thể chọn nhiều giáo viên
+            for (Long teacherId : request.getTeacherIds()) {
+                User teacher = findValidTeacher(teacherId);
+                course.getTeachers().add(teacher);
+            }
+        } else if (isTeacher) {
+            // Teacher tạo lớp: tự động thêm chính họ làm giáo viên
+            course.getTeachers().add(currentUser);
+        }
+
         courseRepository.save(course);
 
         activityLogService.logUser(currentUser, ActivityLogAction.CREATE_COURSE,

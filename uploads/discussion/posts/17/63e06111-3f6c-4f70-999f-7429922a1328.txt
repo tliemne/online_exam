@@ -1,0 +1,98 @@
+
+BÁNG CÁO & THỐNG KÊ HỆ THỐNG
+Ngày: 20/4/2026
+
+═══════════════════════════════════════════════════════════
+
+TỔNG QUAN
+
+Tổng người dùng:        14
+Tổng khóa học:          5
+Tổng đề thi:            13
+Tổng bài làm:           27
+
+═══════════════════════════════════════════════════════════
+
+THỐNG KÊ NGƯỜI DÙNG
+
+Sinh viên hoạt động:    8
+Giảng viên hoạt động:   4
+Đề thi đang mở:         7
+Điểm trung bình:        4.6
+
+═══════════════════════════════════════════════════════════
+
+THỐNG KÊ ĐỀ THI (Top 10)
+
+
+1. Websoket
+   Khóa học: API
+   Trạng thái: Đang mở
+   Số bài làm: 1
+   Điểm TB: 4.0
+
+
+2. apiiiiii
+   Khóa học: API
+   Trạng thái: Đang mở
+   Số bài làm: 2
+   Điểm TB: 8.0
+
+
+3. APII
+   Khóa học: API
+   Trạng thái: Đang mở
+   Số bài làm: 5
+   Điểm TB: 2.2
+
+
+4. API cơ bản
+   Khóa học: API
+   Trạng thái: Đang mở
+   Số bài làm: 3
+   Điểm TB: 4.0
+
+
+5. API nâng cao
+   Khóa học: API
+   Trạng thái: Đang mở
+   Số bài làm: 2
+   Điểm TB: 6.3
+
+
+6. API Test
+   Khóa học: API
+   Trạng thái: Đang mở
+   Số bài làm: 2
+   Điểm TB: 4.8
+
+
+7. Kiểm tra
+   Khóa học: Lập trình hướng đối tượng
+   Trạng thái: Đang mở
+   Số bài làm: 2
+   Điểm TB: 4.3
+
+
+8. Lập trình C++ nâng cao
+   Khóa học: Lạp trình C++
+   Trạng thái: Đã đóng
+   Số bài làm: 1
+   Điểm TB: 5.0
+
+
+9. Lập trình C++ cơ bản
+   Khóa học: Lạp trình C++
+   Trạng thái: Đã đóng
+   Số bài làm: 5
+   Điểm TB: 3.9
+
+
+10. Kiểm tra lập trình cơ bản
+   Khóa học: Lạp trình C++
+   Trạng thái: Đã đóng
+   Số bài làm: 0
+   Điểm TB: —
+
+
+═══════════════════════════════════════════════════════════

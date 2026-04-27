@@ -251,6 +251,7 @@ export default function AdminUsers() {
   const [deleting, setDeleting] = useState(null)
   const [showCreate, setShowCreate] = useState(false)
   const [resetTarget, setResetTarget] = useState(null)  // user cần reset password
+  const [toggling, setToggling] = useState(null)  // user đang toggle status
   const [page, setPage] = useState(0)
   const PAGE_SIZE = 10
   const [activeTab, setActiveTab]   = useState('ALL')
@@ -261,7 +262,11 @@ export default function AdminUsers() {
       .then(r => setUsers(r.data.data || []))
       .finally(() => setLoading(false))
   }
-  useEffect(() => { load() }, [])
+  
+  useEffect(() => { 
+    load()
+    setSearch('') // Clear search on mount
+  }, [])
   useEffect(() => { setPage(0) }, [activeTab, search])
 
   const handleDelete = async (id) => {
@@ -271,6 +276,21 @@ export default function AdminUsers() {
       await userApi.delete(id)
       setUsers(prev => prev.filter(u => u.id !== id))
     } finally { setDeleting(null) }
+  }
+
+  const handleToggleStatus = async (u) => {
+    const action = u.status === 'ACTIVE' ? 'vô hiệu hóa' : 'kích hoạt'
+    if (!confirm(`Bạn có chắc muốn ${action} tài khoản "${u.fullName || u.username}"?`)) return
+    setToggling(u.id)
+    try {
+      await userApi.toggleStatus(u.id)
+      setUsers(prev => prev.map(x => x.id === u.id
+        ? { ...x, status: x.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' }
+        : x
+      ))
+    } catch (err) {
+      alert(err.response?.data?.message || 'Không thể cập nhật trạng thái')
+    } finally { setToggling(null) }
   }
 
   const byTab = activeTab === 'ALL' ? users : users.filter(u => u.roles?.includes(activeTab))
@@ -335,8 +355,21 @@ export default function AdminUsers() {
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-3)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
             </svg>
-            <input className="input-field pl-9" placeholder="Tìm tên, email, username..."
-              value={search} onChange={e => setSearch(e.target.value)} />
+            <input 
+              className="input-field pl-9" 
+              placeholder="Tìm tên, email, username..."
+              value={search} 
+              onChange={e => setSearch(e.target.value)}
+              onInput={e => {
+                // Prevent autofill from setting value to "admin"
+                if (e.target.value === 'admin' && search !== 'admin') {
+                  e.target.value = search
+                }
+              }}
+              autoComplete="off"
+              spellCheck="false"
+              data-lpignore="true"
+            />
           </div>
           <button onClick={load} className="btn-secondary">Làm mới</button>
         </div>
@@ -399,6 +432,23 @@ export default function AdminUsers() {
                       </td>
                       <td className="py-3">
                         <div className="flex items-center gap-1">
+                          {/* Toggle status - chỉ hiện với non-admin và không phải chính mình */}
+                          {u.id !== currentUser?.id && !u.roles?.includes('ADMIN') && (
+                            <button onClick={() => handleToggleStatus(u)} disabled={toggling === u.id}
+                              className={`p-1.5 rounded transition-colors ${
+                                u.status === 'ACTIVE'
+                                  ? 'hover:bg-warning/10 text-[var(--text-3)] hover:text-warning'
+                                  : 'hover:bg-success/10 text-[var(--text-3)] hover:text-success'
+                              }`}
+                              title={u.status === 'ACTIVE' ? 'Vô hiệu hóa tài khoản' : 'Kích hoạt tài khoản'}>
+                              {toggling === u.id
+                                ? <span className="w-4 h-4 border-2 border-warning/30 border-t-warning rounded-full animate-spin block"/>
+                                : u.status === 'ACTIVE'
+                                  ? <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                                  : <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                              }
+                            </button>
+                          )}
                           {/* Reset password - chỉ hiện với non-admin */}
                           {!u.roles?.includes('ADMIN') && (
                             <button onClick={() => setResetTarget(u)}
@@ -447,7 +497,7 @@ export default function AdminUsers() {
         )}
       </div>
       {resetTarget && (
-        <ResetPasswordModal user={resetTarget} onClose={() => setResetTarget(null)} />
+        <ResetPasswordModal user={resetTarget} onClose={() => setResetTarget(null)} onSuccess={load} />
       )}
     </div>
   )

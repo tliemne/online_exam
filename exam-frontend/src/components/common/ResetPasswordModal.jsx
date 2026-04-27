@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { userApi } from '../../api/services'
 
-export default function ResetPasswordModal({ user, onClose }) {
+export default function ResetPasswordModal({ user, onClose, onSuccess }) {
   const [newPassword, setNewPassword] = useState('')
   const [confirm, setConfirm]         = useState('')
   const [show, setShow]               = useState(false)
@@ -29,6 +29,7 @@ export default function ResetPasswordModal({ user, onClose }) {
     try {
       await userApi.resetPassword(user.id, newPassword)
       setDone(true)
+      onSuccess?.()
     } catch (err) {
       setError(err?.response?.data?.message || 'Reset thất bại, thử lại')
     } finally {
@@ -40,8 +41,11 @@ export default function ResetPasswordModal({ user, onClose }) {
     : user.roles?.[0] === 'TEACHER' ? 'Giảng viên' : 'Sinh viên'
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-[var(--bg-surface)] border border-[var(--border-base)] rounded-2xl w-full max-w-md shadow-2xl">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" onClick={(e) => {
+      // Chỉ đóng khi click vào overlay, không đóng khi click vào modal content
+      if (e.target === e.currentTarget) onClose()
+    }}>
+      <div className="bg-[var(--bg-surface)] border border-[var(--border-base)] rounded-2xl w-full max-w-md shadow-2xl" onClick={(e) => e.stopPropagation()}>
 
         {/* Header */}
         <div className="flex items-center justify-between px-7 py-5 border-b border-[var(--border-subtle)]">

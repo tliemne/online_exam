@@ -32,6 +32,7 @@ public class AiGradingService {
     private final ObjectMapper         objectMapper;
     private final RestTemplate         restTemplate;
     private final StringRedisTemplate  redis;
+    private final com.example.online_exam.ai.AiProvider aiProvider;
 
     @Value("${gemini.api.key:}")
     private String geminiApiKey;
@@ -75,22 +76,19 @@ public class AiGradingService {
                     .build();
         }
 
-        if (geminiApiKey == null || geminiApiKey.isBlank()) {
+        if (!aiProvider.isAvailable()) {
             return fallbackExplanation(wrong);
         }
 
         try {
             String prompt = buildExplainPrompt(wrong);
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            Map<String, Object> body = Map.of(
-                    "contents", List.of(Map.of("parts", List.of(Map.of("text", prompt))))
-            );
-            String url = getGeminiUrl() + "?key=" + geminiApiKey;
-            ResponseEntity<String> resp = restTemplate.postForEntity(
-                    url, new HttpEntity<>(body, headers), String.class);
+            String responseText = aiProvider.generate(prompt);
+            
+            if (responseText == null || responseText.isBlank()) {
+                return fallbackExplanation(wrong);
+            }
 
-            AiExplanationResponse.Summary result = parseExplainResponse(resp.getBody(), wrong);
+            AiExplanationResponse.Summary result = parseExplainResponseText(responseText, wrong);
 
             // Cache kết quả 1 giờ
             try {
@@ -137,13 +135,11 @@ public class AiGradingService {
         return sb.toString();
     }
 
-    private AiExplanationResponse.Summary parseExplainResponse(
-            String responseBody, List<AttemptAnswer> wrong) {
+    private AiExplanationResponse.Summary parseExplainResponseText(
+            String responseText, List<AttemptAnswer> wrong) {
         try {
-            JsonNode root = objectMapper.readTree(responseBody);
-            String text = root.path("candidates").get(0)
-                    .path("content").path("parts").get(0).path("text").asText();
-            text = text.replaceAll("(?s)```json|```", "").trim();
+            // Strip markdown
+            String text = responseText.replaceAll("(?s)```json|```", "").trim();
 
             JsonNode json   = objectMapper.readTree(text);
             JsonNode expArr = json.path("explanations");
@@ -221,8 +217,8 @@ public class AiGradingService {
 
         if (essays.isEmpty()) return List.of();
 
-        if (geminiApiKey == null || geminiApiKey.isBlank()) {
-            log.warn("Gemini API key chưa cấu hình");
+        if (!aiProvider.isAvailable()) {
+            log.warn("AI provider not configured");
             return fallback(essays, "AI chưa được cấu hình. Vui lòng chấm thủ công.");
         }
 
@@ -248,25 +244,17 @@ public class AiGradingService {
             Map<Long, Double> maxScoreMap) {
         try {
             String prompt = buildBatchPrompt(essays, maxScoreMap);
+            String responseText = aiProvider.generate(prompt);
+            
+            if (responseText == null || responseText.isBlank()) {
+                throw new RuntimeException("No response from AI providers");
+            }
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-
-            Map<String, Object> body = Map.of(
-                    "contents", List.of(Map.of(
-                            "parts", List.of(Map.of("text", prompt))
-                    ))
-            );
-
-            String url = getGeminiUrl() + "?key=" + geminiApiKey;
-            ResponseEntity<String> resp = restTemplate.postForEntity(
-                    url, new HttpEntity<>(body, headers), String.class);
-
-            return parseBatchResponse(resp.getBody(), essays, answerMap, maxScoreMap);
+            return parseBatchResponseText(responseText, essays, answerMap, maxScoreMap);
 
         } catch (Exception e) {
             log.error("AI batch grading failed: {}", e.getMessage());
-            return fallback(essays, "Không thể kết nối AI. Vui lòng chấm thủ công.");
+            return fallback(essays, "AI đang quá tải. Vui lòng thử lại sau hoặc chấm thủ công.");
         }
     }
 
@@ -301,19 +289,14 @@ public class AiGradingService {
     }
 
     // ── Parse: O(1) per item nhờ answerMap ───────────────────
-    private List<AiSuggestionResponse> parseBatchResponse(
-            String responseBody,
+    private List<AiSuggestionResponse> parseBatchResponseText(
+            String responseText,
             List<AttemptAnswer> essays,
             Map<Long, AttemptAnswer> answerMap,
             Map<Long, Double> maxScoreMap) {
         try {
-            JsonNode root = objectMapper.readTree(responseBody);
-            String text   = root.path("candidates").get(0)
-                    .path("content").path("parts").get(0)
-                    .path("text").asText();
-
-            // Strip markdown phòng trường hợp Gemini vẫn thêm vào
-            text = text.replaceAll("(?s)```json|```", "").trim();
+            // Strip markdown phòng trường hợp AI vẫn thêm vào
+            String text = responseText.replaceAll("(?s)```json|```", "").trim();
 
             JsonNode array = objectMapper.readTree(text);
             Map<Long, AiSuggestionResponse> resultMap = new HashMap<>();
@@ -392,13 +375,9 @@ public class AiGradingService {
 
                 var tags = aa.getQuestion().getTags();
                 if (tags == null || tags.isEmpty()) {
-                    // Câu hỏi không có tag → phân tích theo tên đề thi
-                    String examName = attempt.getExam() != null
-                            ? attempt.getExam().getTitle()
-                            : "Đề thi chung";
-                    tagStats.computeIfAbsent(examName, k -> new int[]{0, 0});
-                    tagStats.get(examName)[0]++;
-                    if (correct) tagStats.get(examName)[1]++;
+                    // Câu hỏi không có tag → skip (không phân tích)
+                    // Hoặc có thể lấy course name nếu muốn
+                    continue;  // Skip câu không có tag
                 } else {
                     for (var tag : tags) {
                         tagStats.computeIfAbsent(tag.getName(), k -> new int[]{0, 0});
@@ -447,6 +426,10 @@ public class AiGradingService {
 
     /** Gọi AI để lấy lộ trình học tập có cấu trúc */
     private AiAdviceResult callAiForAdvice(List<TopicStat> topics, int totalAttempts, int totalWrong) {
+        if (!aiProvider.isAvailable()) {
+            return new AiAdviceResult("", List.of());
+        }
+        
         try {
             // Compact prompt - tối ưu token
             StringBuilder sb = new StringBuilder();
@@ -454,32 +437,12 @@ public class AiGradingService {
             topics.forEach(t -> sb.append(t.topic()).append(":").append(t.correctPct()).append("%,"));
             sb.append("\nJSON (no markdown):{\"advice\":\"<1 câu VN>\",\"roadmap\":[{\"topic\":\"<tên>\",\"priority\":\"HIGH|MEDIUM|LOW\",\"action\":\"<1 câu>\",\"keywords\":[\"kw1\",\"kw2\"]}]}\nChỉ topic <70%, tối đa 5.");
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            Map<String, Object> body = Map.of(
-                    "contents", List.of(Map.of("parts", List.of(Map.of("text", sb.toString()))))
-            );
-
-            // Retry up to 2 times on 503
-            ResponseEntity<String> resp = null;
-            for (int attempt = 0; attempt < 3; attempt++) {
-                try {
-                    resp = restTemplate.postForEntity(
-                            getGeminiUrl() + "?key=" + geminiApiKey,
-                            new HttpEntity<>(body, headers), String.class);
-                    break; // success
-                } catch (org.springframework.web.client.HttpServerErrorException e) {
-                    if (e.getStatusCode().value() == 503 && attempt < 2) {
-                        log.warn("[AiWeakness] 503 retry {}/2", attempt + 1);
-                        Thread.sleep(1500L * (attempt + 1)); // 1.5s, 3s
-                    } else throw e;
-                }
+            String responseText = aiProvider.generate(sb.toString());
+            if (responseText == null || responseText.isBlank()) {
+                return new AiAdviceResult("", List.of());
             }
-            if (resp == null) throw new RuntimeException("No response from Gemini");
-            JsonNode root = objectMapper.readTree(resp.getBody());
-            String text = root.path("candidates").get(0)
-                    .path("content").path("parts").get(0).path("text").asText("");
-            text = text.replaceAll("(?s)```json|```", "").trim();
+            
+            String text = responseText.replaceAll("(?s)```json|```", "").trim();
 
             JsonNode json = objectMapper.readTree(text);
             String advice = json.path("advice").asText("");
@@ -524,7 +487,7 @@ public class AiGradingService {
     public record EssayGradeResult(int score, int maxScore, String feedback, String level) {}
 
     public EssayGradeResult gradePracticeEssay(EssayGradeRequest req) {
-        if (geminiApiKey == null || geminiApiKey.isBlank())
+        if (!aiProvider.isAvailable())
             return new EssayGradeResult(0, 10, "AI chưa được cấu hình.", "UNKNOWN");
 
         try {
@@ -542,18 +505,12 @@ public class AiGradingService {
                 }
                 """, req.question(), req.suggestedAnswer(), req.studentAnswer());
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_JSON);
-            Map<String, Object> body = Map.of(
-                    "contents", List.of(Map.of("parts", List.of(Map.of("text", prompt)))));
-            ResponseEntity<String> resp = restTemplate.postForEntity(
-                    getGeminiUrl() + "?key=" + geminiApiKey,
-                    new HttpEntity<>(body, headers), String.class);
+            String responseText = aiProvider.generate(prompt);
+            if (responseText == null || responseText.isBlank()) {
+                return new EssayGradeResult(0, 10, "AI không phản hồi.", "UNKNOWN");
+            }
 
-            JsonNode root = objectMapper.readTree(resp.getBody());
-            String text = root.path("candidates").get(0)
-                    .path("content").path("parts").get(0).path("text").asText();
-            text = text.replaceAll("(?s)```json|```", "").trim();
+            String text = responseText.replaceAll("(?s)```json|```", "").trim();
             JsonNode json = objectMapper.readTree(text);
 
             return new EssayGradeResult(

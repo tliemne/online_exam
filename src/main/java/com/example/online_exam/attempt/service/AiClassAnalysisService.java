@@ -31,6 +31,7 @@ public class AiClassAnalysisService {
     private final RestTemplate        restTemplate;
     private final ObjectMapper        objectMapper;
     private final StringRedisTemplate redis;
+    private final com.example.online_exam.ai.AiProvider aiProvider;
 
     @Value("${gemini.api.key:}")
     private String geminiApiKey;
@@ -150,7 +151,7 @@ public class AiClassAnalysisService {
 
         // ── AI advice ─────────────────────────────────────
         String aiAdvice = "";
-        if (geminiApiKey != null && !geminiApiKey.isBlank() && !topicStats.isEmpty())
+        if (aiProvider.isAvailable() && !topicStats.isEmpty())
             aiAdvice = callAi(course.getName(), topicStats, passRate, (int) Math.round(avgScore));
 
         // Auto suggestions
@@ -185,17 +186,8 @@ public class AiClassAnalysisService {
                     t.topic(), t.correctPct())));
             sb.append("\nViết 2 câu nhận xét + 1 gợi ý cải thiện cho giáo viên. Tiếng Việt, ngắn gọn. Chỉ text.");
 
-            HttpHeaders h = new HttpHeaders();
-            h.setContentType(MediaType.APPLICATION_JSON);
-            Map<String, Object> body = Map.of("contents",
-                    List.of(Map.of("parts", List.of(Map.of("text", sb.toString())))));
-            ResponseEntity<String> resp = restTemplate.postForEntity(
-                    geminiUrl() + "?key=" + geminiApiKey,
-                    new HttpEntity<>(body, h), String.class);
-            return objectMapper.readTree(resp.getBody())
-                    .path("candidates").get(0)
-                    .path("content").path("parts").get(0)
-                    .path("text").asText("");
+            String responseText = aiProvider.generate(sb.toString());
+            return responseText != null ? responseText : "";
         } catch (Exception e) {
             log.warn("[AiClass] advice failed: {}", e.getMessage());
             return "";

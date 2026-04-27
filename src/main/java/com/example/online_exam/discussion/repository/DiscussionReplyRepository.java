@@ -12,6 +12,9 @@ public interface DiscussionReplyRepository extends JpaRepository<DiscussionReply
 
     List<DiscussionReply> findByPostIdAndIsDeletedFalse(Long postId);
 
+    // Lấy TẤT CẢ replies của post (kể cả đã deleted) - dùng khi xóa post
+    List<DiscussionReply> findByPostId(Long postId);
+
     List<DiscussionReply> findByParentReplyId(Long parentReplyId);
 
     @Query("SELECT r FROM DiscussionReply r WHERE r.post.id = :postId AND r.isDeleted = false ORDER BY r.voteCount DESC")

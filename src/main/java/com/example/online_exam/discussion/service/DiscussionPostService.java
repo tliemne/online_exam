@@ -269,28 +269,32 @@ public class DiscussionPostService {
         // Validate user is post author OR course teacher OR admin
         validatePostEditPermission(currentUser, post);
         
-        // 1. Get all replies (including nested)
-        List<DiscussionReply> replies = discussionReplyRepository.findByPostIdAndIsDeletedFalse(postId);
+        // 1. Lấy TẤT CẢ replies của post (kể cả đã deleted)
+        List<DiscussionReply> allReplies = discussionReplyRepository.findByPostId(postId);
         
-        // 2. Delete all reply attachments (files + database)
-        for (DiscussionReply reply : replies) {
+        // 2. Xóa attachments và votes cho tất cả replies
+        for (DiscussionReply reply : allReplies) {
             List<com.example.online_exam.discussion.entity.DiscussionAttachment> replyAttachments = 
                 attachmentRepository.findByReplyIdOrderByCreatedAtAsc(reply.getId());
             for (com.example.online_exam.discussion.entity.DiscussionAttachment attachment : replyAttachments) {
                 fileUploadService.deleteFile(attachment.getFilePath());
             }
             attachmentRepository.deleteAll(replyAttachments);
-        }
-        
-        // 3. Delete all votes for replies
-        for (DiscussionReply reply : replies) {
             discussionVoteRepository.deleteByReplyId(reply.getId());
         }
         
-        // 4. Delete all replies
-        discussionReplyRepository.deleteAll(replies);
+        // 3. Xóa nested replies trước (có parent_reply_id), rồi mới xóa top-level
+        List<DiscussionReply> nestedReplies = allReplies.stream()
+                .filter(r -> r.getParentReply() != null)
+                .collect(java.util.stream.Collectors.toList());
+        List<DiscussionReply> topLevelReplies = allReplies.stream()
+                .filter(r -> r.getParentReply() == null)
+                .collect(java.util.stream.Collectors.toList());
         
-        // 5. Delete all post attachments (files + database)
+        discussionReplyRepository.deleteAll(nestedReplies);
+        discussionReplyRepository.deleteAll(topLevelReplies);
+        
+        // 4. Xóa post attachments
         List<com.example.online_exam.discussion.entity.DiscussionAttachment> postAttachments = 
             attachmentRepository.findByPostIdOrderByCreatedAtAsc(postId);
         for (com.example.online_exam.discussion.entity.DiscussionAttachment attachment : postAttachments) {
@@ -298,14 +302,11 @@ public class DiscussionPostService {
         }
         attachmentRepository.deleteAll(postAttachments);
         
-        // 6. Delete all votes for post
+        // 5. Xóa votes cho post
         discussionVoteRepository.deleteByPostId(postId);
         
-        // 7. Delete post
+        // 6. Xóa post
         discussionPostRepository.delete(post);
-        
-        // Note: Notifications sẽ được xử lý khi user click vào
-        // Nếu post không tồn tại, sẽ hiển thị "Bài viết không còn tồn tại"
     }
 
     /**

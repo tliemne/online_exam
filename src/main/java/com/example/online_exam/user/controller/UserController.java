@@ -256,6 +256,16 @@ public class UserController {
                 .timestamp(LocalDateTime.now()).build();
     }
 
+    // Chỉ ADMIN toggle trạng thái tài khoản (ACTIVE ↔ INACTIVE)
+    @PatchMapping("/{id}/toggle-status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public BaseResponse<Void> toggleStatus(@PathVariable Long id) {
+        userService.toggleStatus(id);
+        return BaseResponse.<Void>builder()
+                .status(200).message("Cập nhật trạng thái tài khoản thành công")
+                .timestamp(LocalDateTime.now()).build();
+    }
+
     // ── Debug: test gửi email ─────────────────────────────
     @GetMapping("/test-email")
     public org.springframework.http.ResponseEntity<String> testEmail(

@@ -487,4 +487,27 @@ public class UserServiceImpl implements UserService {
         }
     }
 
+    @Override
+    public void toggleStatus(Long userId) {
+        User caller = currentUserService.requireCurrentUser();
+        if (caller.getId().equals(userId)) {
+            throw new AppException(ErrorCode.CANNOT_DELETE_SELF, "Không thể vô hiệu hóa tài khoản đang đăng nhập");
+        }
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+        // Không cho vô hiệu hóa tài khoản Admin khác
+        boolean isAdmin = user.getRoles().stream()
+                .anyMatch(r -> r.getName().name().equals("ADMIN"));
+        if (isAdmin) {
+            throw new AppException(ErrorCode.FORBIDDEN, "Không thể vô hiệu hóa tài khoản Admin");
+        }
+        // Toggle: ACTIVE → INACTIVE, INACTIVE → ACTIVE
+        if (user.getStatus() == com.example.online_exam.user.enums.UserStatus.ACTIVE) {
+            user.setStatus(com.example.online_exam.user.enums.UserStatus.INACTIVE);
+        } else {
+            user.setStatus(com.example.online_exam.user.enums.UserStatus.ACTIVE);
+        }
+        userRepository.save(user);
+    }
+
 }

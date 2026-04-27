@@ -1,7 +1,6 @@
 package com.example.online_exam.course.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import lombok.Data;
 
 import java.util.List;
@@ -11,6 +10,5 @@ public class CourseRequest {
     @NotBlank
     private String name;
     private String description;
-    @NotEmpty(message = "Phải chọn ít nhất một giảng viên")
-    private List<Long> teacherIds;
+    private List<Long> teacherIds; // Optional - Admin chọn giáo viên, Teacher tự động là giáo viên
 }

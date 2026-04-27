@@ -31,7 +31,7 @@ class WebSocketClient {
           : window.location.origin;
 
         const wsUrl = `${backendUrl}/ws`;
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('accessToken'); // dùng đúng key
 
         this.stompClient = new Client({
           webSocketFactory: () => new SockJS(wsUrl),
@@ -39,7 +39,11 @@ class WebSocketClient {
           reconnectDelay: this.reconnectDelay,
           heartbeatIncoming: 10000,
           heartbeatOutgoing: 10000,
-          debug: () => {}, // suppress debug logs
+          debug: (msg) => {
+            if (msg.includes('CONNECTED') || msg.includes('ERROR') || msg.includes('DISCONNECT')) {
+              console.log('[WebSocket]', msg);
+            }
+          },
           onConnect: () => {
             this.connected = true;
             // Re-subscribe all pending subscriptions after reconnect

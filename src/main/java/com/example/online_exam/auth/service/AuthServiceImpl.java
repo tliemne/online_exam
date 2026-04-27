@@ -55,6 +55,11 @@ public class AuthServiceImpl implements AuthService {
             throw new AppException(ErrorCode.INVALID_PASSWORD);
         }
 
+        // Kiểm tra tài khoản có bị vô hiệu hóa không
+        if (user.getStatus() == com.example.online_exam.user.enums.UserStatus.INACTIVE) {
+            throw new AppException(ErrorCode.ACCOUNT_INACTIVE);
+        }
+
         rateLimiter.recordSuccess(request.getUsername());
 
         String accessToken  = jwtService.generateAccessToken(user);
