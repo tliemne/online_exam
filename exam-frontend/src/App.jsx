@@ -3,6 +3,7 @@ import { Suspense } from 'react'
 import { AuthProvider } from './context/AuthContext'
 import { ToastProvider } from './context/ToastContext'
 import AdminActivityLogPage from './pages/admin/AdminActivityLogPage'
+import AdminModerationPage from './pages/admin/AdminModerationPage'
 import { ProtectedRoute, GuestRoute } from './routes/Guards'
 import AppLayout from './components/layout/AppLayout'
 
@@ -95,6 +96,7 @@ export default function App() {
             </ProtectedRoute>
           } />
           <Route path="/admin/activity-logs" element={<ProtectedRoute roles={['ADMIN']}><WithLayout><AdminActivityLogPage /></WithLayout></ProtectedRoute>} />
+          <Route path="/admin/moderation" element={<ProtectedRoute roles={['ADMIN']}><WithLayout><AdminModerationPage /></WithLayout></ProtectedRoute>} />
           <Route path="/admin/discussions" element={<ProtectedRoute roles={['ADMIN']}><WithLayout><AdminDiscussionsPage /></WithLayout></ProtectedRoute>} />
 
           {/* Teacher */}

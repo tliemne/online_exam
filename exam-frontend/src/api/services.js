@@ -210,4 +210,8 @@ export const discussionApi = {
   deleteAttachment: (attachmentId) => api.delete(`/api/discussions/attachments/${attachmentId}`),
   getAttachmentUrl: (attachmentId) => `/public/attachments/${attachmentId}`,
   getThumbnailUrl: (attachmentId) => `/public/attachments/${attachmentId}/thumbnail`,
+  
+  // Reports
+  reportPost:         (postId, data)             => api.post(`/api/discussions/${postId}/report`, data),
+  reportReply:        (replyId, data)            => api.post(`/api/discussions/replies/${replyId}/report`, data),
 }

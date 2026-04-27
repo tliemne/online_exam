@@ -1,0 +1,57 @@
+{
+  "name": "notification-system",
+  "version": "1.0.0",
+  "title": "Notification System Implementation",
+  "description": "Xây dựng hệ thống thông báo cho admin (khi có báo cáo) và user (khi bị cảnh báo)",
+  "status": "completed",
+  "tasks": [
+    {
+      "id": "1",
+      "title": "Backend: Notification Entity & Repository",
+      "description": "Tạo entity Notification và repository",
+      "status": "completed"
+    },
+    {
+      "id": "2",
+      "title": "Backend: Notification Service",
+      "description": "Tạo service để tạo, lấy, đánh dấu đã đọc notification",
+      "status": "completed"
+    },
+    {
+      "id": "3",
+      "title": "Backend: Notification Controller",
+      "description": "Tạo API endpoints cho notification",
+      "status": "completed"
+    },
+    {
+      "id": "4",
+      "title": "Backend: Integrate with Moderation",
+      "description": "Gửi notification khi admin cảnh báo/mute/ban user",
+      "status": "completed"
+    },
+    {
+      "id": "5",
+      "title": "Backend: Integrate with Report",
+      "description": "Gửi notification cho admin khi có báo cáo mới",
+      "status": "completed"
+    },
+    {
+      "id": "6",
+      "title": "Frontend: Notification Bell Component",
+      "description": "Tạo component chuông thông báo trên header",
+      "status": "completed"
+    },
+    {
+      "id": "7",
+      "title": "Frontend: Notification Dropdown",
+      "description": "Tạo dropdown hiển thị danh sách notification",
+      "status": "completed"
+    },
+    {
+      "id": "8",
+      "title": "Frontend: Real-time Updates",
+      "description": "Implement polling hoặc WebSocket để cập nhật real-time",
+      "status": "completed"
+    }
+  ]
+}

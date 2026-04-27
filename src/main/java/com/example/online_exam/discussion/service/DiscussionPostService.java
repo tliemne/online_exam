@@ -55,12 +55,18 @@ public class DiscussionPostService {
     private final NotificationService notificationService;
     private final com.example.online_exam.discussion.repository.DiscussionAttachmentRepository attachmentRepository;
     private final FileUploadService fileUploadService;
+    private final com.example.online_exam.discussion.repository.UserViolationRepository violationRepository;
+    private final com.example.online_exam.discussion.repository.ViolationNotificationRepository violationNotificationRepository;
+    private final com.example.online_exam.discussion.repository.DiscussionReportRepository discussionReportRepository;
 
     /**
      * Task 5.1: Create a new discussion post
      */
     public DiscussionPostResponse createPost(DiscussionPostRequest request) {
         User currentUser = currentUserService.requireCurrentUser();
+        
+        // Check if user is banned or muted
+        checkUserRestrictions(currentUser);
         
         // Validate user is course member
         Course course = courseRepository.findById(request.getCourseId())
@@ -255,6 +261,9 @@ public class DiscussionPostService {
     /**
      * Task 5.6: Delete a post (hard delete with cascade)
      * Xóa thật bài viết và tất cả dữ liệu liên quan:
+     * - Tất cả reports liên quan đến post
+     * - Tất cả violation notifications liên quan
+     * - Tất cả violations liên quan đến post
      * - Tất cả attachments (files và database records)
      * - Tất cả replies (và nested replies) và attachments của chúng
      * - Tất cả votes (cho post và replies)
@@ -269,10 +278,34 @@ public class DiscussionPostService {
         // Validate user is post author OR course teacher OR admin
         validatePostEditPermission(currentUser, post);
         
-        // 1. Lấy TẤT CẢ replies của post (kể cả đã deleted)
+        // 0. Xóa reports liên quan đến post (phải xóa trước vì có foreign key)
+        discussionReportRepository.deleteByPostId(postId);
+        
+        // 1. Xóa violation notifications liên quan đến violations của post
+        violationNotificationRepository.deleteByPostId(postId);
+        
+        // 2. Xóa violations liên quan đến post
+        violationRepository.deleteByPostId(postId);
+        
+        // 3. Lấy TẤT CẢ replies của post (kể cả đã deleted)
         List<DiscussionReply> allReplies = discussionReplyRepository.findByPostId(postId);
         
-        // 2. Xóa attachments và votes cho tất cả replies
+        // 4. Xóa reports liên quan đến replies
+        for (DiscussionReply reply : allReplies) {
+            discussionReportRepository.deleteByReplyId(reply.getId());
+        }
+        
+        // 5. Xóa violation notifications liên quan đến violations của replies
+        for (DiscussionReply reply : allReplies) {
+            violationNotificationRepository.deleteByReplyId(reply.getId());
+        }
+        
+        // 6. Xóa violations liên quan đến replies
+        for (DiscussionReply reply : allReplies) {
+            violationRepository.deleteByReplyId(reply.getId());
+        }
+        
+        // 7. Xóa attachments và votes cho tất cả replies
         for (DiscussionReply reply : allReplies) {
             List<com.example.online_exam.discussion.entity.DiscussionAttachment> replyAttachments = 
                 attachmentRepository.findByReplyIdOrderByCreatedAtAsc(reply.getId());
@@ -283,7 +316,7 @@ public class DiscussionPostService {
             discussionVoteRepository.deleteByReplyId(reply.getId());
         }
         
-        // 3. Xóa nested replies trước (có parent_reply_id), rồi mới xóa top-level
+        // 8. Xóa nested replies trước (có parent_reply_id), rồi mới xóa top-level
         List<DiscussionReply> nestedReplies = allReplies.stream()
                 .filter(r -> r.getParentReply() != null)
                 .collect(java.util.stream.Collectors.toList());
@@ -294,7 +327,7 @@ public class DiscussionPostService {
         discussionReplyRepository.deleteAll(nestedReplies);
         discussionReplyRepository.deleteAll(topLevelReplies);
         
-        // 4. Xóa post attachments
+        // 9. Xóa post attachments
         List<com.example.online_exam.discussion.entity.DiscussionAttachment> postAttachments = 
             attachmentRepository.findByPostIdOrderByCreatedAtAsc(postId);
         for (com.example.online_exam.discussion.entity.DiscussionAttachment attachment : postAttachments) {
@@ -302,10 +335,10 @@ public class DiscussionPostService {
         }
         attachmentRepository.deleteAll(postAttachments);
         
-        // 5. Xóa votes cho post
+        // 10. Xóa votes cho post
         discussionVoteRepository.deleteByPostId(postId);
         
-        // 6. Xóa post
+        // 11. Xóa post
         discussionPostRepository.delete(post);
     }
 
@@ -397,6 +430,27 @@ public class DiscussionPostService {
     }
 
     // ── Helper methods ──────────────────────────────────────────────
+
+    private void checkUserRestrictions(User user) {
+        // Check if user is banned
+        java.util.Optional<com.example.online_exam.discussion.entity.UserViolation> activeBan = 
+                violationRepository.findActiveBanByUserId(user.getId());
+        if (activeBan.isPresent()) {
+            throw new AppException(ErrorCode.FORBIDDEN, 
+                    "Bạn đã bị cấm vĩnh viễn khỏi diễn đàn. Lý do: " + activeBan.get().getReason());
+        }
+
+        // Check if user is muted
+        java.util.Optional<com.example.online_exam.discussion.entity.UserViolation> activeMute = 
+                violationRepository.findActiveMuteByUserId(user.getId(), java.time.LocalDateTime.now());
+        if (activeMute.isPresent()) {
+            com.example.online_exam.discussion.entity.UserViolation mute = activeMute.get();
+            String expiryDate = mute.getExpiresAt()
+                    .format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+            throw new AppException(ErrorCode.FORBIDDEN, 
+                    "Bạn đã bị tạm khóa quyền đăng bài đến " + expiryDate + ". Lý do: " + mute.getReason());
+        }
+    }
 
     private void validateCourseMembership(User user, Course course) {
         boolean isAdmin = currentUserService.isAdmin(user);

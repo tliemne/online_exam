@@ -9,6 +9,7 @@ import AttachmentToolbar from '../../../components/discussion/AttachmentToolbar'
 import FileAttachmentList from '../../../components/discussion/FileAttachmentList'
 import FileUploader from '../../../components/discussion/FileUploader'
 import LinkPreview from '../../../components/discussion/LinkPreview'
+import ReportButton from '../../../components/discussion/ReportButton'
 import { useUrlDetector } from '../../../hooks/useUrlDetector'
 
 const Icon = {
@@ -177,6 +178,7 @@ function ReplyItem({ reply, post, user, isAdmin, isTeacher, isAuthor, canMarkBes
               className="flex items-center gap-1 font-semibold text-[var(--text-3)] hover:text-accent transition-colors py-1">
               Trả lời
             </button>
+            <ReportButton postId={post.id} replyId={reply.id} />
             {canMarkBestAnswer && level === 0 && (
               <button onClick={() => onMarkBest(reply.id)}
                 className={`flex items-center gap-1 font-semibold transition-colors py-1 ${

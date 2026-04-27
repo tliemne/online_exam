@@ -5,6 +5,7 @@ import { useToast } from '../../context/ToastContext'
 import { useTranslation } from 'react-i18next'
 import CreatePostModal from './modals/CreatePostModal'
 import PostDetailModal from './modals/PostDetailModal'
+import ReportButton from '../../components/discussion/ReportButton'
 
 // ── Icons ─────────────────────────────────────────────────
 const Icon = {
@@ -150,6 +151,9 @@ export default function DiscussionForumPage({ courseId: propCourseId }) {
                       {Icon.dislike}
                       Không thích
                     </button>
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <ReportButton postId={post.id} />
+                    </div>
                   </div>
                 </div>
               </div>

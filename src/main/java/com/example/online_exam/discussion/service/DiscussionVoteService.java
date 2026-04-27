@@ -32,12 +32,16 @@ public class DiscussionVoteService {
     private final DiscussionReplyRepository discussionReplyRepository;
     private final CurrentUserService currentUserService;
     private final WebSocketService webSocketService;
+    private final com.example.online_exam.discussion.repository.UserViolationRepository violationRepository;
 
     /**
      * Task 8.1: Vote on a post
      */
     public void votePost(Long postId, VoteType voteType) {
         User currentUser = currentUserService.requireCurrentUser();
+        
+        // Check if user is banned (banned users cannot vote)
+        checkIfBanned(currentUser);
         
         DiscussionPost post = discussionPostRepository.findByIdAndStatus(postId, PostStatus.ACTIVE)
                 .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Post not found"));
@@ -114,6 +118,9 @@ public class DiscussionVoteService {
      */
     public void voteReply(Long replyId, VoteType voteType) {
         User currentUser = currentUserService.requireCurrentUser();
+        
+        // Check if user is banned (banned users cannot vote)
+        checkIfBanned(currentUser);
         
         DiscussionReply reply = discussionReplyRepository.findById(replyId)
                 .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Reply not found"));
@@ -228,6 +235,16 @@ public class DiscussionVoteService {
     }
 
     // ── Helper methods ──────────────────────────────────────────────
+
+    private void checkIfBanned(User user) {
+        // Only check ban, not mute (muted users can still vote)
+        java.util.Optional<com.example.online_exam.discussion.entity.UserViolation> activeBan = 
+                violationRepository.findActiveBanByUserId(user.getId());
+        if (activeBan.isPresent()) {
+            throw new AppException(ErrorCode.FORBIDDEN, 
+                    "Bạn đã bị cấm vĩnh viễn khỏi diễn đàn. Lý do: " + activeBan.get().getReason());
+        }
+    }
 
     private void validateCourseMembership(User user, Course course) {
         boolean isAdmin = currentUserService.isAdmin(user);

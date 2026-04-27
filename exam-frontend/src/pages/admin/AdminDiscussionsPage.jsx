@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useConfirm } from '../../components/common/ConfirmDialog'
 import api from '../../api/client'
@@ -19,10 +19,15 @@ function Skeleton({ w = 'w-full', h = 'h-4' }) {
 
 export default function AdminDiscussionsPage() {
   const { user } = useAuth()
+  const location = useLocation()
   const [confirmDialog, ConfirmDialogUI] = useConfirm()
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  // Đọc query param ?tab=moderation để tự chuyển tab đúng
+  const queryTab = new URLSearchParams(location.search).get('tab')
+  const [activeTab, setActiveTab] = useState(queryTab === 'moderation' ? 'moderation' : 'discussions')
   
   // Filters
   const [searchQuery, setSearchQuery] = useState('')
@@ -107,12 +112,38 @@ export default function AdminDiscussionsPage() {
         </p>
       </div>
 
-      {error && (
-        <div className="rounded-lg px-4 py-3 text-sm border"
-          style={{ background: 'rgba(220,38,38,0.06)', borderColor: 'rgba(220,38,38,0.2)', color: '#dc2626' }}>
-          {error}
-        </div>
-      )}
+      {/* Tabs */}
+      <div className="flex gap-2 border-b border-[var(--border-base)]">
+        <button
+          onClick={() => setActiveTab('discussions')}
+          className={`px-4 py-2 font-semibold transition-colors border-b-2 ${
+            activeTab === 'discussions'
+              ? 'border-accent text-accent'
+              : 'border-transparent text-[var(--text-3)] hover:text-[var(--text-1)]'
+          }`}
+        >
+          Danh sách bài viết
+        </button>
+        <button
+          onClick={() => setActiveTab('moderation')}
+          className={`px-4 py-2 font-semibold transition-colors border-b-2 ${
+            activeTab === 'moderation'
+              ? 'border-accent text-accent'
+              : 'border-transparent text-[var(--text-3)] hover:text-[var(--text-1)]'
+          }`}
+        >
+          Báo cáo vi phạm
+        </button>
+      </div>
+
+      {activeTab === 'discussions' ? (
+        <>
+          {error && (
+            <div className="rounded-lg px-4 py-3 text-sm border"
+              style={{ background: 'rgba(220,38,38,0.06)', borderColor: 'rgba(220,38,38,0.2)', color: '#dc2626' }}>
+              {error}
+            </div>
+          )}
 
       {/* Filters */}
       <div className="card p-4 space-y-3">
@@ -153,9 +184,9 @@ export default function AdminDiscussionsPage() {
             className="input"
             style={{ width: '150px' }}
           >
-            <option value="ACTIVE">Đang hoạt động</option>
-            <option value="CLOSED">Đã đóng</option>
             <option value="">Tất cả</option>
+            <option value="ACTIVE">Đang hoạt động</option>
+            <option value="DELETED">Đã xóa</option>
           </select>
 
           <div className="text-sm flex items-center gap-2 ml-auto" style={{ color: 'var(--text-3)' }}>
@@ -277,7 +308,273 @@ export default function AdminDiscussionsPage() {
           </>
         )}
       </div>
+        </>
+      ) : (
+        <AdminModerationContent />
+      )}
     </div>
     </>
+  )
+}
+
+// Moderation Tab Content Component
+function AdminModerationContent() {
+  const [reports, setReports] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [selectedReport, setSelectedReport] = useState(null)
+  const [actionModal, setActionModal] = useState({ show: false, type: null })
+  const [reason, setReason] = useState('')
+  const [muteDays, setMuteDays] = useState(7)
+  const [submitting, setSubmitting] = useState(false)
+  const toast = { error: (msg) => alert(msg), success: (msg) => alert(msg) }
+
+  useEffect(() => {
+    fetchPendingReports()
+  }, [])
+
+  const fetchPendingReports = async () => {
+    setLoading(true)
+    try {
+      const response = await api.get('/api/admin/moderation/reports/pending')
+      setReports(response.data.data.content || [])
+    } catch (error) {
+      toast.error('Không thể tải danh sách báo cáo')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const openActionModal = (report, type) => {
+    setSelectedReport(report)
+    setActionModal({ show: true, type })
+    setReason('')
+    setMuteDays(7)
+  }
+
+  const closeModal = () => {
+    setActionModal({ show: false, type: null })
+    setSelectedReport(null)
+    setReason('')
+  }
+
+  const handleAction = async (e) => {
+    e.preventDefault()
+    if (reason.length < 10) {
+      toast.error('Lý do phải có ít nhất 10 ký tự')
+      return
+    }
+
+    setSubmitting(true)
+    try {
+      const endpoint = `/api/admin/moderation/reports/${selectedReport.id}/${actionModal.type}`
+      const payload = actionModal.type === 'mute' 
+        ? { reason, muteDurationDays: muteDays }
+        : { reason }
+      
+      await api.post(endpoint, payload)
+      toast.success('Đã xử lý thành công')
+      closeModal()
+      fetchPendingReports()
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Không thể thực hiện')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const getActionLabel = (type) => {
+    const labels = {
+      dismiss: 'Bỏ qua',
+      warn: 'Cảnh cáo',
+      mute: 'Tạm khóa',
+      ban: 'Cấm vĩnh viễn',
+      'delete-content': 'Xóa nội dung'
+    }
+    return labels[type] || type
+  }
+
+  const getViolationLabel = (type) => {
+    const labels = {
+      SPAM: 'Spam',
+      INAPPROPRIATE_CONTENT: 'Nội dung không phù hợp',
+      HARASSMENT: 'Quấy rối',
+      OFF_TOPIC: 'Sai chủ đề',
+      ABUSIVE_LANGUAGE: 'Ngôn từ thô tục',
+      OTHER: 'Khác'
+    }
+    return labels[type] || type
+  }
+
+  const IconMod = {
+    check: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>,
+    warning: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>,
+    stop: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/></svg>,
+    ban: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 715.636 5.636m12.728 12.728L5.636 5.636"/></svg>,
+    trash: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>,
+    x: <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/></svg>,
+  }
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-[var(--text-3)]">
+        {reports.length} báo cáo đang chờ xử lý
+      </p>
+
+      {loading ? (
+        <div className="flex justify-center py-20">
+          <div className="w-6 h-6 rounded-full border-2 border-accent border-t-transparent animate-spin"/>
+        </div>
+      ) : reports.length === 0 ? (
+        <div className="card text-center py-16">
+          <p className="text-[var(--text-2)]">Không có báo cáo nào đang chờ xử lý</p>
+        </div>
+      ) : (
+        reports.map(report => (
+          <div key={report.id} className="card p-5">
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="px-2 py-1 rounded text-xs font-semibold bg-danger/10 text-danger border border-danger/20">
+                    {getViolationLabel(report.violationType)}
+                  </span>
+                  {report.reportCount > 1 && (
+                    <span className="px-2 py-1 rounded text-xs font-semibold bg-accent/10 text-accent border border-accent/20">
+                      {report.reportCount} báo cáo
+                    </span>
+                  )}
+                </div>
+
+                <h3 className="font-semibold text-[var(--text-1)] mb-2">
+                  {report.postTitle || 'Reply'}
+                </h3>
+                <p className="text-sm text-[var(--text-3)] line-clamp-2 mb-3">
+                  {report.postContent || report.replyContent}
+                </p>
+
+                <div className="flex items-center gap-4 text-xs text-[var(--text-3)] mb-3">
+                  <span>Tác giả: <span className="font-medium text-[var(--text-2)]">{report.authorFullName}</span></span>
+                  <span>Báo cáo bởi: <span className="font-medium text-[var(--text-2)]">{report.reporterUsername}</span></span>
+                  <span>{new Date(report.createdAt).toLocaleDateString('vi-VN')}</span>
+                </div>
+
+                {report.details && (
+                  <div className="p-3 rounded bg-[var(--bg-page)] border border-[var(--border-base)] mb-3">
+                    <p className="text-xs text-[var(--text-3)]">
+                      <span className="font-semibold">Chi tiết:</span> {report.details}
+                    </p>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-2">
+                  <button 
+                    onClick={() => openActionModal(report, 'dismiss')}
+                    className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1"
+                  >
+                    {IconMod.check} Bỏ qua
+                  </button>
+                  <button 
+                    onClick={() => openActionModal(report, 'warn')}
+                    className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1"
+                  >
+                    {IconMod.warning} Cảnh cáo
+                  </button>
+                  <button 
+                    onClick={() => openActionModal(report, 'mute')}
+                    className="btn-secondary text-xs px-3 py-1.5 flex items-center gap-1"
+                  >
+                    {IconMod.stop} Tạm khóa
+                  </button>
+                  <button 
+                    onClick={() => openActionModal(report, 'ban')}
+                    className="text-xs px-3 py-1.5 rounded font-semibold bg-danger/10 text-danger hover:bg-danger/20 transition-colors flex items-center gap-1"
+                  >
+                    {IconMod.ban} Cấm vĩnh viễn
+                  </button>
+                  <button 
+                    onClick={() => openActionModal(report, 'delete-content')}
+                    className="text-xs px-3 py-1.5 rounded font-semibold bg-danger/10 text-danger hover:bg-danger/20 transition-colors flex items-center gap-1"
+                  >
+                    {IconMod.trash} Xóa nội dung
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))
+      )}
+
+      {actionModal.show && (
+        <div className="modal-overlay" onClick={closeModal}>
+          <div className="modal-box max-w-md" onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2 className="section-title">
+                {getActionLabel(actionModal.type)} - {selectedReport?.authorFullName}
+              </h2>
+              <button onClick={closeModal} className="btn-ghost p-1.5">
+                {IconMod.x}
+              </button>
+            </div>
+
+            <form onSubmit={handleAction} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-[var(--text-1)] mb-2">
+                  Lý do <span className="text-danger">*</span>
+                </label>
+                <textarea 
+                  className="input-field resize-none"
+                  rows={4}
+                  value={reason}
+                  onChange={e => setReason(e.target.value)}
+                  placeholder="Giải thích lý do bạn thực hiện hành động này..."
+                  required
+                  minLength={10}
+                />
+                <p className="text-xs text-[var(--text-3)] mt-1">{reason.length}/500 (tối thiểu 10)</p>
+              </div>
+
+              {actionModal.type === 'mute' && (
+                <div>
+                  <label className="block text-sm font-medium text-[var(--text-1)] mb-2">
+                    Thời gian khóa <span className="text-danger">*</span>
+                  </label>
+                  <select 
+                    className="input-field"
+                    value={muteDays}
+                    onChange={e => setMuteDays(Number(e.target.value))}
+                  >
+                    <option value={1}>1 ngày</option>
+                    <option value={3}>3 ngày</option>
+                    <option value={7}>7 ngày</option>
+                    <option value={30}>30 ngày</option>
+                  </select>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button 
+                  type="button"
+                  onClick={closeModal}
+                  className="btn-secondary flex-1"
+                  disabled={submitting}
+                >
+                  Hủy
+                </button>
+                <button 
+                  type="submit"
+                  className={`btn-primary flex-1 ${
+                    actionModal.type === 'ban' || actionModal.type === 'delete-content' 
+                      ? 'bg-danger hover:bg-danger/90' 
+                      : ''
+                  }`}
+                  disabled={submitting}
+                >
+                  {submitting ? 'Đang xử lý...' : `Xác nhận ${getActionLabel(actionModal.type).toLowerCase()}`}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }

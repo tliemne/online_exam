@@ -40,12 +40,16 @@ public class DiscussionReplyService {
     private final com.example.online_exam.discussion.repository.DiscussionAttachmentRepository attachmentRepository;
     private final FileUploadService fileUploadService;
     private final WebSocketService webSocketService;
+    private final com.example.online_exam.discussion.repository.UserViolationRepository violationRepository;
 
     /**
      * Task 7.1: Create a new reply
      */
     public DiscussionReplyResponse createReply(Long postId, DiscussionReplyRequest request) {
         User currentUser = currentUserService.requireCurrentUser();
+        
+        // Check if user is banned or muted
+        checkUserRestrictions(currentUser);
         
         DiscussionPost post = discussionPostRepository.findByIdAndStatus(postId, PostStatus.ACTIVE)
                 .orElseThrow(() -> new AppException(ErrorCode.NOT_FOUND, "Post not found"));
@@ -275,6 +279,27 @@ public class DiscussionReplyService {
     }
 
     // ── Helper methods ──────────────────────────────────────────────
+
+    private void checkUserRestrictions(User user) {
+        // Check if user is banned
+        java.util.Optional<com.example.online_exam.discussion.entity.UserViolation> activeBan = 
+                violationRepository.findActiveBanByUserId(user.getId());
+        if (activeBan.isPresent()) {
+            throw new AppException(ErrorCode.FORBIDDEN, 
+                    "Bạn đã bị cấm vĩnh viễn khỏi diễn đàn. Lý do: " + activeBan.get().getReason());
+        }
+
+        // Check if user is muted
+        java.util.Optional<com.example.online_exam.discussion.entity.UserViolation> activeMute = 
+                violationRepository.findActiveMuteByUserId(user.getId(), java.time.LocalDateTime.now());
+        if (activeMute.isPresent()) {
+            com.example.online_exam.discussion.entity.UserViolation mute = activeMute.get();
+            String expiryDate = mute.getExpiresAt()
+                    .format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+            throw new AppException(ErrorCode.FORBIDDEN, 
+                    "Bạn đã bị tạm khóa quyền đăng bài đến " + expiryDate + ". Lý do: " + mute.getReason());
+        }
+    }
 
     private void validateCourseMembership(User user, Course course) {
         boolean isAdmin = currentUserService.isAdmin(user);

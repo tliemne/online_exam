@@ -1,0 +1,75 @@
+{
+  "version": "1.0.0",
+  "title": "Moderation Enhancements - Notifications & Violation History",
+  "description": "Add notification system, violation history page, and auto-unmute without affecting existing code",
+  "status": "in_progress",
+  "tasks": [
+    {
+      "id": "task-1",
+      "title": "Create Notification System for Violations",
+      "description": "Add notification entity, repository, and service for warning/mute/ban notifications",
+      "status": "pending",
+      "subtasks": [
+        "Create ViolationNotification entity",
+        "Create ViolationNotificationRepository",
+        "Create ViolationNotificationService",
+        "Add notification creation in AdminModerationService"
+      ]
+    },
+    {
+      "id": "task-2",
+      "title": "Create User Violation History Page (Backend)",
+      "description": "Add endpoint to get user's violation history",
+      "status": "pending",
+      "subtasks": [
+        "Create UserViolationHistoryDTO",
+        "Add endpoint in UserController",
+        "Add service method in UserService"
+      ]
+    },
+    {
+      "id": "task-3",
+      "title": "Create User Violation History Page (Frontend)",
+      "description": "Create React page to display user's violation history",
+      "status": "pending",
+      "subtasks": [
+        "Create UserViolationHistoryPage.jsx",
+        "Add route in App.jsx",
+        "Add navigation link"
+      ]
+    },
+    {
+      "id": "task-4",
+      "title": "Implement Auto-Unmute Scheduler",
+      "description": "Create scheduled task to auto-unmute users when mute expires",
+      "status": "pending",
+      "subtasks": [
+        "Create UnmuteScheduler",
+        "Add cron job configuration",
+        "Test auto-unmute functionality"
+      ]
+    },
+    {
+      "id": "task-5",
+      "title": "Add Email Notifications",
+      "description": "Send email when user is warned/muted/banned",
+      "status": "pending",
+      "subtasks": [
+        "Create email template for violations",
+        "Add email sending in AdminModerationService",
+        "Test email delivery"
+      ]
+    },
+    {
+      "id": "task-6",
+      "title": "Add Notification UI Component",
+      "description": "Create notification bell/dropdown to show violation notifications",
+      "status": "pending",
+      "subtasks": [
+        "Create NotificationBell component",
+        "Add to header/navbar",
+        "Implement real-time updates via WebSocket"
+      ]
+    }
+  ]
+}
