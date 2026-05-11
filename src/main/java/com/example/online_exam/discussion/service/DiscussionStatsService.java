@@ -33,6 +33,33 @@ public class DiscussionStatsService {
     private final UserRepository userRepository;
 
     /**
+     * Danh sách bài viết chưa có best answer trong các khóa của GV (tối đa 20)
+     */
+    public java.util.List<com.example.online_exam.discussion.dto.UnansweredPostDTO> getUnansweredPosts(Long teacherId) {
+        List<Course> teacherCourses = courseRepository.findByTeacherId(teacherId);
+        List<Long> courseIds = teacherCourses.stream().map(Course::getId).collect(Collectors.toList());
+        if (courseIds.isEmpty()) return java.util.Collections.emptyList();
+
+        return postRepository.findAll().stream()
+                .filter(p -> courseIds.contains(p.getCourse().getId())
+                        && p.getStatus() == com.example.online_exam.discussion.enums.PostStatus.ACTIVE
+                        && !p.getHasBestAnswer())
+                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+                .limit(20)
+                .map(p -> com.example.online_exam.discussion.dto.UnansweredPostDTO.builder()
+                        .postId(p.getId())
+                        .title(p.getTitle())
+                        .authorName(p.getAuthor().getFullName())
+                        .authorUsername(p.getAuthor().getUsername())
+                        .courseId(p.getCourse().getId())
+                        .courseName(p.getCourse().getName())
+                        .replyCount(p.getReplyCount() != null ? p.getReplyCount() : 0)
+                        .createdAt(p.getCreatedAt())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    /**
      * Thống kê cho Teacher Dashboard
      */
     public TeacherDiscussionStatsDTO getTeacherStats(Long teacherId) {
@@ -51,9 +78,10 @@ public class DiscussionStatsService {
                     .build();
         }
 
-        // Lấy tất cả posts trong các khóa của GV
+        // Lấy tất cả posts ACTIVE trong các khóa của GV
         List<DiscussionPost> allPosts = postRepository.findAll().stream()
-                .filter(p -> courseIds.contains(p.getCourse().getId()))
+                .filter(p -> courseIds.contains(p.getCourse().getId())
+                        && p.getStatus() == com.example.online_exam.discussion.enums.PostStatus.ACTIVE)
                 .collect(Collectors.toList());
 
         Long totalPosts = (long) allPosts.size();
@@ -194,8 +222,11 @@ public class DiscussionStatsService {
      * Dùng cho endpoint GET /courses/{courseId}/discussions/stats
      */
     public ForumStatsResponse getCourseForumStats(Long courseId) {
-        // Lấy tất cả posts trong course với eager loading
-        List<DiscussionPost> coursePosts = postRepository.findByCourseIdWithAuthor(courseId);
+        // Lấy tất cả posts ACTIVE trong course với eager loading
+        List<DiscussionPost> coursePosts = postRepository.findByCourseIdWithAuthor(courseId)
+                .stream()
+                .filter(p -> p.getStatus() == com.example.online_exam.discussion.enums.PostStatus.ACTIVE)
+                .collect(Collectors.toList());
 
         int totalPosts = coursePosts.size();
         int answeredPosts = (int) coursePosts.stream()

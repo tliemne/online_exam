@@ -1,0 +1,343 @@
+// Hệ Thống Thi Trực Tuyến Tích Hợp Trí Tuệ Nhân Tạo
+// Paste vào https://dbdiagram.io/d
+
+// ── NHÓM 1: NGƯỜI DÙNG & PHÂN QUYỀN ─────────────────────────
+
+Table roles {
+  id bigint [primary key, increment]
+  name varchar(20) [not null, unique, note: 'ADMIN | TEACHER | STUDENT']
+  created_at datetime
+  updated_at datetime
+}
+
+Table users {
+  id bigint [primary key, increment]
+  username varchar(255) [not null, unique]
+  password_hash varchar(255) [not null]
+  email varchar(255) [unique]
+  full_name varchar(255)
+  avatar_url varchar(500)
+  phone varchar(20)
+  date_of_birth date
+  status varchar(20) [default: 'ACTIVE', note: 'ACTIVE | INACTIVE']
+  created_at datetime
+  updated_at datetime
+}
+
+Table user_roles {
+  user_id bigint [not null]
+  role_id bigint [not null]
+
+  indexes {
+    (user_id, role_id) [pk]
+  }
+}
+
+Table user_profiles {
+  id bigint [primary key, increment]
+  user_id bigint [not null, unique]
+  student_code varchar(50) [unique, note: 'Chỉ dùng cho sinh viên']
+  class_name varchar(100) [note: 'Chỉ dùng cho sinh viên']
+  teacher_code varchar(50) [unique, note: 'Chỉ dùng cho giáo viên']
+  department varchar(100) [note: 'Chỉ dùng cho giáo viên']
+  specialization varchar(255) [note: 'Chỉ dùng cho giáo viên']
+  created_at datetime
+  updated_at datetime
+}
+
+// ── NHÓM 2: LỚP HỌC & NỘI DUNG ──────────────────────────────
+
+Table courses {
+  id bigint [primary key, increment]
+  name varchar(255) [not null]
+  description text
+  created_by bigint
+  created_at datetime
+  updated_at datetime
+}
+
+Table course_teachers {
+  course_id bigint [not null]
+  teacher_id bigint [not null]
+
+  indexes {
+    (course_id, teacher_id) [pk]
+  }
+}
+
+Table course_students {
+  course_id bigint [not null]
+  student_id bigint [not null]
+
+  indexes {
+    (course_id, student_id) [pk]
+  }
+}
+
+Table lectures {
+  id bigint [primary key, increment]
+  course_id bigint [not null]
+  created_by bigint
+  title varchar(255) [not null]
+  description text
+  video_url varchar(500)
+  order_index int [default: 1]
+  created_at datetime
+  updated_at datetime
+}
+
+Table course_announcements {
+  id bigint [primary key, increment]
+  course_id bigint [not null]
+  author_id bigint [not null]
+  title varchar(255) [not null]
+  content text [not null]
+  created_at datetime
+  updated_at datetime
+}
+
+// ── NHÓM 3: NGÂN HÀNG CÂU HỎI ───────────────────────────────
+
+Table tags {
+  id bigint [primary key, increment]
+  name varchar(100) [not null, unique]
+  description varchar(255)
+  color varchar(50)
+}
+
+Table questions {
+  id bigint [primary key, increment]
+  content text [not null]
+  type varchar(30) [not null, note: 'MULTIPLE_CHOICE | TRUE_FALSE | ESSAY']
+  difficulty varchar(20) [not null, default: 'MEDIUM', note: 'EASY | MEDIUM | HARD']
+  course_id bigint [not null]
+  created_by bigint
+  total_attempts int [not null, default: 0]
+  correct_count int [not null, default: 0]
+  correct_rate double [not null, default: 0.0]
+  difficulty_flag varchar(20) [default: 'OK', note: 'OK | TOO_EASY | TOO_HARD']
+  created_at datetime
+  updated_at datetime
+}
+
+Table answers {
+  id bigint [primary key, increment]
+  content text [not null]
+  correct boolean [not null, default: false]
+  question_id bigint [not null]
+  created_at datetime
+  updated_at datetime
+}
+
+Table question_tags {
+  question_id bigint [not null]
+  tag_id bigint [not null]
+
+  indexes {
+    (question_id, tag_id) [pk]
+  }
+}
+
+// ── NHÓM 4: ĐỀ THI & BÀI LÀM ────────────────────────────────
+
+Table exams {
+  id bigint [primary key, increment]
+  title varchar(255) [not null]
+  description text
+  duration_minutes int [not null]
+  start_time datetime
+  end_time datetime
+  total_score double [default: 10.0]
+  pass_score double [default: 5.0]
+  shuffle_questions boolean [default: false]
+  max_attempts int [default: 1]
+  max_tab_violations int [default: 3]
+  max_exit_attempts int [default: 1]
+  status varchar(20) [not null, default: 'DRAFT', note: 'DRAFT | PUBLISHED | CLOSED']
+  course_id bigint [not null]
+  created_by bigint
+  created_at datetime
+  updated_at datetime
+}
+
+Table exam_questions {
+  id bigint [primary key, increment]
+  exam_id bigint [not null]
+  question_id bigint [not null]
+  score double [not null, default: 1.0]
+  order_index int [not null, default: 0]
+
+  indexes {
+    (exam_id, question_id) [unique]
+  }
+}
+
+Table attempts {
+  id bigint [primary key, increment]
+  exam_id bigint [not null]
+  student_id bigint [not null]
+  status varchar(20) [not null, default: 'IN_PROGRESS', note: 'IN_PROGRESS | SUBMITTED | GRADED']
+  score double
+  total_score double
+  passed boolean
+  started_at datetime
+  submitted_at datetime
+  time_remaining_seconds int
+  tab_violation_count int [default: 0]
+  exit_count int [default: 0]
+  question_order text [note: 'JSON array thứ tự câu hỏi đã xáo trộn']
+}
+
+Table attempt_answers {
+  id bigint [primary key, increment]
+  attempt_id bigint [not null]
+  question_id bigint
+  selected_answer_id bigint
+  text_answer text
+  score double
+  is_correct boolean
+  teacher_comment text
+}
+
+// ── NHÓM 5: DIỄN ĐÀN THẢO LUẬN ──────────────────────────────
+
+Table discussion_tags {
+  id bigint [primary key, increment]
+  name varchar(30) [not null]
+  course_id bigint [not null]
+  usage_count int [default: 0]
+  created_at datetime
+
+  indexes {
+    (course_id, name) [unique]
+  }
+}
+
+Table discussion_posts {
+  id bigint [primary key, increment]
+  title varchar(200) [not null]
+  content text [not null]
+  course_id bigint [not null]
+  author_id bigint [not null]
+  status varchar(20) [not null, default: 'ACTIVE', note: 'ACTIVE | DELETED | HIDDEN']
+  vote_count int [default: 0]
+  dislike_count int [default: 0]
+  reply_count int [default: 0]
+  has_best_answer boolean [default: false]
+  created_at datetime
+  updated_at datetime
+}
+
+Table discussion_post_tags {
+  post_id bigint [not null]
+  tag_id bigint [not null]
+
+  indexes {
+    (post_id, tag_id) [pk]
+  }
+}
+
+Table discussion_replies {
+  id bigint [primary key, increment]
+  content text [not null]
+  post_id bigint [not null]
+  author_id bigint [not null]
+  parent_reply_id bigint [note: 'NULL = bình luận gốc']
+  vote_count int [default: 0]
+  dislike_count int [default: 0]
+  is_best_answer boolean [default: false]
+  is_deleted boolean [default: false]
+  created_at datetime
+  updated_at datetime
+}
+
+Table discussion_votes {
+  id bigint [primary key, increment]
+  user_id bigint [not null]
+  post_id bigint [note: 'NULL nếu vote bình luận']
+  reply_id bigint [note: 'NULL nếu vote bài viết']
+  vote_type varchar(20) [not null, note: 'UPVOTE | DOWNVOTE']
+  created_at datetime
+
+  indexes {
+    (user_id, post_id) [unique]
+    (user_id, reply_id) [unique]
+  }
+}
+
+// ── NHÓM 6: HỆ THỐNG ─────────────────────────────────────────
+
+Table notifications {
+  id bigint [primary key, increment]
+  user_id bigint [not null]
+  type varchar(32) [not null, note: 'EXAM_PUBLISHED | ATTEMPT_GRADED | ESSAY_GRADED | ANNOUNCEMENT | WARNING | MUTE | BAN | REPORT_NEW']
+  title varchar(255) [not null]
+  message text
+  link varchar(255)
+  is_read boolean [not null, default: false]
+  created_at datetime
+}
+
+Table activity_logs {
+  id bigint [primary key, increment]
+  user_id bigint
+  action varchar(64) [not null, note: 'CREATE | UPDATE | DELETE | LOGIN']
+  target_type varchar(64) [note: 'USER | COURSE | EXAM | QUESTION']
+  target_id bigint
+  description text
+  ip_address varchar(64)
+  created_at datetime [not null]
+}
+
+// ── RELATIONSHIPS ─────────────────────────────────────────────
+
+// Nhóm 1
+Ref: user_roles.user_id > users.id
+Ref: user_roles.role_id > roles.id
+Ref: user_profiles.user_id - users.id
+
+// Nhóm 2
+Ref: courses.created_by > users.id
+Ref: course_teachers.course_id > courses.id
+Ref: course_teachers.teacher_id > users.id
+Ref: course_students.course_id > courses.id
+Ref: course_students.student_id > users.id
+Ref: lectures.course_id > courses.id
+Ref: lectures.created_by > users.id
+Ref: course_announcements.course_id > courses.id
+Ref: course_announcements.author_id > users.id
+
+// Nhóm 3
+Ref: questions.course_id > courses.id
+Ref: questions.created_by > users.id
+Ref: answers.question_id > questions.id
+Ref: question_tags.question_id > questions.id
+Ref: question_tags.tag_id > tags.id
+
+// Nhóm 4
+Ref: exams.course_id > courses.id
+Ref: exams.created_by > users.id
+Ref: exam_questions.exam_id > exams.id
+Ref: exam_questions.question_id > questions.id
+Ref: attempts.exam_id > exams.id
+Ref: attempts.student_id > users.id
+Ref: attempt_answers.attempt_id > attempts.id
+Ref: attempt_answers.question_id > questions.id
+Ref: attempt_answers.selected_answer_id > answers.id
+
+// Nhóm 5
+Ref: discussion_tags.course_id > courses.id
+Ref: discussion_posts.course_id > courses.id
+Ref: discussion_posts.author_id > users.id
+Ref: discussion_post_tags.post_id > discussion_posts.id
+Ref: discussion_post_tags.tag_id > discussion_tags.id
+Ref: discussion_replies.post_id > discussion_posts.id
+Ref: discussion_replies.author_id > users.id
+Ref: discussion_replies.parent_reply_id > discussion_replies.id
+Ref: discussion_votes.user_id > users.id
+Ref: discussion_votes.post_id > discussion_posts.id
+Ref: discussion_votes.reply_id > discussion_replies.id
+
+// Nhóm 6
+Ref: notifications.user_id > users.id
+Ref: activity_logs.user_id > users.id

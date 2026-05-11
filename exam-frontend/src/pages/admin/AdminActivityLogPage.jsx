@@ -14,54 +14,127 @@ const Icon = {
 
 // ── Action badge color map ────────────────────────────────
 const ACTION_COLOR = {
-  LOGIN:            'bg-emerald-500/15 text-emerald-400',
-  LOGOUT:           'bg-slate-500/15 text-slate-400',
-  CREATE_EXAM:      'bg-blue-500/15 text-blue-400',
-  UPDATE_EXAM:      'bg-amber-500/15 text-amber-400',
-  DELETE_EXAM:      'bg-red-500/15 text-red-400',
-  PUBLISH_EXAM:     'bg-violet-500/15 text-violet-400',
-  CLOSE_EXAM:       'bg-orange-500/15 text-orange-400',
-  CREATE_QUESTION:  'bg-blue-500/15 text-blue-400',
-  UPDATE_QUESTION:  'bg-amber-500/15 text-amber-400',
-  DELETE_QUESTION:  'bg-red-500/15 text-red-400',
-  CREATE_COURSE:    'bg-teal-500/15 text-teal-400',
-  UPDATE_COURSE:    'bg-amber-500/15 text-amber-400',
-  DELETE_COURSE:    'bg-red-500/15 text-red-400',
-  ADD_STUDENT:      'bg-emerald-500/15 text-emerald-400',
-  REMOVE_STUDENT:   'bg-red-500/15 text-red-400',
-  SUBMIT_ATTEMPT:   'bg-cyan-500/15 text-cyan-400',
-  GRADE_ATTEMPT:    'bg-indigo-500/15 text-indigo-400',
-  CREATE_TAG:       'bg-pink-500/15 text-pink-400',
-  UPDATE_TAG:       'bg-amber-500/15 text-amber-400',
-  DELETE_TAG:       'bg-red-500/15 text-red-400',
-  CREATE_USER:      'bg-blue-500/15 text-blue-400',
-  DELETE_USER:      'bg-red-500/15 text-red-400',
+  // Auth
+  LOGIN:                'bg-emerald-500/15 text-emerald-400',
+  LOGOUT:               'bg-slate-500/15 text-slate-400',
+  REGISTER:             'bg-blue-500/15 text-blue-400',
+  FORGOT_PASSWORD:      'bg-amber-500/15 text-amber-400',
+  RESET_PASSWORD:       'bg-amber-500/15 text-amber-400',
+  // User management
+  CREATE_USER:          'bg-blue-500/15 text-blue-400',
+  UPDATE_USER:          'bg-amber-500/15 text-amber-400',
+  DELETE_USER:          'bg-red-500/15 text-red-400',
+  RESET_USER_PASSWORD:  'bg-orange-500/15 text-orange-400',
+  TOGGLE_USER_STATUS:   'bg-orange-500/15 text-orange-400',
+  // Course
+  CREATE_COURSE:        'bg-teal-500/15 text-teal-400',
+  UPDATE_COURSE:        'bg-amber-500/15 text-amber-400',
+  DELETE_COURSE:        'bg-red-500/15 text-red-400',
+  ADD_STUDENT:          'bg-emerald-500/15 text-emerald-400',
+  REMOVE_STUDENT:       'bg-red-500/15 text-red-400',
+  // Exam
+  CREATE_EXAM:          'bg-blue-500/15 text-blue-400',
+  UPDATE_EXAM:          'bg-amber-500/15 text-amber-400',
+  DELETE_EXAM:          'bg-red-500/15 text-red-400',
+  PUBLISH_EXAM:         'bg-violet-500/15 text-violet-400',
+  CLOSE_EXAM:           'bg-orange-500/15 text-orange-400',
+  // Question
+  CREATE_QUESTION:      'bg-blue-500/15 text-blue-400',
+  UPDATE_QUESTION:      'bg-amber-500/15 text-amber-400',
+  DELETE_QUESTION:      'bg-red-500/15 text-red-400',
+  // Attempt
+  START_EXAM:           'bg-cyan-500/15 text-cyan-400',
+  SUBMIT_ATTEMPT:       'bg-cyan-500/15 text-cyan-400',
+  GRADE_ATTEMPT:        'bg-indigo-500/15 text-indigo-400',
+  RESET_ATTEMPT:        'bg-orange-500/15 text-orange-400',
+  // Tag
+  CREATE_TAG:           'bg-pink-500/15 text-pink-400',
+  UPDATE_TAG:           'bg-amber-500/15 text-amber-400',
+  DELETE_TAG:           'bg-red-500/15 text-red-400',
+  // Moderation
+  DISMISS_REPORT:       'bg-slate-500/15 text-slate-400',
+  DELETE_CONTENT:       'bg-red-500/15 text-red-400',
+  WARN_USER:            'bg-amber-500/15 text-amber-400',
+  MUTE_USER:            'bg-orange-500/15 text-orange-400',
+  BAN_USER:             'bg-red-600/15 text-red-500',
+  UNBAN_USER:           'bg-emerald-500/15 text-emerald-400',
 }
 
 const ACTION_LABEL = {
   LOGIN: 'login', LOGOUT: 'logout',
+  REGISTER: 'register',
+  FORGOT_PASSWORD: 'forgotPassword', RESET_PASSWORD: 'resetPassword',
+  CREATE_USER: 'createUser', UPDATE_USER: 'updateUser', DELETE_USER: 'deleteUser',
+  RESET_USER_PASSWORD: 'resetUserPassword', TOGGLE_USER_STATUS: 'toggleUserStatus',
   CREATE_EXAM: 'createExam', UPDATE_EXAM: 'updateExam', DELETE_EXAM: 'deleteExam',
   PUBLISH_EXAM: 'publish', CLOSE_EXAM: 'close',
   CREATE_QUESTION: 'createQuestion', UPDATE_QUESTION: 'updateQuestion', DELETE_QUESTION: 'deleteQuestion',
   CREATE_COURSE: 'createCourse', UPDATE_COURSE: 'updateCourse', DELETE_COURSE: 'deleteCourse',
   ADD_STUDENT: 'addStudent', REMOVE_STUDENT: 'removeStudent',
-  SUBMIT_ATTEMPT: 'submitExam', GRADE_ATTEMPT: 'gradeExam',
+  START_EXAM: 'startExam', SUBMIT_ATTEMPT: 'submitExam', GRADE_ATTEMPT: 'gradeExam', RESET_ATTEMPT: 'resetAttempt',
   CREATE_TAG: 'createTag', UPDATE_TAG: 'updateTag', DELETE_TAG: 'deleteTag',
-  CREATE_USER: 'createUser', DELETE_USER: 'deleteUser',
+  DISMISS_REPORT: 'dismissReport', DELETE_CONTENT: 'deleteContent',
+  WARN_USER: 'warnUser', MUTE_USER: 'muteUser', BAN_USER: 'banUser', UNBAN_USER: 'unbanUser',
 }
 
-const ALL_ACTIONS = [
-  'LOGIN', 'LOGOUT',
-  'CREATE_COURSE', 'UPDATE_COURSE', 'DELETE_COURSE', 'ADD_STUDENT', 'REMOVE_STUDENT',
-  'CREATE_EXAM', 'UPDATE_EXAM', 'DELETE_EXAM', 'PUBLISH_EXAM', 'CLOSE_EXAM',
-  'CREATE_QUESTION', 'UPDATE_QUESTION', 'DELETE_QUESTION',
-  'CREATE_TAG', 'UPDATE_TAG', 'DELETE_TAG',
+// Nhóm action theo category để dropdown dễ đọc
+const ACTION_GROUPS = [
+  {
+    label: 'Xác thực',
+    actions: ['LOGIN', 'LOGOUT', 'REGISTER', 'FORGOT_PASSWORD', 'RESET_PASSWORD'],
+  },
+  {
+    label: 'Người dùng',
+    actions: ['CREATE_USER', 'UPDATE_USER', 'DELETE_USER', 'RESET_USER_PASSWORD', 'TOGGLE_USER_STATUS'],
+  },
+  {
+    label: 'Lớp học',
+    actions: ['CREATE_COURSE', 'UPDATE_COURSE', 'DELETE_COURSE', 'ADD_STUDENT', 'REMOVE_STUDENT'],
+  },
+  {
+    label: 'Đề thi',
+    actions: ['CREATE_EXAM', 'UPDATE_EXAM', 'DELETE_EXAM', 'PUBLISH_EXAM', 'CLOSE_EXAM'],
+  },
+  {
+    label: 'Câu hỏi',
+    actions: ['CREATE_QUESTION', 'UPDATE_QUESTION', 'DELETE_QUESTION'],
+  },
+  {
+    label: 'Bài làm',
+    actions: ['SUBMIT_ATTEMPT', 'GRADE_ATTEMPT', 'RESET_ATTEMPT'],
+  },
+  {
+    label: 'Tags',
+    actions: ['CREATE_TAG', 'UPDATE_TAG', 'DELETE_TAG'],
+  },
+  {
+    label: 'Kiểm duyệt',
+    actions: ['DISMISS_REPORT', 'DELETE_CONTENT', 'WARN_USER', 'MUTE_USER', 'BAN_USER', 'UNBAN_USER'],
+  },
 ]
 
-function ActionBadge({ action, t }) {
+const ALL_ACTIONS = ACTION_GROUPS.flatMap(g => g.actions)
+
+// Label tiếng Việt hiển thị trực tiếp
+const ACTION_DISPLAY = {
+  LOGIN: 'Đăng nhập', LOGOUT: 'Đăng xuất',
+  REGISTER: 'Đăng ký', FORGOT_PASSWORD: 'Quên mật khẩu', RESET_PASSWORD: 'Reset mật khẩu',
+  CREATE_USER: 'Tạo người dùng', UPDATE_USER: 'Cập nhật user', DELETE_USER: 'Xóa người dùng',
+  RESET_USER_PASSWORD: 'Reset mật khẩu user', TOGGLE_USER_STATUS: 'Đổi trạng thái user',
+  CREATE_COURSE: 'Tạo lớp học', UPDATE_COURSE: 'Cập nhật lớp', DELETE_COURSE: 'Xóa lớp học',
+  ADD_STUDENT: 'Thêm sinh viên', REMOVE_STUDENT: 'Xóa sinh viên',
+  CREATE_EXAM: 'Tạo đề thi', UPDATE_EXAM: 'Cập nhật đề thi', DELETE_EXAM: 'Xóa đề thi',
+  PUBLISH_EXAM: 'Mở đề thi', CLOSE_EXAM: 'Đóng đề thi',
+  CREATE_QUESTION: 'Tạo câu hỏi', UPDATE_QUESTION: 'Cập nhật câu hỏi', DELETE_QUESTION: 'Xóa câu hỏi',
+  START_EXAM: 'Bắt đầu thi', SUBMIT_ATTEMPT: 'Nộp bài', GRADE_ATTEMPT: 'Chấm bài', RESET_ATTEMPT: 'Reset bài thi',
+  CREATE_TAG: 'Tạo tag', UPDATE_TAG: 'Cập nhật tag', DELETE_TAG: 'Xóa tag',
+  DISMISS_REPORT: 'Bỏ qua báo cáo', DELETE_CONTENT: 'Xóa nội dung',
+  WARN_USER: 'Cảnh cáo', MUTE_USER: 'Tạm khóa', BAN_USER: 'Cấm vĩnh viễn', UNBAN_USER: 'Bỏ cấm',
+}
+
+function ActionBadge({ action }) {
   const color = ACTION_COLOR[action] || 'bg-slate-500/15 text-slate-400'
-  const labelKey = ACTION_LABEL[action] || action
-  const label = t(`admin.${labelKey}`) || labelKey
+  const label = ACTION_DISPLAY[action] || action
   return (
     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${color}`}>
       {label}
@@ -248,9 +321,15 @@ export default function AdminActivityLogPage() {
             value={action}
             onChange={e => setAction(e.target.value)}
           >
-            <option value="">-- {t('common.search')} --</option>
-            {ALL_ACTIONS.map(a => (
-              <option key={a} value={a}>{ACTION_LABEL[a]} ({a})</option>
+            <option value="">-- Tìm kiếm --</option>
+            {ACTION_GROUPS.map(group => (
+              <optgroup key={group.label} label={group.label}>
+                {group.actions.map(a => (
+                  <option key={a} value={a}>
+                    {ACTION_LABEL[a] ? `${ACTION_LABEL[a]} (${a})` : a}
+                  </option>
+                ))}
+              </optgroup>
             ))}
           </select>
 
@@ -344,7 +423,7 @@ export default function AdminActivityLogPage() {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      <ActionBadge action={log.action} t={t} />
+                      <ActionBadge action={log.action} />
                     </td>
                     <td className="px-4 py-3 text-xs" style={{ color: 'var(--text-2)' }}>
                       {log.targetType

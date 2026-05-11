@@ -34,6 +34,7 @@ import com.example.online_exam.userprofile.entity.StudentProfile;
 import com.example.online_exam.userprofile.entity.TeacherProfile;
 import com.example.online_exam.userprofile.repository.StudentProfileRepository;
 import com.example.online_exam.userprofile.repository.TeacherProfileRepository;
+import com.example.online_exam.activitylog.entity.ActivityLogAction;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -66,6 +67,7 @@ public class UserServiceImpl implements UserService {
     private final ExamQuestionRepository examQuestionRepository;
     private final com.example.online_exam.activitylog.repository.ActivityLogRepository activityLogRepository;
     private final com.example.online_exam.notification.repository.NotificationRepository notificationRepository;
+    private final com.example.online_exam.activitylog.service.ActivityLogService activityLogService;
 
     // Optional — null nếu spring-boot-starter-mail chưa được cấu hình
     @org.springframework.beans.factory.annotation.Autowired(required = false)
@@ -139,9 +141,10 @@ public class UserServiceImpl implements UserService {
             );
         }
 
+        activityLogService.logUser(user,
+                ActivityLogAction.REGISTER,
+                "USER", user.getId(), "Đăng ký tài khoản: " + user.getUsername());
         return mapByVisibility(user);
-//        return userMapper.toResponse(user);
-//
     }
 
     @Override
@@ -208,6 +211,9 @@ public class UserServiceImpl implements UserService {
         if (request.getStatus() != null) user.setStatus(request.getStatus());
 
         userRepository.save(user);
+        User caller = currentUserService.getCurrentUser().orElse(null);
+        activityLogService.log(caller != null ? caller.getId() : null, ActivityLogAction.UPDATE_USER,
+                "USER", id, "Cập nhật user: " + user.getUsername());
         return mapByVisibility(user);
     }
 
@@ -348,6 +354,8 @@ public class UserServiceImpl implements UserService {
         // 9. Xóa activity logs
         activityLogRepository.deleteByUserId(id);
         // 10. Xóa user
+        activityLogService.logUser(caller, ActivityLogAction.DELETE_USER,
+                "USER", id, "Xóa user: " + target.getUsername() + " (" + target.getEmail() + ")");
         userRepository.deleteById(id);    }
     private UserResponse mapByVisibility(User targetUser) {
         User viewer = currentUserService.getCurrentUser().orElse(null);
@@ -448,6 +456,10 @@ public class UserServiceImpl implements UserService {
                     emailService != null ? "OK" : "NULL", req.getEmail());
         }
 
+        User creator = currentUserService.requireCurrentUser();
+        activityLogService.logUser(creator, ActivityLogAction.CREATE_USER,
+                "USER", savedUser.getId(), "Tạo sinh viên: " + savedUser.getUsername());
+
         return new CreateStudentResult(
                 savedUser.getId(),
                 savedUser.getUsername(),
@@ -485,6 +497,9 @@ public class UserServiceImpl implements UserService {
                 && !user.getEmail().endsWith("@school.edu.vn")) {
             emailService.sendPasswordReset(user.getEmail(), user.getFullName(), newPassword);
         }
+        User caller = currentUserService.requireCurrentUser();
+        activityLogService.logUser(caller, ActivityLogAction.RESET_USER_PASSWORD,
+                "USER", userId, "Reset mật khẩu cho: " + user.getUsername());
     }
 
     @Override
@@ -508,6 +523,8 @@ public class UserServiceImpl implements UserService {
             user.setStatus(com.example.online_exam.user.enums.UserStatus.ACTIVE);
         }
         userRepository.save(user);
+        activityLogService.logUser(caller, ActivityLogAction.TOGGLE_USER_STATUS,
+                "USER", userId, "Đổi trạng thái user: " + user.getUsername() + " → " + user.getStatus());
     }
 
 }

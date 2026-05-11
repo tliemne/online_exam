@@ -7,7 +7,7 @@ import ConfirmDialog from '../../components/common/ConfirmDialog'
 
 export default function AdminExamsPage() {
   const { t } = useTranslation()
-  const { showToast } = useToast()
+  const toast = useToast()
   
   const [exams, setExams] = useState([])
   const [loading, setLoading] = useState(true)
@@ -35,7 +35,7 @@ export default function AdminExamsPage() {
         setExams(data)
       })
       .catch(err => {
-        showToast(err.response?.data?.message || 'Không thể tải danh sách đề thi', 'error')
+        toast(err.response?.data?.message || 'Không thể tải danh sách đề thi', 'error')
       })
       .finally(() => setLoading(false))
   }
@@ -46,11 +46,12 @@ export default function AdminExamsPage() {
     setDeleting(true)
     try {
       await api.delete(`/exams/${deleteDialog.exam.id}`)
-      showToast('Đã xóa đề thi thành công', 'success')
-      loadExams()
+      toast('Đã xóa đề thi thành công', 'success')
       setDeleteDialog({ open: false, exam: null })
+      loadExams()
     } catch (err) {
-      showToast(err.response?.data?.message || 'Không thể xóa đề thi', 'error')
+      toast(err.response?.data?.message || 'Không thể xóa đề thi', 'error')
+      setDeleteDialog({ open: false, exam: null })
     } finally {
       setDeleting(false)
     }
@@ -254,8 +255,9 @@ export default function AdminExamsPage() {
           title="Xác nhận xóa đề thi"
           message={`Bạn có chắc chắn muốn xóa đề thi "${deleteDialog.exam?.title || ''}"? Tất cả bài làm và dữ liệu liên quan sẽ bị xóa vĩnh viễn.`}
           confirmLabel={deleting ? "Đang xóa..." : "Xóa"}
+          loading={deleting}
           onConfirm={handleDelete}
-          onCancel={() => setDeleteDialog({ open: false, exam: null })}
+          onCancel={() => !deleting && setDeleteDialog({ open: false, exam: null })}
           danger
         />
       )}

@@ -306,6 +306,9 @@ export default function TeacherDashboard() {
   const [discussionStats, setDiscussionStats] = useState(null)
   const [discussionLoading, setDiscussionLoading] = useState(true)
   const [forumStats, setForumStats] = useState(null) // Thêm forum stats cho top contributors
+  const [showUnanswered, setShowUnanswered] = useState(false)
+  const [unansweredPosts, setUnansweredPosts] = useState([])
+  const [unansweredLoading, setUnansweredLoading] = useState(false)
 
   useEffect(() => {
     api.get('/dashboard/teacher')
@@ -386,7 +389,16 @@ export default function TeacherDashboard() {
                   </p>
                 </div>
               </div>
-              <button onClick={() => navigate('/teacher/courses')}
+              <button onClick={() => {
+                  setShowUnanswered(true)
+                  if (unansweredPosts.length === 0) {
+                    setUnansweredLoading(true)
+                    api.get('/dashboard/discussion/teacher/unanswered')
+                      .then(r => setUnansweredPosts(r.data.data || []))
+                      .catch(() => {})
+                      .finally(() => setUnansweredLoading(false))
+                  }
+                }}
                 className="btn-primary px-4 py-2 text-sm">
                 Xem câu hỏi →
               </button>
@@ -571,6 +583,113 @@ export default function TeacherDashboard() {
           </Link>
         ))}
       </div>
+
+      {/* Modal: Danh sách câu hỏi chưa trả lời */}
+      {showUnanswered && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)' }}
+          onClick={e => { if (e.target === e.currentTarget) setShowUnanswered(false) }}>
+          <div className="w-full max-w-2xl max-h-[80vh] flex flex-col rounded-2xl overflow-hidden"
+            style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-base)', boxShadow: 'var(--shadow-modal)' }}>
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b shrink-0"
+              style={{ borderColor: 'var(--border-base)' }}>
+              <div>
+                <h2 className="font-bold text-base" style={{ color: 'var(--text-1)' }}>
+                  Câu hỏi chưa trả lời
+                </h2>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-3)' }}>
+                  Các bài viết chưa có câu trả lời tốt nhất trong lớp của bạn
+                </p>
+              </div>
+              <button onClick={() => setShowUnanswered(false)}
+                className="w-8 h-8 flex items-center justify-center rounded-lg transition-colors"
+                style={{ color: 'var(--text-3)' }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-elevated)'}
+                onMouseLeave={e => e.currentTarget.style.background = ''}>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto">
+              {unansweredLoading ? (
+                <div className="flex justify-center py-12">
+                  <div className="w-6 h-6 rounded-full border-2 border-t-transparent animate-spin"
+                    style={{ borderColor: 'var(--accent)' }}/>
+                </div>
+              ) : unansweredPosts.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-sm" style={{ color: 'var(--text-3)' }}>Không có câu hỏi nào chưa trả lời</p>
+                </div>
+              ) : (
+                <div className="divide-y" style={{ borderColor: 'var(--border-base)' }}>
+                  {unansweredPosts.map(post => (
+                    <div key={post.postId}
+                      className="px-6 py-4 hover:bg-[var(--bg-elevated)] transition-colors cursor-pointer"
+                      onClick={() => {
+                        navigate(`/teacher/courses/${post.courseId}?tab=discussion&postId=${post.postId}`)
+                        setShowUnanswered(false)
+                      }}>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm leading-snug" style={{ color: 'var(--text-1)' }}>
+                            {post.title}
+                          </p>
+                          <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                            {/* Lớp học */}
+                            <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full"
+                              style={{ background: 'var(--accent)18', color: 'var(--accent)' }}>
+                              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
+                              </svg>
+                              {post.courseName}
+                            </span>
+                            {/* Tác giả */}
+                            <span className="text-xs" style={{ color: 'var(--text-3)' }}>
+                              {post.authorName || post.authorUsername}
+                            </span>
+                            {/* Số phản hồi */}
+                            {post.replyCount > 0 && (
+                              <span className="text-xs" style={{ color: 'var(--text-3)' }}>
+                                {post.replyCount} phản hồi
+                              </span>
+                            )}
+                            {/* Thời gian */}
+                            <span className="text-xs" style={{ color: 'var(--text-3)' }}>
+                              {post.createdAt ? new Date(post.createdAt).toLocaleDateString('vi-VN') : ''}
+                            </span>
+                          </div>
+                        </div>
+                        <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                          style={{ color: 'var(--text-3)' }}>
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
+                        </svg>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-3 border-t shrink-0 flex items-center justify-between"
+              style={{ borderColor: 'var(--border-base)', background: 'var(--bg-elevated)' }}>
+              <p className="text-xs" style={{ color: 'var(--text-3)' }}>
+                {unansweredPosts.length} câu hỏi cần trả lời
+              </p>
+              <button onClick={() => setShowUnanswered(false)}
+                className="text-xs px-3 py-1.5 rounded-lg transition-colors"
+                style={{ color: 'var(--text-2)', background: 'var(--bg-surface)', border: '1px solid var(--border-base)' }}>
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

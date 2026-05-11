@@ -1,5 +1,7 @@
 package com.example.online_exam.attempt.service;
 
+import com.example.online_exam.activitylog.entity.ActivityLogAction;
+import com.example.online_exam.activitylog.service.ActivityLogService;
 import com.example.online_exam.attempt.dto.*;
 import com.example.online_exam.attempt.entity.*;
 import com.example.online_exam.attempt.enums.AttemptStatus;
@@ -51,6 +53,7 @@ public class AttemptServiceImpl implements AttemptService {
     private final QuestionStatService     questionStatService;
     private final NotificationService     notificationService;
     private final WebSocketService        webSocketService;
+    private final ActivityLogService      activityLogService;
 
     // ── Start Exam → tạo attempt IN_PROGRESS (hoặc trả lại nếu đã có) ─────
     @Override
@@ -226,6 +229,10 @@ public class AttemptServiceImpl implements AttemptService {
         }
 
         attempt = attemptRepo.save(attempt);
+
+        activityLogService.logUser(student, ActivityLogAction.SUBMIT_ATTEMPT,
+                "ATTEMPT", attempt.getId(), "Nộp bài: " + exam.getTitle()
+                        + (attempt.getScore() != null ? " — Điểm: " + attempt.getScore() + "/" + attempt.getTotalScore() : " (chờ chấm)"));
 
         if (autoGraded && student.getEmail() != null) {
             emailService.sendGradeResult(
@@ -431,6 +438,11 @@ public class AttemptServiceImpl implements AttemptService {
         
         attemptRepo.save(attempt);
         
+        activityLogService.logUser(caller, ActivityLogAction.GRADE_ATTEMPT,
+                "ATTEMPT", attemptId, "Chấm bài: " + attempt.getExam().getTitle()
+                        + " — SV: " + attempt.getStudent().getUsername()
+                        + " — Điểm: " + finalScore + "/" + attempt.getExam().getTotalScore());
+
         // ✅ Cập nhật stats ASYNC khi teacher grade tự luận
         // Chỉ cập nhật stats cho câu TỰ LUẬN (vì trắc nghiệm đã cập nhật khi nộp)
         Map<Long, Boolean> statMap = attempt.getAnswers().stream()
@@ -554,6 +566,9 @@ public class AttemptServiceImpl implements AttemptService {
         List<Attempt> allAttempts = attemptRepo.findByExamIdAndStudentIdOrderByStartedAtDesc(examId, studentId);
         attemptRepo.deleteAll(allAttempts);
         
+        activityLogService.logUser(caller, ActivityLogAction.RESET_ATTEMPT,
+                "ATTEMPT", attemptId, "Reset bài thi: " + attempt.getExam().getTitle()
+                        + " — SV: " + attempt.getStudent().getUsername());
         log.info("Reset all {} attempts for student {} in exam {}", allAttempts.size(), studentId, examId);
     }
 

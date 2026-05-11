@@ -61,4 +61,8 @@ public interface ViolationNotificationRepository extends JpaRepository<Violation
     @Modifying
     @Query("DELETE FROM ViolationNotification vn WHERE vn.violation.reply.id = :replyId")
     void deleteByReplyId(@Param("replyId") Long replyId);
+    
+    @Modifying
+    @Query("DELETE FROM ViolationNotification vn WHERE vn.violation.id = :violationId")
+    void deleteByViolationId(@Param("violationId") Long violationId);
 }

@@ -187,29 +187,55 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {/* Charts - Simplified to 2 charts */}
+      {/* Charts */}
       {stats && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Monthly Attempts */}
+          {/* Monthly Attempts - Area chart */}
           <div className="card">
             <p className="font-bold mb-0.5" style={{ color: 'var(--text-1)' }}>Lượt thi theo tháng</p>
             <p className="text-xs mb-4" style={{ color: 'var(--text-3)' }}>6 tháng gần nhất</p>
             {stats.monthlyAttempts && stats.monthlyAttempts.length > 0 ? (
-              <ReactApexChart type="bar" height={200}
+              <ReactApexChart type="area" height={210}
                 series={[{ name: 'Lượt thi', data: stats.monthlyAttempts.map(m => m.count) }]}
                 options={{
-                  chart: { background: 'transparent', toolbar: { show: false } },
+                  chart: {
+                    background: 'transparent',
+                    toolbar: { show: false },
+                    sparkline: { enabled: false },
+                  },
                   theme: { mode: document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark' },
                   xaxis: {
                     categories: stats.monthlyAttempts.map(m => m.month),
-                    labels: { style: { colors: 'var(--text-3)', fontSize: '11px' }, rotate: -45, rotateAlways: true }
+                    labels: { style: { colors: 'var(--text-3)', fontSize: '11px' }, rotate: -30, rotateAlways: true },
+                    axisBorder: { show: false },
+                    axisTicks: { show: false },
                   },
-                  yaxis: { labels: { style: { colors: 'var(--text-3)' } } },
-                  colors: ['var(--accent)'],
-                  plotOptions: { bar: { borderRadius: 6, columnWidth: '60%' } },
+                  yaxis: {
+                    labels: { style: { colors: 'var(--text-3)', fontSize: '11px' } },
+                    min: 0,
+                  },
+                  colors: ['#7c3aed'],
+                  fill: {
+                    type: 'gradient',
+                    gradient: {
+                      shadeIntensity: 1,
+                      opacityFrom: 0.45,
+                      opacityTo: 0.02,
+                      stops: [0, 100],
+                    },
+                  },
+                  stroke: { curve: 'smooth', width: 2.5 },
+                  markers: { size: 4, colors: ['#7c3aed'], strokeWidth: 0, hover: { size: 6 } },
                   dataLabels: { enabled: false },
-                  grid: { borderColor: 'var(--border-base)', strokeDashArray: 3 },
-                  tooltip: { theme: 'dark', y: { formatter: (val) => `${val} lượt` } }
+                  grid: {
+                    borderColor: 'var(--border-base)',
+                    strokeDashArray: 4,
+                    xaxis: { lines: { show: false } },
+                  },
+                  tooltip: {
+                    theme: 'dark',
+                    y: { formatter: (val) => `${val} lượt` },
+                  },
                 }}
               />
             ) : (
@@ -217,32 +243,82 @@ export default function AdminDashboard() {
             )}
           </div>
 
-          {/* Score Distribution */}
+          {/* Score Distribution - Radial/Donut đẹp hơn */}
           <div className="card">
             <p className="font-bold mb-0.5" style={{ color: 'var(--text-1)' }}>Phân bố điểm</p>
-            <p className="text-xs mb-4" style={{ color: 'var(--text-3)' }}>Theo thang điểm 10</p>
-            {stats.scoreDistribution ? (
-              <ReactApexChart type="donut" height={200}
-                series={[
-                  stats.scoreDistribution.excellent,
-                  stats.scoreDistribution.good,
-                  stats.scoreDistribution.fair,
-                  stats.scoreDistribution.average,
-                  stats.scoreDistribution.poor
-                ]}
-                options={{
-                  chart: { background: 'transparent' },
-                  theme: { mode: document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark' },
-                  labels: ['Xuất sắc (9-10)', 'Giỏi (8-9)', 'Khá (7-8)', 'TB (5-7)', 'Yếu (<5)'],
-                  colors: ['#16a34a', '#0891b2', '#d97706', '#f59e0b', '#dc2626'],
-                  legend: { position: 'bottom', labels: { colors: 'var(--text-2)' }, fontSize: '11px' },
-                  dataLabels: { enabled: true, formatter: (val) => `${val.toFixed(0)}%`, style: { fontSize: '11px', colors: ['#fff'] } },
-                  stroke: { width: 0 },
-                  plotOptions: { pie: { donut: { size: '65%' } } },
-                  tooltip: { theme: 'dark', y: { formatter: (val) => `${val} bài` } }
-                }}
-              />
-            ) : (
+            <p className="text-xs mb-2" style={{ color: 'var(--text-3)' }}>Theo thang điểm 10</p>
+            {stats.scoreDistribution ? (() => {
+              const dist = stats.scoreDistribution
+              const total = (dist.excellent || 0) + (dist.good || 0) + (dist.fair || 0) + (dist.average || 0) + (dist.poor || 0)
+              const bands = [
+                { label: 'Xuất sắc', range: '9–10', value: dist.excellent || 0, color: '#16a34a' },
+                { label: 'Giỏi',     range: '8–9',  value: dist.good      || 0, color: '#0891b2' },
+                { label: 'Khá',      range: '7–8',  value: dist.fair      || 0, color: '#d97706' },
+                { label: 'Trung bình', range: '5–7', value: dist.average  || 0, color: '#f59e0b' },
+                { label: 'Yếu',      range: '<5',   value: dist.poor      || 0, color: '#dc2626' },
+              ]
+              return (
+                <div className="flex gap-4 items-center">
+                  <div className="shrink-0">
+                    <ReactApexChart type="donut" height={180} width={180}
+                      series={bands.map(b => b.value)}
+                      options={{
+                        chart: { background: 'transparent' },
+                        theme: { mode: document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark' },
+                        labels: bands.map(b => b.label),
+                        colors: bands.map(b => b.color),
+                        legend: { show: false },
+                        dataLabels: { enabled: false },
+                        stroke: { width: 2, colors: ['var(--bg-surface)'] },
+                        plotOptions: {
+                          pie: {
+                            donut: {
+                              size: '70%',
+                              labels: {
+                                show: true,
+                                total: {
+                                  show: true,
+                                  label: 'Tổng',
+                                  fontSize: '11px',
+                                  color: 'var(--text-3)',
+                                  formatter: () => total,
+                                },
+                                value: {
+                                  fontSize: '18px',
+                                  fontWeight: 700,
+                                  color: 'var(--text-1)',
+                                },
+                              },
+                            },
+                          },
+                        },
+                        tooltip: { theme: 'dark', y: { formatter: (val) => `${val} bài` } },
+                      }}
+                    />
+                  </div>
+                  {/* Legend bên phải */}
+                  <div className="flex-1 space-y-2">
+                    {bands.map(b => {
+                      const pct = total > 0 ? Math.round(b.value / total * 100) : 0
+                      return (
+                        <div key={b.label} className="flex items-center gap-2">
+                          <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: b.color }}/>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-0.5">
+                              <span className="text-xs" style={{ color: 'var(--text-2)' }}>{b.label} <span className="text-[10px]" style={{ color: 'var(--text-3)' }}>({b.range})</span></span>
+                              <span className="text-xs font-mono font-semibold" style={{ color: 'var(--text-1)' }}>{pct}%</span>
+                            </div>
+                            <div className="h-1 rounded-full overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
+                              <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: b.color }}/>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })() : (
               <p className="text-center py-10 text-sm" style={{ color: 'var(--text-3)' }}>Chưa có dữ liệu</p>
             )}
           </div>
@@ -254,8 +330,6 @@ export default function AdminDashboard() {
         <div className="flex items-center justify-between px-5 py-4"
           style={{ borderBottom: '1px solid var(--border-base)' }}>
           <h2 className="section-title">Bài làm gần đây</h2>
-          <Link to="/teacher/grading" className="text-xs transition-colors"
-            style={{ color: 'var(--accent)' }}>Chấm điểm →</Link>
         </div>
 
         {loading ? (

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import CreateStudentModal from '../../components/common/CreateStudentModal'
 import ResetPasswordModal from '../../components/common/ResetPasswordModal'
+import Pagination from '../../components/common/Pagination'
 import { useParams, useNavigate, Link, useLocation } from 'react-router-dom'
 import { courseApi, userApi, lectureApi, announcementApi } from '../../api/services'
 import { useAuth } from '../../context/AuthContext'
@@ -265,6 +266,8 @@ function TabStudents({ course, isTeacher, isAdmin, onRefresh }) {
   const [removing, setRemoving] = useState(null)
   const [resetTarget, setResetTarget] = useState(null)
   const [search, setSearch] = useState('')
+  const [currentPage, setCurrentPage] = useState(0)
+  const PAGE_SIZE = 10
 
   const load = useCallback(() => {
     setLoading(true)
@@ -289,6 +292,12 @@ function TabStudents({ course, isTeacher, isAdmin, onRefresh }) {
     s.username?.toLowerCase().includes(search.toLowerCase()) ||
     s.studentCode?.toLowerCase().includes(search.toLowerCase())
   )
+
+  // Reset về trang 0 khi search thay đổi
+  useEffect(() => { setCurrentPage(0) }, [search])
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+  const paginated = filtered.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE)
 
   return (
     <>
@@ -363,9 +372,11 @@ function TabStudents({ course, isTeacher, isAdmin, onRefresh }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border-subtle)]">
-              {filtered.map((s, idx) => (
+              {paginated.map((s, idx) => {
+                const globalIdx = currentPage * PAGE_SIZE + idx
+                return (
                 <tr key={s.id} className="hover:bg-[var(--bg-elevated)]/40 transition-colors">
-                  <td className="px-6 py-4.5 text-xs text-[var(--text-3)] font-mono">{idx + 1}</td>
+                  <td className="px-6 py-4.5 text-xs text-[var(--text-3)] font-mono">{globalIdx + 1}</td>
                   <td className="px-6 py-4.5">
                     <div className="flex items-center gap-2.5">
                       <div className="w-8 h-8 rounded-full bg-success/15 border border-success/25 flex items-center justify-center shrink-0">
@@ -408,11 +419,21 @@ function TabStudents({ course, isTeacher, isAdmin, onRefresh }) {
                     </td>
                   )}
                 </tr>
-              ))}
+                )
+              })}
             </tbody>
           </table>
           <div className="px-5 py-3 border-t border-[var(--border-base)] text-xs text-[var(--text-3)]">
             {filtered.length} sinh viên
+          </div>
+          <div className="px-5 pb-3">
+            <Pagination
+              page={currentPage}
+              totalPages={totalPages}
+              totalElements={filtered.length}
+              size={PAGE_SIZE}
+              onPageChange={setCurrentPage}
+            />
           </div>
         </div>
       )}

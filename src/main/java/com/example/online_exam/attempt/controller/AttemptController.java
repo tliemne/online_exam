@@ -26,7 +26,7 @@ public class AttemptController {
     private final AiGradingService       aiGradingService;
     private final AiClassAnalysisService aiClassAnalysisService;
 
-    // POST /attempts/exams/{examId}/start — tạo attempt IN_PROGRESS (hoặc trả lại nếu đã có)
+    // POST /attempts/exams/{examId}/start
     @PostMapping("/exams/{examId}/start")
     @PreAuthorize("hasRole('STUDENT')")
     public BaseResponse<AttemptResponse> startExam(@PathVariable Long examId) {

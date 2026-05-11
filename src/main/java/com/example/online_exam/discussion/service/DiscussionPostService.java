@@ -278,20 +278,45 @@ public class DiscussionPostService {
         // Validate user is post author OR course teacher OR admin
         validatePostEditPermission(currentUser, post);
         
-        // 0. Xóa reports liên quan đến post (phải xóa trước vì có foreign key)
+        // 0. Lấy tất cả reports của post để xóa violations liên quan trước
+        List<com.example.online_exam.discussion.entity.DiscussionReport> postReports = 
+            new java.util.ArrayList<>(discussionReportRepository.findByPostId(postId));
+        for (com.example.online_exam.discussion.entity.DiscussionReport report : postReports) {
+            // Xóa violation_notifications liên quan đến violation của report này
+            List<com.example.online_exam.discussion.entity.UserViolation> reportViolations = 
+                violationRepository.findByReportId(report.getId());
+            for (com.example.online_exam.discussion.entity.UserViolation v : reportViolations) {
+                // Xóa violation_notifications trước
+                violationNotificationRepository.deleteByViolationId(v.getId());
+            }
+            // Xóa violations liên quan đến report này
+            violationRepository.deleteByReportId(report.getId());
+        }
+        
+        // 1. Xóa reports liên quan đến post
         discussionReportRepository.deleteByPostId(postId);
         
-        // 1. Xóa violation notifications liên quan đến violations của post
+        // 2. Xóa violation notifications liên quan đến violations của post (không qua report)
         violationNotificationRepository.deleteByPostId(postId);
         
-        // 2. Xóa violations liên quan đến post
+        // 3. Xóa violations liên quan đến post (không qua report)
         violationRepository.deleteByPostId(postId);
         
         // 3. Lấy TẤT CẢ replies của post (kể cả đã deleted)
         List<DiscussionReply> allReplies = discussionReplyRepository.findByPostId(postId);
         
-        // 4. Xóa reports liên quan đến replies
+        // 4. Xóa reports liên quan đến replies (xóa violations của report trước)
         for (DiscussionReply reply : allReplies) {
+            List<com.example.online_exam.discussion.entity.DiscussionReport> replyReports = 
+                new java.util.ArrayList<>(discussionReportRepository.findByReplyId(reply.getId()));
+            for (com.example.online_exam.discussion.entity.DiscussionReport report : replyReports) {
+                List<com.example.online_exam.discussion.entity.UserViolation> reportViolations = 
+                    violationRepository.findByReportId(report.getId());
+                for (com.example.online_exam.discussion.entity.UserViolation v : reportViolations) {
+                    violationNotificationRepository.deleteByViolationId(v.getId());
+                }
+                violationRepository.deleteByReportId(report.getId());
+            }
             discussionReportRepository.deleteByReplyId(reply.getId());
         }
         

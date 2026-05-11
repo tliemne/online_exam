@@ -160,6 +160,8 @@ public class AuthServiceImpl implements AuthService {
 
         // Delete token after use
         redisTemplate.delete(key);
+        activityLogService.logUser(user, ActivityLogAction.RESET_PASSWORD,
+                "USER", userId, "Reset mật khẩu qua email");
         log.info("Password reset successfully for user {}", user.getUsername());
     }
 }

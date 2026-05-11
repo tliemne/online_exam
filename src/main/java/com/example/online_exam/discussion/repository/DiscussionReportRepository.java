@@ -25,4 +25,8 @@ public interface DiscussionReportRepository extends JpaRepository<DiscussionRepo
     void deleteByPostId(Long postId);
     
     void deleteByReplyId(Long replyId);
+    
+    java.util.List<DiscussionReport> findByPostId(Long postId);
+    
+    java.util.List<DiscussionReport> findByReplyId(Long replyId);
 }

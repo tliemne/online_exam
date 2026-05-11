@@ -1,0 +1,56 @@
+Họ tên,Username,Mật khẩu,Email,Role,Mã SV/GV,Lớp/Khoa
+Nguyễn Văn Minh,teacher01,123456,teacher01@school.edu.vn,TEACHER,GV2026001,Công nghệ thông tin
+Trần Thị Lan,teacher02,123456,teacher02@school.edu.vn,TEACHER,GV2026002,Công nghệ thông tin
+Lê Văn Hùng,teacher03,123456,teacher03@school.edu.vn,TEACHER,GV2026003,Kỹ thuật phần mềm
+Phạm Thị Hoa,teacher04,123456,teacher04@school.edu.vn,TEACHER,GV2026004,Hệ thống thông tin
+Hoàng Văn Dũng,teacher05,123456,teacher05@school.edu.vn,TEACHER,GV2026005,Khoa học máy tính
+Nguyễn Thị Hoa,student01,123456,student01@student.edu.vn,STUDENT,SV2026001,CNTT-K17
+Trần Văn Nam,student02,123456,student02@student.edu.vn,STUDENT,SV2026002,CNTT-K17
+Lê Thị Mai,student03,123456,student03@student.edu.vn,STUDENT,SV2026003,CNTT-K17
+Phạm Văn Đức,student04,123456,student04@student.edu.vn,STUDENT,SV2026004,CNTT-K17
+Hoàng Thị Linh,student05,123456,student05@student.edu.vn,STUDENT,SV2026005,CNTT-K17
+Vũ Văn Tùng,student06,123456,student06@student.edu.vn,STUDENT,SV2026006,CNTT-K17
+Đặng Thị Thu,student07,123456,student07@student.edu.vn,STUDENT,SV2026007,CNTT-K17
+Bùi Văn Khoa,student08,123456,student08@student.edu.vn,STUDENT,SV2026008,CNTT-K17
+Ngô Thị Hương,student09,123456,student09@student.edu.vn,STUDENT,SV2026009,CNTT-K17
+Đinh Văn Long,student10,123456,student10@student.edu.vn,STUDENT,SV2026010,CNTT-K17
+Lý Thị Ngọc,student11,123456,student11@student.edu.vn,STUDENT,SV2026011,CNTT-K17
+Trương Văn Bình,student12,123456,student12@student.edu.vn,STUDENT,SV2026012,CNTT-K17
+Phan Thị Dung,student13,123456,student13@student.edu.vn,STUDENT,SV2026013,CNTT-K17
+Cao Văn Thắng,student14,123456,student14@student.edu.vn,STUDENT,SV2026014,CNTT-K17
+Đỗ Thị Hạnh,student15,123456,student15@student.edu.vn,STUDENT,SV2026015,CNTT-K17
+Nguyễn Văn Tài,student16,123456,student16@student.edu.vn,STUDENT,SV2026016,CNTT-K17
+Trần Thị Bích,student17,123456,student17@student.edu.vn,STUDENT,SV2026017,CNTT-K17
+Lê Văn Phúc,student18,123456,student18@student.edu.vn,STUDENT,SV2026018,CNTT-K17
+Phạm Thị Yến,student19,123456,student19@student.edu.vn,STUDENT,SV2026019,CNTT-K17
+Hoàng Văn Quân,student20,123456,student20@student.edu.vn,STUDENT,SV2026020,CNTT-K17
+Vũ Thị Thanh,student21,123456,student21@student.edu.vn,STUDENT,SV2026021,KTPM-K17
+Đặng Văn Hiếu,student22,123456,student22@student.edu.vn,STUDENT,SV2026022,KTPM-K17
+Bùi Thị Loan,student23,123456,student23@student.edu.vn,STUDENT,SV2026023,KTPM-K17
+Ngô Văn Sơn,student24,123456,student24@student.edu.vn,STUDENT,SV2026024,KTPM-K17
+Đinh Thị Hằng,student25,123456,student25@student.edu.vn,STUDENT,SV2026025,KTPM-K17
+Lý Văn Cường,student26,123456,student26@student.edu.vn,STUDENT,SV2026026,KTPM-K17
+Trương Thị Nhung,student27,123456,student27@student.edu.vn,STUDENT,SV2026027,KTPM-K17
+Phan Văn Kiên,student28,123456,student28@student.edu.vn,STUDENT,SV2026028,KTPM-K17
+Cao Thị Thúy,student29,123456,student29@student.edu.vn,STUDENT,SV2026029,KTPM-K17
+Đỗ Văn Hải,student30,123456,student30@student.edu.vn,STUDENT,SV2026030,KTPM-K17
+Nguyễn Thị Diệu,student31,123456,student31@student.edu.vn,STUDENT,SV2026031,KTPM-K17
+Trần Văn Lộc,student32,123456,student32@student.edu.vn,STUDENT,SV2026032,KTPM-K17
+Lê Thị Phương,student33,123456,student33@student.edu.vn,STUDENT,SV2026033,KTPM-K17
+Phạm Văn Toàn,student34,123456,student34@student.edu.vn,STUDENT,SV2026034,KTPM-K17
+Hoàng Thị Trang,student35,123456,student35@student.edu.vn,STUDENT,SV2026035,KTPM-K17
+Vũ Văn Duy,student36,123456,student36@student.edu.vn,STUDENT,SV2026036,HTTT-K17
+Đặng Thị Hà,student37,123456,student37@student.edu.vn,STUDENT,SV2026037,HTTT-K17
+Bùi Văn Trung,student38,123456,student38@student.edu.vn,STUDENT,SV2026038,HTTT-K17
+Ngô Thị Lan,student39,123456,student39@student.edu.vn,STUDENT,SV2026039,HTTT-K17
+Đinh Văn Mạnh,student40,123456,student40@student.edu.vn,STUDENT,SV2026040,HTTT-K17
+Lý Thị Vân,student41,123456,student41@student.edu.vn,STUDENT,SV2026041,HTTT-K17
+Trương Văn Đạt,student42,123456,student42@student.edu.vn,STUDENT,SV2026042,HTTT-K17
+Phan Thị Hồng,student43,123456,student43@student.edu.vn,STUDENT,SV2026043,HTTT-K17
+Cao Văn Lâm,student44,123456,student44@student.edu.vn,STUDENT,SV2026044,HTTT-K17
+Đỗ Thị Quỳnh,student45,123456,student45@student.edu.vn,STUDENT,SV2026045,HTTT-K17
+Nguyễn Văn Hậu,student46,123456,student46@student.edu.vn,STUDENT,SV2026046,HTTT-K17
+Trần Thị Kim,student47,123456,student47@student.edu.vn,STUDENT,SV2026047,HTTT-K17
+Lê Văn Tuấn,student48,123456,student48@student.edu.vn,STUDENT,SV2026048,HTTT-K17
+Phạm Thị Nga,student49,123456,student49@student.edu.vn,STUDENT,SV2026049,HTTT-K17
+Hoàng Văn Khải,student50,123456,student50@student.edu.vn,STUDENT,SV2026050,HTTT-K17

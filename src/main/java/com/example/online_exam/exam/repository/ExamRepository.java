@@ -27,7 +27,7 @@ public interface ExamRepository extends JpaRepository<Exam, Long> {
         WHERE e.course.id IN (
             SELECT c.id FROM Course c JOIN c.students s WHERE s.id = :studentId
         )
-        AND e.status = 'PUBLISHED'
+        AND e.status IN ('PUBLISHED', 'CLOSED')
         ORDER BY e.startTime DESC
     """)
     List<Exam> findPublishedForStudent(@Param("studentId") Long studentId);

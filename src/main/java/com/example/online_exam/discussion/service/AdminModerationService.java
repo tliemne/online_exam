@@ -1,5 +1,7 @@
 package com.example.online_exam.discussion.service;
 
+import com.example.online_exam.activitylog.entity.ActivityLogAction;
+import com.example.online_exam.activitylog.service.ActivityLogService;
 import com.example.online_exam.discussion.dto.ModerationActionRequest;
 import com.example.online_exam.discussion.dto.ReportResponse;
 import com.example.online_exam.discussion.dto.UserViolationStatsDTO;
@@ -35,6 +37,7 @@ public class AdminModerationService {
     private final DiscussionReportService reportService;
     private final ViolationNotificationService notificationService;
     private final NotificationService mainNotificationService;
+    private final ActivityLogService activityLogService;
 
     public Page<ReportResponse> getPendingReports(Pageable pageable) {
         validateAdmin();
@@ -59,6 +62,8 @@ public class AdminModerationService {
         report.setResolutionNote(request.getReason());
         reportRepository.save(report);
 
+        activityLogService.logUser(admin, ActivityLogAction.DISMISS_REPORT,
+                "REPORT", reportId, "Bỏ qua báo cáo #" + reportId);
         return reportService.mapToResponse(report);
     }
 
@@ -80,6 +85,9 @@ public class AdminModerationService {
         report.setResolutionNote("Content deleted: " + request.getReason());
         reportRepository.save(report);
 
+        String target = report.getPost() != null ? "bài viết #" + report.getPost().getId() : "bình luận #" + (report.getReply() != null ? report.getReply().getId() : "?");
+        activityLogService.logUser(admin, ActivityLogAction.DELETE_CONTENT,
+                "REPORT", reportId, "Xóa nội dung vi phạm: " + target);
         return reportService.mapToResponse(report);
     }
 
@@ -109,6 +117,8 @@ public class AdminModerationService {
         report.setResolutionNote("User warned: " + request.getReason());
         reportRepository.save(report);
 
+        activityLogService.logUser(admin, ActivityLogAction.WARN_USER,
+                "USER", author.getId(), "Cảnh cáo user: " + author.getUsername() + " — " + request.getReason());
         return reportService.mapToResponse(report);
     }
 
@@ -139,6 +149,8 @@ public class AdminModerationService {
         report.setResolutionNote("User muted for " + request.getMuteDurationDays() + " days");
         reportRepository.save(report);
 
+        activityLogService.logUser(admin, ActivityLogAction.MUTE_USER,
+                "USER", author.getId(), "Tạm khóa user: " + author.getUsername() + " " + request.getMuteDurationDays() + " ngày — " + request.getReason());
         return reportService.mapToResponse(report);
     }
 
@@ -168,6 +180,8 @@ public class AdminModerationService {
         report.setResolutionNote("User banned: " + request.getReason());
         reportRepository.save(report);
 
+        activityLogService.logUser(admin, ActivityLogAction.BAN_USER,
+                "USER", author.getId(), "Cấm vĩnh viễn user: " + author.getUsername() + " — " + request.getReason());
         return reportService.mapToResponse(report);
     }
 

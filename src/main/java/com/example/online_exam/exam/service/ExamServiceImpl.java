@@ -10,6 +10,7 @@ import com.example.online_exam.exam.entity.ExamQuestion;
 import com.example.online_exam.exam.enums.ExamStatus;
 import com.example.online_exam.exam.repository.ExamQuestionRepository;
 import com.example.online_exam.attempt.repository.AttemptRepository;
+import com.example.online_exam.attempt.repository.AttemptAnswerRepository;
 import com.example.online_exam.exam.repository.ExamRepository;
 import com.example.online_exam.exception.AppException;
 import com.example.online_exam.exception.ErrorCode;
@@ -51,6 +52,7 @@ public class ExamServiceImpl implements ExamService {
     private final UserRepository         userRepo;
     private final CurrentUserService     currentUserService;
     private final AttemptRepository      attemptRepo;
+    private final AttemptAnswerRepository attemptAnswerRepo;
     private final EmailService           emailService;
     private final ActivityLogService     activityLogService;
     private final ExamCacheService       examCacheService;
@@ -122,15 +124,26 @@ public class ExamServiceImpl implements ExamService {
         Exam exam = findExam(id);
         User caller = currentUser();
 
+        boolean isAdmin = caller.getRoles().stream()
+                .anyMatch(r -> r.getName() == com.example.online_exam.user.enums.RoleName.ADMIN);
+
         if (isTeacher(caller)) checkOwnership(exam, caller);
 
-        if (exam.getStatus() == ExamStatus.PUBLISHED) {
+        // Chỉ teacher bị giới hạn không xóa đề PUBLISHED còn hiệu lực
+        // Admin có thể xóa bất kỳ đề thi nào
+        if (!isAdmin && exam.getStatus() == ExamStatus.PUBLISHED) {
             boolean expired = exam.getEndTime() != null
                     && exam.getEndTime().isBefore(java.time.LocalDateTime.now());
             if (!expired) throw new AppException(ErrorCode.INVALID_REQUEST);
         }
 
         String title = exam.getTitle();
+        
+        // Xóa đúng thứ tự để tránh foreign key constraint:
+        // 1. AttemptAnswer → 2. Attempt → 3. Exam (ExamQuestion tự xóa qua cascade)
+        attemptAnswerRepo.deleteByAttemptExamId(id);
+        attemptRepo.deleteByExamId(id);
+        
         examRepo.delete(exam);
         examCacheService.evict(id);
         activityLogService.logUser(caller, ActivityLogAction.DELETE_EXAM,

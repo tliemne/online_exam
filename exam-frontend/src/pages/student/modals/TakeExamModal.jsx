@@ -35,6 +35,7 @@ export default function TakeExamModal({ exam, onClose, onSubmitted }) {
   const [showTabAlert, setShowTabAlert] = useState(false)
   const [attemptId, setAttemptId]   = useState(null)  // lưu attemptId để heartbeat
   const [autoSubmitted, setAutoSubmitted] = useState(false) // flag để ngăn thoát khi đã auto-submit
+  const [timeAlert, setTimeAlert]   = useState(null)  // '5min' | '1min' | null
 
   // Load câu hỏi + start/resume attempt
   useEffect(() => {
@@ -112,6 +113,10 @@ export default function TakeExamModal({ exam, onClose, onSubmitted }) {
     const t = setInterval(() => {
       setTimeLeft(p => {
         if (p <= 1) { clearInterval(t); handleSubmit(true); return 0 }
+        // Cảnh báo 5 phút
+        if (p === 300) setTimeAlert('5min')
+        // Cảnh báo 1 phút
+        if (p === 60)  setTimeAlert('1min')
         return p - 1
       })
     }, 1000)
@@ -210,7 +215,8 @@ export default function TakeExamModal({ exam, onClose, onSubmitted }) {
   }, [submitted, loading, saveProgress])
 
   const fmt = (s) => `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`
-  const urgent = timeLeft < 300 // < 5 phút
+  const urgent   = timeLeft < 300  // < 5 phút — màu vàng
+  const critical = timeLeft < 60   // < 1 phút — màu đỏ
   const MAX_WARNINGS = exam.maxTabViolations ?? 3
 
   const handleAnswer = (questionId, value) => {
@@ -417,9 +423,10 @@ export default function TakeExamModal({ exam, onClose, onSubmitted }) {
         </div>
         <div className="flex items-center gap-4">
           {/* Timer */}
-          <div className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono font-bold text-lg border ${
-            urgent ? 'bg-danger/10 border-danger/30 text-danger animate-pulse'
-                   : 'bg-[var(--bg-elevated)] border-[var(--border-base)] text-[var(--text-1)]'
+          <div className={`flex items-center gap-2 px-4 py-2 rounded-lg font-mono font-bold text-lg border transition-all ${
+            critical ? 'bg-danger/15 border-danger/40 text-danger animate-pulse'
+            : urgent  ? 'bg-amber-500/15 border-amber-500/30 text-amber-400'
+                      : 'bg-[var(--bg-elevated)] border-[var(--border-base)] text-[var(--text-1)]'
           }`}>
             {Icon.clock} {fmt(timeLeft)}
           </div>
@@ -436,20 +443,49 @@ export default function TakeExamModal({ exam, onClose, onSubmitted }) {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Question list sidebar */}
-        <div className="w-56 border-r border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3 overflow-y-auto shrink-0">
-          <p className="text-xs text-[var(--text-3)] mb-2 font-medium uppercase tracking-wider">Câu hỏi</p>
+        <div className="w-56 border-r border-[var(--border-subtle)] bg-[var(--bg-surface)] p-3 overflow-y-auto shrink-0 flex flex-col gap-3">
+          {/* Progress */}
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-xs text-[var(--text-3)] font-medium uppercase tracking-wider">Câu hỏi</p>
+              <p className="text-xs font-mono font-semibold" style={{ color: 'var(--accent)' }}>
+                {answered}/{questions.length}
+              </p>
+            </div>
+            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--bg-elevated)' }}>
+              <div className="h-full rounded-full transition-all duration-300"
+                style={{ width: `${questions.length > 0 ? (answered / questions.length) * 100 : 0}%`, background: 'var(--accent)' }}/>
+            </div>
+          </div>
+
+          {/* Grid số câu */}
           <div className="grid grid-cols-5 gap-1.5">
             {questions.map((q, i) => (
               <button key={q.questionId} onClick={() => setCurrent(i)}
+                title={`Câu ${i + 1}${answers[q.questionId] !== undefined ? ' — Đã trả lời' : ' — Chưa trả lời'}`}
                 className={`w-8 h-8 rounded-lg text-xs font-mono font-bold transition-all ${
                   current === i
-                    ? 'bg-accent text-white'
+                    ? 'bg-accent text-white ring-2 ring-accent/40'
                     : answers[q.questionId] !== undefined
                     ? 'bg-success/20 border border-success/40 text-success'
                     : 'bg-[var(--bg-elevated)] border border-[var(--border-base)] text-[var(--text-3)] hover:border-accent/50'
                 }`}>
                 {i + 1}
               </button>
+            ))}
+          </div>
+
+          {/* Legend */}
+          <div className="space-y-1.5 pt-1 border-t" style={{ borderColor: 'var(--border-subtle)' }}>
+            {[
+              { color: 'bg-accent', label: 'Đang xem' },
+              { color: 'bg-success/20 border border-success/40', label: 'Đã trả lời' },
+              { color: 'bg-[var(--bg-elevated)] border border-[var(--border-base)]', label: 'Chưa làm' },
+            ].map(item => (
+              <div key={item.label} className="flex items-center gap-2">
+                <div className={`w-4 h-4 rounded shrink-0 ${item.color}`}/>
+                <span className="text-xs" style={{ color: 'var(--text-3)' }}>{item.label}</span>
+              </div>
             ))}
           </div>
         </div>
@@ -541,6 +577,47 @@ export default function TakeExamModal({ exam, onClose, onSubmitted }) {
         </div>
       </div>
 
+      {/* Time warning popup */}
+      {timeAlert && (
+        <div className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="rounded-2xl p-6 w-full max-w-sm shadow-2xl text-center animate-scale-in"
+            style={{
+              background: 'var(--bg-surface)',
+              border: `2px solid ${timeAlert === '1min' ? 'var(--danger)' : '#f59e0b'}`,
+            }}>
+            <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto mb-4"
+              style={{ background: timeAlert === '1min' ? 'rgba(220,38,38,0.15)' : 'rgba(245,158,11,0.15)' }}>
+              <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24"
+                stroke={timeAlert === '1min' ? '#dc2626' : '#f59e0b'} strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+            </div>
+            <h3 className="font-bold text-lg mb-2"
+              style={{ color: timeAlert === '1min' ? 'var(--danger)' : '#f59e0b' }}>
+              {timeAlert === '1min' ? 'Còn 1 phút!' : 'Còn 5 phút!'}
+            </h3>
+            <p className="text-sm mb-1" style={{ color: 'var(--text-1)' }}>
+              {timeAlert === '1min'
+                ? 'Bài thi sẽ tự động nộp sau 1 phút nữa.'
+                : 'Bạn còn 5 phút để hoàn thành bài thi.'}
+            </p>
+            {questions.length - answered > 0 && (
+              <p className="text-sm mb-4" style={{ color: 'var(--text-3)' }}>
+                Còn <b style={{ color: timeAlert === '1min' ? 'var(--danger)' : '#f59e0b' }}>
+                  {questions.length - answered}
+                </b> câu chưa trả lời.
+              </p>
+            )}
+            <button
+              onClick={() => setTimeAlert(null)}
+              className="w-full py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
+              style={{ background: timeAlert === '1min' ? 'var(--danger)' : '#f59e0b' }}>
+              Tiếp tục làm bài
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Tab switch warning modal */}
       {showTabAlert && (
         <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
@@ -603,8 +680,12 @@ export default function TakeExamModal({ exam, onClose, onSubmitted }) {
       {/* Footer submit bar */}
       <div className="border-t border-[var(--border-subtle)] bg-[var(--bg-surface)] px-6 py-3 flex items-center justify-between shrink-0">
         <p className="text-sm text-[var(--text-3)]">
-          {urgent && <span className="text-danger font-medium mr-2">Sắp hết giờ!</span>}
+          {critical && <span className="text-danger font-semibold mr-2 animate-pulse">⚠ Còn dưới 1 phút!</span>}
+          {!critical && urgent && <span className="text-amber-400 font-medium mr-2">Còn dưới 5 phút</span>}
           Đã trả lời <span className="text-accent font-semibold">{answered}/{questions.length}</span> câu
+          {answered < questions.length && (
+            <span className="ml-2 text-[var(--text-3)]">· {questions.length - answered} câu chưa làm</span>
+          )}
         </p>
         <button onClick={() => handleSubmit(false)} disabled={submitting}
           className="btn-primary">

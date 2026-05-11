@@ -86,7 +86,7 @@ export default function AdminDiscussionsPage() {
     if (!ok) return
 
     try {
-      await api.delete(`/discussions/${post.id}`)
+      await api.delete(`/api/discussions/${post.id}`)
       alert('Đã xóa bài viết thành công')
       loadDiscussions()
     } catch (e) {
@@ -154,7 +154,7 @@ export default function AdminDiscussionsPage() {
               placeholder="Tìm kiếm theo tiêu đề, nội dung..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="input pl-9"
+              className="input-field pl-9"
             />
             <span className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-3)' }}>
               {Icon.search}
@@ -169,7 +169,7 @@ export default function AdminDiscussionsPage() {
           <select
             value={selectedCourse}
             onChange={(e) => { setSelectedCourse(e.target.value); setPage(0) }}
-            className="input"
+            className="input-field"
             style={{ width: '200px' }}
           >
             <option value="">Tất cả khóa học</option>
@@ -181,7 +181,7 @@ export default function AdminDiscussionsPage() {
           <select
             value={selectedStatus}
             onChange={(e) => { setSelectedStatus(e.target.value); setPage(0) }}
-            className="input"
+            className="input-field"
             style={{ width: '150px' }}
           >
             <option value="">Tất cả</option>

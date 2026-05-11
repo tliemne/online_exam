@@ -34,4 +34,8 @@ public interface UserViolationRepository extends JpaRepository<UserViolation, Lo
     void deleteByPostId(Long postId);
     
     void deleteByReplyId(Long replyId);
+    
+    void deleteByReportId(Long reportId);
+    
+    List<UserViolation> findByReportId(Long reportId);
 }

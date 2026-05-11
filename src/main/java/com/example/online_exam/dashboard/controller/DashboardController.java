@@ -50,6 +50,12 @@ public class DashboardController {
         return ok(discussionStatsService.getTeacherStats(user.getId()));
     }
 
+    @GetMapping("/discussion/teacher/unanswered")
+    @PreAuthorize("hasAnyRole('ADMIN','TEACHER')")
+    public BaseResponse<java.util.List<com.example.online_exam.discussion.dto.UnansweredPostDTO>> unansweredPosts(@AuthenticationPrincipal User user) {
+        return ok(discussionStatsService.getUnansweredPosts(user.getId()));
+    }
+
     @GetMapping("/discussion/student")
     @PreAuthorize("hasRole('STUDENT')")
     public BaseResponse<StudentDiscussionStatsDTO> studentDiscussionStats(@AuthenticationPrincipal User user) {
